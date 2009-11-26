@@ -1,0 +1,464 @@
+<!DOCTYPE QtCreatorProject>
+<qtcreator>
+ <data>
+  <variable>RunConfiguration0-Arguments</variable>
+  <valuelist type="QVariantList" />
+ </data>
+ <data>
+  <variable>RunConfiguration0-Executable</variable>
+  <value type="QString" ></value>
+ </data>
+ <data>
+  <variable>RunConfiguration0-RunConfiguration.name</variable>
+  <value type="QString" >Run </value>
+ </data>
+ <data>
+  <variable>RunConfiguration0-UseTerminal</variable>
+  <value type="bool" >false</value>
+ </data>
+ <data>
+  <variable>RunConfiguration0-UserEnvironmentChanges</variable>
+  <valuelist type="QVariantList" />
+ </data>
+ <data>
+  <variable>RunConfiguration0-UserName</variable>
+  <value type="QString" ></value>
+ </data>
+ <data>
+  <variable>RunConfiguration0-UserSetName</variable>
+  <value type="bool" >false</value>
+ </data>
+ <data>
+  <variable>RunConfiguration0-WorkingDirectory</variable>
+  <value type="QString" >$BUILDDIR</value>
+ </data>
+ <data>
+  <variable>RunConfiguration0-type</variable>
+  <value type="QString" >ProjectExplorer.CustomExecutableRunConfiguration</value>
+ </data>
+ <data>
+  <variable>RunConfiguration1-CommandLineArguments</variable>
+  <valuelist type="QVariantList" />
+ </data>
+ <data>
+  <variable>RunConfiguration1-ProFile</variable>
+  <value type="QString" >src/src.pro</value>
+ </data>
+ <data>
+  <variable>RunConfiguration1-RunConfiguration.name</variable>
+  <value type="QString" >src</value>
+ </data>
+ <data>
+  <variable>RunConfiguration1-UseDyldImageSuffix</variable>
+  <value type="bool" >false</value>
+ </data>
+ <data>
+  <variable>RunConfiguration1-UseTerminal</variable>
+  <value type="bool" >false</value>
+ </data>
+ <data>
+  <variable>RunConfiguration1-UserEnvironmentChanges</variable>
+  <valuelist type="QVariantList" />
+ </data>
+ <data>
+  <variable>RunConfiguration1-UserSetName</variable>
+  <value type="bool" >false</value>
+ </data>
+ <data>
+  <variable>RunConfiguration1-type</variable>
+  <value type="QString" >Qt4ProjectManager.Qt4RunConfiguration</value>
+ </data>
+ <data>
+  <variable>activeRunConfiguration</variable>
+  <value type="int" >1</value>
+ </data>
+ <data>
+  <variable>activebuildconfiguration</variable>
+  <value type="QString" >Debug</value>
+ </data>
+ <data>
+  <variable>buildConfiguration-Debug</variable>
+  <valuemap type="QVariantMap" >
+   <value key="ProjectExplorer.BuildConfiguration.DisplayName" type="QString" >Debug</value>
+   <value key="QtVersionId" type="int" >0</value>
+   <value key="addQDumper" type="" ></value>
+   <value key="buildDirectory" type="QString" >/home/tim/work/my/lrceditor</value>
+  </valuemap>
+ </data>
+ <data>
+  <variable>buildConfiguration-Release</variable>
+  <valuemap type="QVariantMap" >
+   <value key="ProjectExplorer.BuildConfiguration.DisplayName" type="QString" >Release</value>
+   <value key="QtVersionId" type="int" >0</value>
+   <value key="addQDumper" type="" ></value>
+  </valuemap>
+ </data>
+ <data>
+  <variable>buildconfiguration-Debug-buildstep0</variable>
+  <valuemap type="QVariantMap" >
+   <value key="ProjectExplorer.BuildConfiguration.DisplayName" type="QString" >Debug</value>
+   <valuelist key="abstractProcess.Environment" type="QVariantList" >
+    <value type="QString" >COLORTERM=1</value>
+    <value type="QString" >CPU=i686</value>
+    <value type="QString" >CSHEDIT=emacs</value>
+    <value type="QString" >CVS_RSH=ssh</value>
+    <value type="QString" >DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-fMHt7C0Nqt,guid=3db416e659149ecf05759e324b0eef22</value>
+    <value type="QString" >DESKTOP_SESSION=default</value>
+    <value type="QString" >DESKTOP_STARTUP_ID=</value>
+    <value type="QString" >DISPLAY=:0.0</value>
+    <value type="QString" >DM_CONTROL=/var/run/xdmctl</value>
+    <value type="QString" >EDITOR=/usr/bin/vim</value>
+    <value type="QString" >ENV=/etc/bash.bashrc</value>
+    <value type="QString" >FROM_HEADER=</value>
+    <value type="QString" >GPG_AGENT_INFO=/tmp/gpg-JA0B8u/S.gpg-agent:5036:1</value>
+    <value type="QString" >GS_LIB=/home/tim/.fonts</value>
+    <value type="QString" >GTK2_RC_FILES=/etc/gtk-2.0/gtkrc:/home/tim/.gtkrc-2.0-kde4::/home/tim/.gtkrc-2.0-qtengine:/home/tim/.gtkrc-2.0:/home/tim/.kde4/share/config/gtkrc-2.0</value>
+    <value type="QString" >GTK_IM_MODULE=cedilla</value>
+    <value type="QString" >GTK_RC_FILES=/etc/gtk/gtkrc:/home/tim/.gtkrc::/home/tim/.kde4/share/config/gtkrc</value>
+    <value type="QString" >G_BROKEN_FILENAMES=1</value>
+    <value type="QString" >G_FILENAME_ENCODING=@locale,UTF-8,ISO-8859-15,CP1252</value>
+    <value type="QString" >HISTSIZE=1000</value>
+    <value type="QString" >HOME=/home/tim</value>
+    <value type="QString" >HOST=tim</value>
+    <value type="QString" >HOSTNAME=tim</value>
+    <value type="QString" >HOSTTYPE=i386</value>
+    <value type="QString" >INPUTRC=/etc/inputrc</value>
+    <value type="QString" >JAVA_BINDIR=/usr/lib/jvm/jre/bin</value>
+    <value type="QString" >JAVA_HOME=/usr/lib/jvm/jre</value>
+    <value type="QString" >JAVA_ROOT=/usr/lib/jvm/jre</value>
+    <value type="QString" >JRE_HOME=/usr/lib/jvm/jre</value>
+    <value type="QString" >KDE_FULL_SESSION=true</value>
+    <value type="QString" >KDE_MULTIHEAD=false</value>
+    <value type="QString" >KDE_SESSION_UID=1000</value>
+    <value type="QString" >KDE_SESSION_VERSION=4</value>
+    <value type="QString" >LANG=en_US.UTF-8</value>
+    <value type="QString" >LD_LIBRARY_PATH=/usr/lib/qtcreator:/usr/lib/mpi/gcc/openmpi/lib</value>
+    <value type="QString" >LESS=-M -I</value>
+    <value type="QString" >LESSCLOSE=lessclose.sh %s %s</value>
+    <value type="QString" >LESSKEY=/etc/lesskey.bin</value>
+    <value type="QString" >LESSOPEN=lessopen.sh %s</value>
+    <value type="QString" >LESS_ADVANCED_PREPROCESSOR=no</value>
+    <value type="QString" >LOGNAME=tim</value>
+    <value type="QString" >LS_COLORS=no=00:fi=00:di=01;34:ln=00;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=41;33;01:ex=00;32:*.cmd=00;32:*.exe=01;32:*.com=01;32:*.bat=01;32:*.btm=01;32:*.dll=01;32:*.tar=00;31:*.tbz=00;31:*.tgz=00;31:*.rpm=00;31:*.deb=00;31:*.arj=00;31:*.taz=00;31:*.lzh=00;31:*.lzma=00;31:*.zip=00;31:*.zoo=00;31:*.z=00;31:*.Z=00;31:*.gz=00;31:*.bz2=00;31:*.tb2=00;31:*.tz2=00;31:*.tbz2=00;31:*.xz=00;31:*.avi=01;35:*.bmp=01;35:*.fli=01;35:*.gif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mng=01;35:*.mov=01;35:*.mpg=01;35:*.pcx=01;35:*.pbm=01;35:*.pgm=01;35:*.png=01;35:*.ppm=01;35:*.tga=01;35:*.tif=01;35:*.xbm=01;35:*.xpm=01;35:*.dl=01;35:*.gl=01;35:*.wmv=01;35:*.aiff=00;32:*.au=00;32:*.mid=00;32:*.mp3=00;32:*.ogg=00;32:*.voc=00;32:*.wav=00;32:</value>
+    <value type="QString" >LS_OPTIONS=-N --color=tty -T 0</value>
+    <value type="QString" >MACHTYPE=i686-suse-linux</value>
+    <value type="QString" >MAIL=/var/spool/mail/tim</value>
+    <value type="QString" >MANPATH=/usr/lib/mpi/gcc/openmpi/share/man:/usr/local/man:/usr/share/man</value>
+    <value type="QString" >MINICOM=-c on</value>
+    <value type="QString" >MORE=-sl</value>
+    <value type="QString" >NNTPSERVER=news</value>
+    <value type="QString" >OSTYPE=linux</value>
+    <value type="QString" >PAGER=less</value>
+    <value type="QString" >PATH=/usr/bin:/usr/lib/mpi/gcc/openmpi/bin:/home/tim/bin:/usr/local/bin:/usr/bin:/bin:/usr/bin/X11:/usr/X11R6/bin:/usr/games:/opt/kde3/bin:/usr/lib/jvm/jre/bin:/usr/lib/mit/bin:/usr/lib/mit/sbin:/home/tim/bin:/home/tim/bin/mingw/bin</value>
+    <value type="QString" >PROFILEREAD=true</value>
+    <value type="QString" >PWD=/home/tim/Documents</value>
+    <value type="QString" >PYTHONSTARTUP=/etc/pythonstart</value>
+    <value type="QString" >QTDIR=/usr</value>
+    <value type="QString" >QT_IM_MODULE=xim</value>
+    <value type="QString" >QT_IM_SWITCHER=imsw-multi</value>
+    <value type="QString" >QT_PLUGIN_PATH=/home/tim/.kde4/lib/kde4/plugins/:/usr/lib/kde4/plugins/</value>
+    <value type="QString" >QT_SYSTEM_DIR=/usr/share/desktop-data</value>
+    <value type="QString" >SESSION_MANAGER=local/tim:@/tmp/.ICE-unix/5139,unix/tim:/tmp/.ICE-unix/5139</value>
+    <value type="QString" >SHELL=/bin/bash</value>
+    <value type="QString" >SHLVL=1</value>
+    <value type="QString" >SSH_AGENT_PID=5037</value>
+    <value type="QString" >SSH_ASKPASS=/usr/lib/ssh/x11-ssh-askpass</value>
+    <value type="QString" >SSH_AUTH_SOCK=/tmp/ssh-lstRZ4988/agent.4988</value>
+    <value type="QString" >TERM=xterm</value>
+    <value type="QString" >TMPDIR=/tmp</value>
+    <value type="QString" >USER=tim</value>
+    <value type="QString" >USE_FAM=</value>
+    <value type="QString" >WINDOWMANAGER=/usr/bin/startkde</value>
+    <value type="QString" >WINDOWPATH=7</value>
+    <value type="QString" >XAUTHLOCALHOSTNAME=tim</value>
+    <value type="QString" >XCURSOR_THEME=Oxygen_White</value>
+    <value type="QString" >XDG_CONFIG_DIRS=/etc/xdg</value>
+    <value type="QString" >XDG_DATA_DIRS=/usr/share:/etc/opt/kde3/share:/opt/kde3/share</value>
+    <value type="QString" >XDG_SESSION_COOKIE=b2e56319d428f9d142adb0634aef416d-1259269921.508957-1287444311</value>
+    <value type="QString" >XDM_MANAGED=method=classic</value>
+    <value type="QString" >XKEYSYMDB=/usr/share/X11/XKeysymDB</value>
+    <value type="QString" >XMODIFIERS=@im=local</value>
+    <value type="QString" >XNLSPATH=/usr/share/X11/nls</value>
+    <value type="QString" >XSESSION_IS_UP=yes</value>
+    <value type="QString" >mc=() {  . /usr/share/mc/bin/mc-wrapper.sh
+}</value>
+   </valuelist>
+   <valuelist key="abstractProcess.arguments" type="QVariantList" >
+    <value type="QString" >/home/tim/work/my/lrceditor/lrceditor.pro</value>
+    <value type="QString" >-spec</value>
+    <value type="QString" >/usr/share/qt4/mkspecs/linux-g++</value>
+    <value type="QString" >-r</value>
+    <value type="QString" >CONFIG+=debug</value>
+   </valuelist>
+   <value key="abstractProcess.command" type="QString" >/usr/bin/qmake</value>
+   <value key="abstractProcess.enabled" type="bool" >true</value>
+   <value key="abstractProcess.workingDirectory" type="QString" >/home/tim/work/my/lrceditor</value>
+   <value key="buildConfiguration" type="int" >2</value>
+  </valuemap>
+ </data>
+ <data>
+  <variable>buildconfiguration-Debug-buildstep1</variable>
+  <valuemap type="QVariantMap" >
+   <value key="ProjectExplorer.BuildConfiguration.DisplayName" type="QString" >Debug</value>
+   <valuelist key="abstractProcess.Environment" type="QVariantList" >
+    <value type="QString" >COLORTERM=1</value>
+    <value type="QString" >CPU=i686</value>
+    <value type="QString" >CSHEDIT=emacs</value>
+    <value type="QString" >CVS_RSH=ssh</value>
+    <value type="QString" >DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-fMHt7C0Nqt,guid=3db416e659149ecf05759e324b0eef22</value>
+    <value type="QString" >DESKTOP_SESSION=default</value>
+    <value type="QString" >DESKTOP_STARTUP_ID=</value>
+    <value type="QString" >DISPLAY=:0.0</value>
+    <value type="QString" >DM_CONTROL=/var/run/xdmctl</value>
+    <value type="QString" >EDITOR=/usr/bin/vim</value>
+    <value type="QString" >ENV=/etc/bash.bashrc</value>
+    <value type="QString" >FROM_HEADER=</value>
+    <value type="QString" >GPG_AGENT_INFO=/tmp/gpg-JA0B8u/S.gpg-agent:5036:1</value>
+    <value type="QString" >GS_LIB=/home/tim/.fonts</value>
+    <value type="QString" >GTK2_RC_FILES=/etc/gtk-2.0/gtkrc:/home/tim/.gtkrc-2.0-kde4::/home/tim/.gtkrc-2.0-qtengine:/home/tim/.gtkrc-2.0:/home/tim/.kde4/share/config/gtkrc-2.0</value>
+    <value type="QString" >GTK_IM_MODULE=cedilla</value>
+    <value type="QString" >GTK_RC_FILES=/etc/gtk/gtkrc:/home/tim/.gtkrc::/home/tim/.kde4/share/config/gtkrc</value>
+    <value type="QString" >G_BROKEN_FILENAMES=1</value>
+    <value type="QString" >G_FILENAME_ENCODING=@locale,UTF-8,ISO-8859-15,CP1252</value>
+    <value type="QString" >HISTSIZE=1000</value>
+    <value type="QString" >HOME=/home/tim</value>
+    <value type="QString" >HOST=tim</value>
+    <value type="QString" >HOSTNAME=tim</value>
+    <value type="QString" >HOSTTYPE=i386</value>
+    <value type="QString" >INPUTRC=/etc/inputrc</value>
+    <value type="QString" >JAVA_BINDIR=/usr/lib/jvm/jre/bin</value>
+    <value type="QString" >JAVA_HOME=/usr/lib/jvm/jre</value>
+    <value type="QString" >JAVA_ROOT=/usr/lib/jvm/jre</value>
+    <value type="QString" >JRE_HOME=/usr/lib/jvm/jre</value>
+    <value type="QString" >KDE_FULL_SESSION=true</value>
+    <value type="QString" >KDE_MULTIHEAD=false</value>
+    <value type="QString" >KDE_SESSION_UID=1000</value>
+    <value type="QString" >KDE_SESSION_VERSION=4</value>
+    <value type="QString" >LANG=en_US.UTF-8</value>
+    <value type="QString" >LD_LIBRARY_PATH=/usr/lib/qtcreator:/usr/lib/mpi/gcc/openmpi/lib</value>
+    <value type="QString" >LESS=-M -I</value>
+    <value type="QString" >LESSCLOSE=lessclose.sh %s %s</value>
+    <value type="QString" >LESSKEY=/etc/lesskey.bin</value>
+    <value type="QString" >LESSOPEN=lessopen.sh %s</value>
+    <value type="QString" >LESS_ADVANCED_PREPROCESSOR=no</value>
+    <value type="QString" >LOGNAME=tim</value>
+    <value type="QString" >LS_COLORS=no=00:fi=00:di=01;34:ln=00;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=41;33;01:ex=00;32:*.cmd=00;32:*.exe=01;32:*.com=01;32:*.bat=01;32:*.btm=01;32:*.dll=01;32:*.tar=00;31:*.tbz=00;31:*.tgz=00;31:*.rpm=00;31:*.deb=00;31:*.arj=00;31:*.taz=00;31:*.lzh=00;31:*.lzma=00;31:*.zip=00;31:*.zoo=00;31:*.z=00;31:*.Z=00;31:*.gz=00;31:*.bz2=00;31:*.tb2=00;31:*.tz2=00;31:*.tbz2=00;31:*.xz=00;31:*.avi=01;35:*.bmp=01;35:*.fli=01;35:*.gif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mng=01;35:*.mov=01;35:*.mpg=01;35:*.pcx=01;35:*.pbm=01;35:*.pgm=01;35:*.png=01;35:*.ppm=01;35:*.tga=01;35:*.tif=01;35:*.xbm=01;35:*.xpm=01;35:*.dl=01;35:*.gl=01;35:*.wmv=01;35:*.aiff=00;32:*.au=00;32:*.mid=00;32:*.mp3=00;32:*.ogg=00;32:*.voc=00;32:*.wav=00;32:</value>
+    <value type="QString" >LS_OPTIONS=-N --color=tty -T 0</value>
+    <value type="QString" >MACHTYPE=i686-suse-linux</value>
+    <value type="QString" >MAIL=/var/spool/mail/tim</value>
+    <value type="QString" >MANPATH=/usr/lib/mpi/gcc/openmpi/share/man:/usr/local/man:/usr/share/man</value>
+    <value type="QString" >MINICOM=-c on</value>
+    <value type="QString" >MORE=-sl</value>
+    <value type="QString" >NNTPSERVER=news</value>
+    <value type="QString" >OSTYPE=linux</value>
+    <value type="QString" >PAGER=less</value>
+    <value type="QString" >PATH=/usr/bin:/usr/lib/mpi/gcc/openmpi/bin:/home/tim/bin:/usr/local/bin:/usr/bin:/bin:/usr/bin/X11:/usr/X11R6/bin:/usr/games:/opt/kde3/bin:/usr/lib/jvm/jre/bin:/usr/lib/mit/bin:/usr/lib/mit/sbin:/home/tim/bin:/home/tim/bin/mingw/bin</value>
+    <value type="QString" >PROFILEREAD=true</value>
+    <value type="QString" >PWD=/home/tim/Documents</value>
+    <value type="QString" >PYTHONSTARTUP=/etc/pythonstart</value>
+    <value type="QString" >QTDIR=/usr</value>
+    <value type="QString" >QT_IM_MODULE=xim</value>
+    <value type="QString" >QT_IM_SWITCHER=imsw-multi</value>
+    <value type="QString" >QT_PLUGIN_PATH=/home/tim/.kde4/lib/kde4/plugins/:/usr/lib/kde4/plugins/</value>
+    <value type="QString" >QT_SYSTEM_DIR=/usr/share/desktop-data</value>
+    <value type="QString" >SESSION_MANAGER=local/tim:@/tmp/.ICE-unix/5139,unix/tim:/tmp/.ICE-unix/5139</value>
+    <value type="QString" >SHELL=/bin/bash</value>
+    <value type="QString" >SHLVL=1</value>
+    <value type="QString" >SSH_AGENT_PID=5037</value>
+    <value type="QString" >SSH_ASKPASS=/usr/lib/ssh/x11-ssh-askpass</value>
+    <value type="QString" >SSH_AUTH_SOCK=/tmp/ssh-lstRZ4988/agent.4988</value>
+    <value type="QString" >TERM=xterm</value>
+    <value type="QString" >TMPDIR=/tmp</value>
+    <value type="QString" >USER=tim</value>
+    <value type="QString" >USE_FAM=</value>
+    <value type="QString" >WINDOWMANAGER=/usr/bin/startkde</value>
+    <value type="QString" >WINDOWPATH=7</value>
+    <value type="QString" >XAUTHLOCALHOSTNAME=tim</value>
+    <value type="QString" >XCURSOR_THEME=Oxygen_White</value>
+    <value type="QString" >XDG_CONFIG_DIRS=/etc/xdg</value>
+    <value type="QString" >XDG_DATA_DIRS=/usr/share:/etc/opt/kde3/share:/opt/kde3/share</value>
+    <value type="QString" >XDG_SESSION_COOKIE=b2e56319d428f9d142adb0634aef416d-1259269921.508957-1287444311</value>
+    <value type="QString" >XDM_MANAGED=method=classic</value>
+    <value type="QString" >XKEYSYMDB=/usr/share/X11/XKeysymDB</value>
+    <value type="QString" >XMODIFIERS=@im=local</value>
+    <value type="QString" >XNLSPATH=/usr/share/X11/nls</value>
+    <value type="QString" >XSESSION_IS_UP=yes</value>
+    <value type="QString" >mc=() {  . /usr/share/mc/bin/mc-wrapper.sh
+}</value>
+   </valuelist>
+   <valuelist key="abstractProcess.arguments" type="QVariantList" >
+    <value type="QString" >-w</value>
+   </valuelist>
+   <value key="abstractProcess.command" type="QString" >/usr/bin/make</value>
+   <value key="abstractProcess.enabled" type="bool" >true</value>
+   <value key="abstractProcess.workingDirectory" type="QString" >/home/tim/work/my/lrceditor</value>
+  </valuemap>
+ </data>
+ <data>
+  <variable>buildconfiguration-Debug-cleanstep0</variable>
+  <valuemap type="QVariantMap" >
+   <value key="ProjectExplorer.BuildConfiguration.DisplayName" type="QString" >Debug</value>
+   <valuelist key="abstractProcess.Environment" type="QVariantList" >
+    <value type="QString" >COLORTERM=1</value>
+    <value type="QString" >CPU=i686</value>
+    <value type="QString" >CSHEDIT=emacs</value>
+    <value type="QString" >CVS_RSH=ssh</value>
+    <value type="QString" >DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-xWYkvdwD1p,guid=03644c75e48d48cf9e3848f94b06249e</value>
+    <value type="QString" >DESKTOP_SESSION=default</value>
+    <value type="QString" >DESKTOP_STARTUP_ID=</value>
+    <value type="QString" >DISPLAY=:0.0</value>
+    <value type="QString" >DM_CONTROL=/var/run/xdmctl</value>
+    <value type="QString" >EDITOR=/usr/bin/vim</value>
+    <value type="QString" >ENV=/etc/bash.bashrc</value>
+    <value type="QString" >FROM_HEADER=</value>
+    <value type="QString" >GPG_AGENT_INFO=/tmp/gpg-VNPy5A/S.gpg-agent:3119:1</value>
+    <value type="QString" >GS_LIB=/home/tim/.fonts</value>
+    <value type="QString" >GTK2_RC_FILES=/etc/gtk-2.0/gtkrc:/home/tim/.gtkrc-2.0-kde4::/home/tim/.gtkrc-2.0-qtengine:/home/tim/.gtkrc-2.0:/home/tim/.kde4/share/config/gtkrc-2.0</value>
+    <value type="QString" >GTK_IM_MODULE=cedilla</value>
+    <value type="QString" >GTK_RC_FILES=/etc/gtk/gtkrc:/home/tim/.gtkrc::/home/tim/.kde4/share/config/gtkrc</value>
+    <value type="QString" >G_BROKEN_FILENAMES=1</value>
+    <value type="QString" >G_FILENAME_ENCODING=@locale,UTF-8,ISO-8859-15,CP1252</value>
+    <value type="QString" >HISTSIZE=1000</value>
+    <value type="QString" >HOME=/home/tim</value>
+    <value type="QString" >HOST=tim</value>
+    <value type="QString" >HOSTNAME=tim</value>
+    <value type="QString" >HOSTTYPE=i386</value>
+    <value type="QString" >INPUTRC=/etc/inputrc</value>
+    <value type="QString" >JAVA_BINDIR=/usr/lib/jvm/jre/bin</value>
+    <value type="QString" >JAVA_HOME=/usr/lib/jvm/jre</value>
+    <value type="QString" >JAVA_ROOT=/usr/lib/jvm/jre</value>
+    <value type="QString" >JRE_HOME=/usr/lib/jvm/jre</value>
+    <value type="QString" >KDE_FULL_SESSION=true</value>
+    <value type="QString" >KDE_MULTIHEAD=false</value>
+    <value type="QString" >KDE_SESSION_UID=1000</value>
+    <value type="QString" >KDE_SESSION_VERSION=4</value>
+    <value type="QString" >LANG=en_US.UTF-8</value>
+    <value type="QString" >LANGUAGE=</value>
+    <value type="QString" >LD_LIBRARY_PATH=/usr/lib/qtcreator:</value>
+    <value type="QString" >LESS=-M -I</value>
+    <value type="QString" >LESSCLOSE=lessclose.sh %s %s</value>
+    <value type="QString" >LESSKEY=/etc/lesskey.bin</value>
+    <value type="QString" >LESSOPEN=lessopen.sh %s</value>
+    <value type="QString" >LESS_ADVANCED_PREPROCESSOR=no</value>
+    <value type="QString" >LOGNAME=tim</value>
+    <value type="QString" >LS_COLORS=no=00:fi=00:di=01;34:ln=00;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=41;33;01:ex=00;32:*.cmd=00;32:*.exe=01;32:*.com=01;32:*.bat=01;32:*.btm=01;32:*.dll=01;32:*.tar=00;31:*.tbz=00;31:*.tgz=00;31:*.rpm=00;31:*.deb=00;31:*.arj=00;31:*.taz=00;31:*.lzh=00;31:*.lzma=00;31:*.zip=00;31:*.zoo=00;31:*.z=00;31:*.Z=00;31:*.gz=00;31:*.bz2=00;31:*.tb2=00;31:*.tz2=00;31:*.tbz2=00;31:*.xz=00;31:*.avi=01;35:*.bmp=01;35:*.fli=01;35:*.gif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mng=01;35:*.mov=01;35:*.mpg=01;35:*.pcx=01;35:*.pbm=01;35:*.pgm=01;35:*.png=01;35:*.ppm=01;35:*.tga=01;35:*.tif=01;35:*.xbm=01;35:*.xpm=01;35:*.dl=01;35:*.gl=01;35:*.wmv=01;35:*.aiff=00;32:*.au=00;32:*.mid=00;32:*.mp3=00;32:*.ogg=00;32:*.voc=00;32:*.wav=00;32:</value>
+    <value type="QString" >LS_OPTIONS=-N --color=tty -T 0</value>
+    <value type="QString" >MACHTYPE=i686-suse-linux</value>
+    <value type="QString" >MAIL=/var/spool/mail/tim</value>
+    <value type="QString" >MANPATH=/usr/local/man:/usr/share/man</value>
+    <value type="QString" >MINICOM=-c on</value>
+    <value type="QString" >MORE=-sl</value>
+    <value type="QString" >NNTPSERVER=news</value>
+    <value type="QString" >OSTYPE=linux</value>
+    <value type="QString" >PAGER=less</value>
+    <value type="QString" >PATH=/usr/bin:/home/tim/bin:/usr/local/bin:/usr/bin:/bin:/usr/bin/X11:/usr/X11R6/bin:/usr/games:/opt/kde3/bin:/usr/lib/jvm/jre/bin:/usr/lib/mit/bin:/usr/lib/mit/sbin:/home/tim/bin:/home/tim/bin/mingw/bin</value>
+    <value type="QString" >PROFILEREAD=true</value>
+    <value type="QString" >PWD=/home/tim/Documents</value>
+    <value type="QString" >PYTHONSTARTUP=/etc/pythonstart</value>
+    <value type="QString" >QTDIR=/usr</value>
+    <value type="QString" >QT_IM_MODULE=xim</value>
+    <value type="QString" >QT_IM_SWITCHER=imsw-multi</value>
+    <value type="QString" >QT_PLUGIN_PATH=/home/tim/.kde4/lib/kde4/plugins/:/usr/lib/kde4/plugins/</value>
+    <value type="QString" >QT_SYSTEM_DIR=/usr/share/desktop-data</value>
+    <value type="QString" >SESSION_MANAGER=local/tim:@/tmp/.ICE-unix/3228,unix/tim:/tmp/.ICE-unix/3228</value>
+    <value type="QString" >SHELL=/bin/bash</value>
+    <value type="QString" >SHLVL=1</value>
+    <value type="QString" >SSH_AGENT_PID=3120</value>
+    <value type="QString" >SSH_ASKPASS=/usr/lib/ssh/x11-ssh-askpass</value>
+    <value type="QString" >SSH_AUTH_SOCK=/tmp/ssh-qzNjn3065/agent.3065</value>
+    <value type="QString" >TERM=xterm</value>
+    <value type="QString" >TMPDIR=/tmp</value>
+    <value type="QString" >USER=tim</value>
+    <value type="QString" >USE_FAM=</value>
+    <value type="QString" >WINDOWMANAGER=/usr/bin/startkde</value>
+    <value type="QString" >WINDOWPATH=7</value>
+    <value type="QString" >XAUTHLOCALHOSTNAME=tim</value>
+    <value type="QString" >XCURSOR_THEME=Oxygen_White</value>
+    <value type="QString" >XDG_CONFIG_DIRS=/etc/xdg</value>
+    <value type="QString" >XDG_DATA_DIRS=/usr/share:/etc/opt/kde3/share:/opt/kde3/share</value>
+    <value type="QString" >XDG_SESSION_COOKIE=b2e56319d428f9d142adb0634aef416d-1258693787.838715-575202350</value>
+    <value type="QString" >XDM_MANAGED=method=classic</value>
+    <value type="QString" >XKEYSYMDB=/usr/share/X11/XKeysymDB</value>
+    <value type="QString" >XMODIFIERS=@im=local</value>
+    <value type="QString" >XNLSPATH=/usr/share/X11/nls</value>
+    <value type="QString" >XSESSION_IS_UP=yes</value>
+    <value type="QString" >mc=() {  . /usr/share/mc/bin/mc-wrapper.sh
+}</value>
+   </valuelist>
+   <valuelist key="abstractProcess.arguments" type="QVariantList" >
+    <value type="QString" >clean</value>
+    <value type="QString" >-w</value>
+   </valuelist>
+   <value key="abstractProcess.command" type="QString" >/usr/bin/make</value>
+   <value key="abstractProcess.enabled" type="bool" >true</value>
+   <value key="abstractProcess.workingDirectory" type="QString" >/home/tim/work/my/lrceditor</value>
+  </valuemap>
+ </data>
+ <data>
+  <variable>buildconfiguration-Release-buildstep0</variable>
+  <valuemap type="QVariantMap" >
+   <value key="ProjectExplorer.BuildConfiguration.DisplayName" type="QString" >Release</value>
+   <value key="buildConfiguration" type="int" >0</value>
+  </valuemap>
+ </data>
+ <data>
+  <variable>buildconfiguration-Release-buildstep1</variable>
+  <valuemap type="QVariantMap" >
+   <value key="ProjectExplorer.BuildConfiguration.DisplayName" type="QString" >Release</value>
+  </valuemap>
+ </data>
+ <data>
+  <variable>buildconfiguration-Release-cleanstep0</variable>
+  <valuemap type="QVariantMap" >
+   <value key="ProjectExplorer.BuildConfiguration.DisplayName" type="QString" >Release</value>
+  </valuemap>
+ </data>
+ <data>
+  <variable>buildconfigurations</variable>
+  <valuelist type="QVariantList" >
+   <value type="QString" >Debug</value>
+   <value type="QString" >Release</value>
+  </valuelist>
+ </data>
+ <data>
+  <variable>buildstep0</variable>
+  <valuemap type="QVariantMap" >
+   <value key="ProjectExplorer.BuildConfiguration.DisplayName" type="QString" ></value>
+   <value key="mkspec" type="QString" ></value>
+  </valuemap>
+ </data>
+ <data>
+  <variable>buildstep1</variable>
+  <valuemap type="QVariantMap" >
+   <value key="ProjectExplorer.BuildConfiguration.DisplayName" type="QString" ></value>
+  </valuemap>
+ </data>
+ <data>
+  <variable>buildsteps</variable>
+  <valuelist type="QVariantList" >
+   <value type="QString" >trolltech.qt4projectmanager.qmake</value>
+   <value type="QString" >trolltech.qt4projectmanager.make</value>
+  </valuelist>
+ </data>
+ <data>
+  <variable>cleanstep0</variable>
+  <valuemap type="QVariantMap" >
+   <value key="ProjectExplorer.BuildConfiguration.DisplayName" type="QString" ></value>
+   <value key="clean" type="bool" >true</value>
+  </valuemap>
+ </data>
+ <data>
+  <variable>cleansteps</variable>
+  <valuelist type="QVariantList" >
+   <value type="QString" >trolltech.qt4projectmanager.make</value>
+  </valuelist>
+ </data>
+ <data>
+  <variable>defaultFileEncoding</variable>
+  <value type="QByteArray" >System</value>
+ </data>
+ <data>
+  <variable>project</variable>
+  <valuemap type="QVariantMap" />
+ </data>
+</qtcreator>

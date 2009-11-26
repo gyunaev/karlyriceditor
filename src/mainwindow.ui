@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="Editor" name="editor" native="true"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionNew_project"/>
+    <addaction name="action_openProject"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionSave_as"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuit"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="actionUndo"/>
+    <addaction name="actionRedo"/>
+    <addaction name="separator"/>
+    <addaction name="actionInsert_tag"/>
+    <addaction name="actionRemove_tag"/>
+    <addaction name="separator"/>
+    <addaction name="actionRemove_all_tags"/>
+    <addaction name="separator"/>
+    <addaction name="actionClear_text"/>
+   </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionGeneral"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <widget class="QMenu" name="menuProject">
+    <property name="title">
+     <string>Project</string>
+    </property>
+    <addaction name="actionOpen_music_file"/>
+    <addaction name="actionOpen_lyric_file"/>
+    <addaction name="separator"/>
+    <addaction name="actionValidate_lyrics"/>
+    <addaction name="actionView_lyric_file"/>
+    <addaction name="actionTest_lyric_file"/>
+    <addaction name="actionExport_lyric_file"/>
+    <addaction name="separator"/>
+    <addaction name="actionEdit_header_data"/>
+    <addaction name="actionProject_settings"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuProject"/>
+   <addaction name="menuSettings"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionOpen_music_file">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_music.png</normaloff>:/images/dryicons_music.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open music file...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionOpen_lyric_file">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_open_folder.png</normaloff>:/images/dryicons_open_folder.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open lyric file...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
+   </property>
+  </action>
+  <action name="actionNew_project">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_new.png</normaloff>:/images/dryicons_new.png</iconset>
+   </property>
+   <property name="text">
+    <string>New project...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/save.png</normaloff>:/images/save.png</iconset>
+   </property>
+   <property name="text">
+    <string>Save project</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionSave_as">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/saveas.png</normaloff>:/images/saveas.png</iconset>
+   </property>
+   <property name="text">
+    <string>Save project as ...</string>
+   </property>
+  </action>
+  <action name="actionQuit">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/quit.png</normaloff>:/images/quit.png</iconset>
+   </property>
+   <property name="text">
+    <string>Quit</string>
+   </property>
+  </action>
+  <action name="actionUndo">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_undo.png</normaloff>:/images/dryicons_undo.png</iconset>
+   </property>
+   <property name="text">
+    <string>Undo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="actionRedo">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_redo.png</normaloff>:/images/dryicons_redo.png</iconset>
+   </property>
+   <property name="text">
+    <string>Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Z</string>
+   </property>
+  </action>
+  <action name="actionInsert_tag">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_clock_add.png</normaloff>:/images/dryicons_clock_add.png</iconset>
+   </property>
+   <property name="text">
+    <string>Insert tag</string>
+   </property>
+   <property name="shortcut">
+    <string>F5</string>
+   </property>
+  </action>
+  <action name="actionRemove_tag">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_clock_remove.png</normaloff>:/images/dryicons_clock_remove.png</iconset>
+   </property>
+   <property name="text">
+    <string>Remove tag</string>
+   </property>
+   <property name="shortcut">
+    <string>F8</string>
+   </property>
+  </action>
+  <action name="actionRemove_all_tags">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/quit.png</normaloff>:/images/quit.png</iconset>
+   </property>
+   <property name="text">
+    <string>Remove all tags</string>
+   </property>
+  </action>
+  <action name="actionClear_text">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/clear.png</normaloff>:/images/clear.png</iconset>
+   </property>
+   <property name="text">
+    <string>Clear text</string>
+   </property>
+  </action>
+  <action name="actionGeneral">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_process.png</normaloff>:/images/dryicons_process.png</iconset>
+   </property>
+   <property name="text">
+    <string>General...</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About...</string>
+   </property>
+  </action>
+  <action name="action_openProject">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_open_folder.png</normaloff>:/images/dryicons_open_folder.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open project...</string>
+   </property>
+  </action>
+  <action name="actionProject_settings">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_process.png</normaloff>:/images/dryicons_process.png</iconset>
+   </property>
+   <property name="text">
+    <string>Project settings...</string>
+   </property>
+  </action>
+  <action name="actionExport_lyric_file">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/saveas.png</normaloff>:/images/saveas.png</iconset>
+   </property>
+   <property name="text">
+    <string>Export lyric file...</string>
+   </property>
+  </action>
+  <action name="actionView_lyric_file">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_page_search.png</normaloff>:/images/dryicons_page_search.png</iconset>
+   </property>
+   <property name="text">
+    <string>View lyrics</string>
+   </property>
+   <property name="toolTip">
+    <string>View the lyrics file</string>
+   </property>
+  </action>
+  <action name="actionTest_lyric_file">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_computer.png</normaloff>:/images/dryicons_computer.png</iconset>
+   </property>
+   <property name="text">
+    <string>Test lyrics</string>
+   </property>
+   <property name="toolTip">
+    <string>Test the lyrics using built-in karaoke</string>
+   </property>
+  </action>
+  <action name="actionEdit_header_data">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_application_edit.png</normaloff>:/images/dryicons_application_edit.png</iconset>
+   </property>
+   <property name="text">
+    <string>Edit header data...</string>
+   </property>
+  </action>
+  <action name="actionValidate_lyrics">
+   <property name="icon">
+    <iconset resource="lrceditor.qrc">
+     <normaloff>:/images/dryicons_application_search.png</normaloff>:/images/dryicons_application_search.png</iconset>
+   </property>
+   <property name="text">
+    <string>Validate lyrics</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>Editor</class>
+   <extends>QWidget</extends>
+   <header>editor.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="lrceditor.qrc"/>
+ </resources>
+ <connections/>
+</ui>

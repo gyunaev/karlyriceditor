@@ -1,0 +1,41 @@
+<RCC>
+    <qresource prefix="/" >
+        <file>images/dryicons_play.png</file>
+        <file>images/dryicons_pause.png</file>
+        <file>images/dryicons_forward.png</file>
+        <file>images/dryicons_rewind.png</file>
+        <file>images/dryicons_stop.png</file>
+        <file>images/dryicons_application_add.png</file>
+        <file>images/dryicons_application_edit.png</file>
+        <file>images/dryicons_application_remove.png</file>
+        <file>images/dryicons_clock.png</file>
+        <file>images/dryicons_sound.png</file>
+        <file>images/dryicons_clock_add.png</file>
+        <file>images/dryicons_clock_remove.png</file>
+        <file>images/dryicons_cd.png</file>
+        <file>images/dryicons_process.png</file>
+        <file>images/dryicons_application_accept.png</file>
+        <file>images/dryicons_application_accept.png</file>
+        <file>images/dryicons_cd.png</file>
+        <file>images/dryicons_process.png</file>
+        <file>images/dryicons_application_accept.png</file>
+        <file>images/dryicons_application_deny.png</file>
+        <file>images/dryicons_application_remove.png</file>
+        <file>images/dryicons_application_search.png</file>
+        <file>images/dryicons_computer.png</file>
+        <file>images/dryicons_new.png</file>
+        <file>images/dryicons_open_folder.png</file>
+        <file>images/dryicons_undo.png</file>
+        <file>images/dryicons_redo.png</file>
+        <file>images/dryicons_music.png</file>
+        <file>images/dryicons_page_search.png</file>
+        <file>images/dryicons_appicon.png</file>
+        <file>images/save.png</file>
+        <file>images/saveas.png</file>
+        <file>images/clear.png</file>
+        <file>images/nocover.png</file>
+        <file>images/quit.png</file>
+        <file>images/view_media_lyrics.png</file>
+        <file>images/casio.jpg</file>
+    </qresource>
+</RCC>
