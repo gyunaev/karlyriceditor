@@ -30,6 +30,8 @@
 #include "settings.h"
 #include "viewwidget.h"
 #include "testwindow.h"
+#include "version.h"
+#include "ui_dialog_about.h"
 
 
 MainWindow * pMainWindow;
@@ -436,6 +438,18 @@ void MainWindow::act_settingsGeneral()
 
 void MainWindow::act_helpAbout()
 {
+	QDialog dlg;
+	Ui::DialogAbout ui_about;
+
+	ui_about.setupUi( &dlg );
+
+	ui_about.labelAbout->setText( tr("<b>Karaoke Lyrics Editor version %1.%2</b><br><br>"
+			"Copyright (C) George Yunaev 2009, gyunaev@ulduzsoft.com<br><br>"
+			"<a href=\"http://sourceforge.net/projects/karlyriceditor/\">http://sourceforge.net/projects/karlyriceditor</a><br><br>"
+			"This program is licensed under terms of GNU General Public License<br>"
+			"version 3; see COPYING for details.") .arg(APP_VERSION_MAJOR) .arg(APP_VERSION_MINOR) );
+
+	dlg.exec();
 }
 
 void MainWindow::updateState()

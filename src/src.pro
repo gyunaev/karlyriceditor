@@ -15,7 +15,8 @@ HEADERS += mainwindow.h \
     settings.h \
     viewwidget.h \
     testwindow.h \
-    lyrics.h
+    lyrics.h \
+    version.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -39,4 +40,5 @@ FORMS += mainwindow.ui \
     wiznewproject_musicfile.ui \
     playerwidget.ui \
     viewwidget.ui \
-    testwindow.ui
+    testwindow.ui \
+    dialog_about.ui

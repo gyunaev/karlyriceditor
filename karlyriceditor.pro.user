@@ -82,7 +82,7 @@
    <value key="ProjectExplorer.BuildConfiguration.DisplayName" type="QString" >Debug</value>
    <value key="QtVersionId" type="int" >0</value>
    <value key="addQDumper" type="" ></value>
-   <value key="buildDirectory" type="QString" >/home/tim/work/my/lrceditor</value>
+   <value key="buildDirectory" type="QString" >/home/tim/work/my/karlyriceditor</value>
   </valuemap>
  </data>
  <data>
@@ -184,7 +184,7 @@
 }</value>
    </valuelist>
    <valuelist key="abstractProcess.arguments" type="QVariantList" >
-    <value type="QString" >/home/tim/work/my/lrceditor/lrceditor.pro</value>
+    <value type="QString" >/home/tim/work/my/karlyriceditor/karlyriceditor.pro</value>
     <value type="QString" >-spec</value>
     <value type="QString" >/usr/share/qt4/mkspecs/linux-g++</value>
     <value type="QString" >-r</value>
@@ -192,7 +192,7 @@
    </valuelist>
    <value key="abstractProcess.command" type="QString" >/usr/bin/qmake</value>
    <value key="abstractProcess.enabled" type="bool" >true</value>
-   <value key="abstractProcess.workingDirectory" type="QString" >/home/tim/work/my/lrceditor</value>
+   <value key="abstractProcess.workingDirectory" type="QString" >/home/tim/work/my/karlyriceditor</value>
    <value key="buildConfiguration" type="int" >2</value>
   </valuemap>
  </data>
@@ -291,7 +291,7 @@
    </valuelist>
    <value key="abstractProcess.command" type="QString" >/usr/bin/make</value>
    <value key="abstractProcess.enabled" type="bool" >true</value>
-   <value key="abstractProcess.workingDirectory" type="QString" >/home/tim/work/my/lrceditor</value>
+   <value key="abstractProcess.workingDirectory" type="QString" >/home/tim/work/my/karlyriceditor</value>
   </valuemap>
  </data>
  <data>
@@ -391,7 +391,7 @@
    </valuelist>
    <value key="abstractProcess.command" type="QString" >/usr/bin/make</value>
    <value key="abstractProcess.enabled" type="bool" >true</value>
-   <value key="abstractProcess.workingDirectory" type="QString" >/home/tim/work/my/lrceditor</value>
+   <value key="abstractProcess.workingDirectory" type="QString" >/home/tim/work/my/karlyriceditor</value>
   </valuemap>
  </data>
  <data>
