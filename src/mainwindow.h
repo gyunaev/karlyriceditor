@@ -54,7 +54,6 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	act_editRemoveAllTags();
 		void	act_editClearText();
 
-		void	act_projectOpenMusicFile();
 		void	act_projectOpenLyricFile();
 		void	act_projectEditHeader();
 		void	act_projectValidateLyrics();

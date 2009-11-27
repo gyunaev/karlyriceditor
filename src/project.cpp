@@ -25,6 +25,10 @@
 #include "project.h"
 
 // Project data enum
+// Formats info:
+// UltraStar: http://ultrastardeluxe.xtremeweb-hosting.net/wiki/doku.php?id=editor:txt_file
+// LRC: http://en.wikipedia.org/wiki/LRC_%28file_format%29
+//
 enum
 {
 	PD_SIGNATURE,		// BONIFACI
@@ -35,6 +39,12 @@ enum
 	PD_TAG_TITLE,
 	PD_TAG_ARTIST,
 	PD_TAG_ALBUM,
+
+	PD_TAG_CREATEDBY = 40,	// LRC tag
+	PD_TAG_OFFSET,			// LRC tag
+	PD_TAG_APPLICATION,		// LRC tag
+	PD_TAG_APPVERSION,		// LRC tag
+
 	PD_TAG_LANGUAGE = 50,	// UltraStar tag
 	PD_TAG_GENRE,			// UltraStar tag
 	PD_TAG_MP3FILE,			// UltraStar tag

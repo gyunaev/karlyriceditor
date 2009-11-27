@@ -70,7 +70,6 @@
     <property name="title">
      <string>Project</string>
     </property>
-    <addaction name="actionOpen_music_file"/>
     <addaction name="actionOpen_lyric_file"/>
     <addaction name="separator"/>
     <addaction name="actionValidate_lyrics"/>
@@ -88,21 +87,9 @@
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionOpen_music_file">
-   <property name="icon">
-    <iconset resource="lrceditor.qrc">
-     <normaloff>:/images/dryicons_music.png</normaloff>:/images/dryicons_music.png</iconset>
-   </property>
-   <property name="text">
-    <string>Open music file...</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+O</string>
-   </property>
-  </action>
   <action name="actionOpen_lyric_file">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_open_folder.png</normaloff>:/images/dryicons_open_folder.png</iconset>
    </property>
    <property name="text">
@@ -114,7 +101,7 @@
   </action>
   <action name="actionNew_project">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_new.png</normaloff>:/images/dryicons_new.png</iconset>
    </property>
    <property name="text">
@@ -126,7 +113,7 @@
   </action>
   <action name="actionSave">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/save.png</normaloff>:/images/save.png</iconset>
    </property>
    <property name="text">
@@ -138,7 +125,7 @@
   </action>
   <action name="actionSave_as">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/saveas.png</normaloff>:/images/saveas.png</iconset>
    </property>
    <property name="text">
@@ -147,7 +134,7 @@
   </action>
   <action name="actionQuit">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/quit.png</normaloff>:/images/quit.png</iconset>
    </property>
    <property name="text">
@@ -156,7 +143,7 @@
   </action>
   <action name="actionUndo">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_undo.png</normaloff>:/images/dryicons_undo.png</iconset>
    </property>
    <property name="text">
@@ -168,7 +155,7 @@
   </action>
   <action name="actionRedo">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_redo.png</normaloff>:/images/dryicons_redo.png</iconset>
    </property>
    <property name="text">
@@ -180,7 +167,7 @@
   </action>
   <action name="actionInsert_tag">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_clock_add.png</normaloff>:/images/dryicons_clock_add.png</iconset>
    </property>
    <property name="text">
@@ -192,7 +179,7 @@
   </action>
   <action name="actionRemove_tag">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_clock_remove.png</normaloff>:/images/dryicons_clock_remove.png</iconset>
    </property>
    <property name="text">
@@ -204,7 +191,7 @@
   </action>
   <action name="actionRemove_all_tags">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/quit.png</normaloff>:/images/quit.png</iconset>
    </property>
    <property name="text">
@@ -213,7 +200,7 @@
   </action>
   <action name="actionClear_text">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/clear.png</normaloff>:/images/clear.png</iconset>
    </property>
    <property name="text">
@@ -222,7 +209,7 @@
   </action>
   <action name="actionGeneral">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_process.png</normaloff>:/images/dryicons_process.png</iconset>
    </property>
    <property name="text">
@@ -236,7 +223,7 @@
   </action>
   <action name="action_openProject">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_open_folder.png</normaloff>:/images/dryicons_open_folder.png</iconset>
    </property>
    <property name="text">
@@ -245,7 +232,7 @@
   </action>
   <action name="actionProject_settings">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_process.png</normaloff>:/images/dryicons_process.png</iconset>
    </property>
    <property name="text">
@@ -254,7 +241,7 @@
   </action>
   <action name="actionExport_lyric_file">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/saveas.png</normaloff>:/images/saveas.png</iconset>
    </property>
    <property name="text">
@@ -263,7 +250,7 @@
   </action>
   <action name="actionView_lyric_file">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_page_search.png</normaloff>:/images/dryicons_page_search.png</iconset>
    </property>
    <property name="text">
@@ -275,7 +262,7 @@
   </action>
   <action name="actionTest_lyric_file">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_computer.png</normaloff>:/images/dryicons_computer.png</iconset>
    </property>
    <property name="text">
@@ -287,7 +274,7 @@
   </action>
   <action name="actionEdit_header_data">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_application_edit.png</normaloff>:/images/dryicons_application_edit.png</iconset>
    </property>
    <property name="text">
@@ -296,7 +283,7 @@
   </action>
   <action name="actionValidate_lyrics">
    <property name="icon">
-    <iconset resource="lrceditor.qrc">
+    <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_application_search.png</normaloff>:/images/dryicons_application_search.png</iconset>
    </property>
    <property name="text">
@@ -313,7 +300,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="lrceditor.qrc"/>
+  <include location="resources.qrc"/>
  </resources>
  <connections/>
 </ui>

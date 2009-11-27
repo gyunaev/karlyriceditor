@@ -31,6 +31,7 @@
 #include "viewwidget.h"
 #include "testwindow.h"
 #include "version.h"
+#include "projectsettings.h"
 #include "ui_dialog_about.h"
 
 
@@ -111,7 +112,6 @@ void MainWindow::connectActions()
 	connect( actionInsert_tag, SIGNAL( triggered()), this, SLOT( act_editInsertTag()) );
 	connect( actionRemove_tag, SIGNAL( triggered()), this, SLOT( act_editRemoveTag()) );
 	connect( actionRemove_all_tags, SIGNAL( triggered()), this, SLOT(act_editRemoveAllTags()) );
-	connect( actionOpen_music_file, SIGNAL( triggered()), this, SLOT(act_projectOpenMusicFile()) );
 	connect( actionOpen_lyric_file, SIGNAL( triggered()), this, SLOT(act_projectOpenLyricFile()) );
 	connect( actionQuit, SIGNAL( triggered()), qApp, SLOT( quit()) );
 	connect( actionClear_text, SIGNAL( triggered()), this, SLOT( act_editClearText()) );
@@ -348,16 +348,15 @@ void MainWindow::act_projectValidateLyrics()
 		actionValidate_lyrics->setIcon( m_validatorIconFailed );
 }
 
-void MainWindow::act_projectOpenMusicFile()
-{
-}
-
 void MainWindow::act_projectOpenLyricFile()
 {
 }
 
 void MainWindow::act_projectEditHeader()
 {
+	ProjectSettings ps( m_project, false, this );
+	ps.setWindowTitle( tr("Edit lyric header data" ) );
+	ps.exec();
 }
 
 void MainWindow::act_projectTest()
@@ -430,6 +429,9 @@ void MainWindow::act_projectExportLyricFile()
 
 void MainWindow::act_projectSettings()
 {
+	ProjectSettings ps( m_project, true, this );
+	ps.setWindowTitle( tr("Edit project settings" ) );
+	ps.exec();
 }
 
 void MainWindow::act_settingsGeneral()
@@ -468,7 +470,6 @@ void MainWindow::updateState()
 	actionView_lyric_file->setEnabled( project_ready );
 	actionTest_lyric_file->setEnabled( project_ready );
 	actionRemove_all_tags->setEnabled( project_ready );
-	actionOpen_music_file->setEnabled( project_ready );
 	actionOpen_lyric_file->setEnabled( project_ready );
 	actionClear_text->setEnabled( project_ready );
 	actionExport_lyric_file->setEnabled( project_ready );
