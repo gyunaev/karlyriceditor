@@ -64,9 +64,14 @@ class Editor : public QTextEdit
 		void	textModified();
 
 	protected:
-		void mouseReleaseEvent ( QMouseEvent * event );
+		void mouseReleaseEvent( QMouseEvent * event );
+		void mouseMoveEvent( QMouseEvent * event );
+		bool event ( QEvent * event ); // tooltips
 
 	private:
+		// Returns time mark textchar under cursor. Returns -1 if not on time mark
+		qint64 hasTimeMark( const QPoint& point );
+
 		void	cursorToLine( int line );
 
 		Project		 *	m_project;

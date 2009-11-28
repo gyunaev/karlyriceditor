@@ -21,6 +21,7 @@
 #include <QDataStream>
 #include <QMessageBox>
 #include <QMouseEvent>
+#include <QToolTip>
 #include <QStack>
 
 #include "mainwindow.h"
@@ -48,6 +49,8 @@ Editor::Editor( QWidget * parent )
 
 	QFont font( pSettings->m_editorFontFamily, pSettings->m_editorFontSize );
 	setFont( font );
+
+	setMouseTracking( true );
 }
 
 void Editor::setProject( Project* proj )
@@ -580,17 +583,56 @@ bool Editor::validate()
 	return true;
 }
 
-void Editor::mouseReleaseEvent ( QMouseEvent * event )
+qint64 Editor::hasTimeMark( const QPoint& point )
 {
-	if ( event->button() == Qt::LeftButton )
+	QAbstractTextDocumentLayout * layout = document()->documentLayout();
+
+	if ( layout && layout->hitTest( point, Qt::ExactHit ) != -1 )
 	{
-		QTextCursor cur = cursorForPosition ( event->pos() );
+		QTextCursor cur = cursorForPosition ( point );
 
 		if ( cur.charFormat().objectType() == EditorTimeMark::TimeTextFormat )
-		{
-			qint64 timing = qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::TimeProperty ) );
-			qDebug("qq %d", (int) timing );
-		}
+			return qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::TimeProperty ) );
+	}
+
+	return (qint64) -1;
+}
+
+void Editor::mouseMoveEvent( QMouseEvent * event )
+{
+	if ( hasTimeMark( event->pos() ) != -1 )
+		viewport()->setCursor( Qt::PointingHandCursor );
+	else
+		viewport()->setCursor( Qt::IBeamCursor );
+}
+
+bool Editor::event ( QEvent * event )
+{
+	if ( event->type() == QEvent::ToolTip )
+	{
+		QHelpEvent *helpEvent = static_cast<QHelpEvent *>(event);
+		qint64 mark = hasTimeMark( helpEvent->pos() );
+
+		if ( mark == 0 )
+			QToolTip::showText( helpEvent->globalPos(), tr("Placeholder") );
+		else if ( mark > 0 )
+			QToolTip::showText( helpEvent->globalPos(), tr("Time mark: %1 ms") .arg( mark ) );
+
+		return true;
+	}
+
+	return QTextEdit::event( event );
+}
+
+void Editor::mouseReleaseEvent ( QMouseEvent * event )
+{
+	if ( event->button() == Qt::LeftButton && hasTimeMark( event->pos() ) != -1 )
+	{
+		QTextCursor cur = cursorForPosition ( event->pos() );
+		if ( cur.charFormat().objectType() != EditorTimeMark::TimeTextFormat )
+			abort(); // something is wrong with hitTest
+
+		qint64 mark = qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::TimeProperty ) );
 	}
 
 	QTextEdit::mouseReleaseEvent ( event );
