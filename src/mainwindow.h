@@ -28,6 +28,7 @@ class Project;
 class ViewWidget;
 class PlayerWidget;
 class TestWindow;
+class RecentFiles;
 
 
 class MainWindow : public QMainWindow, public Ui::MainWindow
@@ -66,11 +67,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 
 		void	act_helpAbout();
 
-		/*		void	file_openRecentFile();
-
-
-		void updateRecentFileActions();
-*/
+		void	openRecentFile( const QString& file );
 
 	protected:
 		void	closeEvent(QCloseEvent *event);
@@ -80,6 +77,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	createToolbars();
 		void	setCurrentProject( Project * proj );
 		bool	saveProject( const QString& filename );
+		bool	loadProject( const QString& file );
 
 		// If the project is changed, and user selected "Cancel", returns false
 		bool	tryCloseCurrentProject();
@@ -89,6 +87,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		Project				*	m_project;
 		ViewWidget			*	m_viewer;
 		TestWindow			*	m_testWindow;
+		RecentFiles			*	m_recentFiles;
 		QString					m_projectFile;
 
 		// Validator icons

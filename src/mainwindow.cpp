@@ -32,6 +32,7 @@
 #include "testwindow.h"
 #include "version.h"
 #include "projectsettings.h"
+#include "recentfiles.h"
 #include "ui_dialog_about.h"
 
 
@@ -65,6 +66,10 @@ MainWindow::MainWindow()
 	// Test window
 	m_testWindow = new TestWindow( this );
 	connect( m_player, SIGNAL(tick(qint64)), m_testWindow, SLOT(tick(qint64)) );
+
+	// Recent files
+	m_recentFiles = new RecentFiles( menuFile, actionQuit );
+	connect( m_recentFiles, SIGNAL( openRecentFile(const QString&) ), this, SLOT( openRecentFile( const QString&)) );
 
 	// Do the rest
 	connectActions();
@@ -225,13 +230,29 @@ void MainWindow::act_fileOpenProject()
 	if ( fileName.isEmpty() )
 		return;
 
+	loadProject( fileName );
+}
+
+void MainWindow::openRecentFile( const QString& file )
+{
+	loadProject( file );
+}
+
+bool MainWindow::loadProject( const QString& fileName )
+{
 	Project * newproj = new Project( editor );
 
 	if ( !newproj->load( fileName ) )
-		return;
+	{
+		m_recentFiles->removeRecentFile( fileName );
+		delete newproj;
+		return false;
+	}
 
+	m_recentFiles->setCurrentFile( fileName );
 	m_projectFile = fileName;
 	setCurrentProject( newproj );
+	return true;
 }
 
 bool MainWindow::act_fileSaveProject()
@@ -263,6 +284,9 @@ bool MainWindow::saveProject( const QString& fileName )
 {
 	bool res = m_project->save( fileName );
 	updateState();
+
+	if ( res )
+		m_recentFiles->setCurrentFile( fileName );
 
 	return res;
 }
