@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ProjectSettings</class>
- <widget class="QWidget" name="ProjectSettings">
+ <class>DialogProjectSettings</class>
+ <widget class="QDialog" name="DialogProjectSettings">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>365</width>
-    <height>535</height>
+    <height>567</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Settings</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_5">
    <item>
@@ -315,8 +315,48 @@
      </widget>
     </widget>
    </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>DialogProjectSettings</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>214</x>
+     <y>519</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>164</x>
+     <y>539</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>DialogProjectSettings</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>314</x>
+     <y>518</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>335</x>
+     <y>539</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

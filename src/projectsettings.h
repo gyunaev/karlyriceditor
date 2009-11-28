@@ -2,11 +2,11 @@
 #define PROJECTSETTINGS_H
 
 #include <QDialog>
-#include "ui_projectsettings.h"
+#include "ui_dialog_projectsettings.h"
 
 class Project;
 
-class ProjectSettings : public QDialog, public Ui::ProjectSettings
+class ProjectSettings : public QDialog, public Ui::DialogProjectSettings
 {
 	public:
 		ProjectSettings( Project* proj, bool showtype = true, QWidget * parent = 0 );

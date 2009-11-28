@@ -2,7 +2,7 @@
 #include "project.h"
 
 ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent )
-	: QDialog( parent ), Ui::ProjectSettings()
+	: QDialog( parent ), Ui::DialogProjectSettings()
 {
 	setupUi( this );
 
@@ -20,10 +20,11 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 	else
 		groupLRC->hide();
 
-	if ( showtype )
-	{
-	}
+	if ( !showtype )
+		tabSettings->removeTab( 0 );
 
+	// Scale down the dialog as part of it is hidden
+	resize( QSize( width(), 1 ) );
 }
 
 void ProjectSettings::accept()
