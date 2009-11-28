@@ -47,6 +47,12 @@ class Project
 			Tag_Cover,
 			Tag_Background,
 			Tag_Video,
+			Tag_VideoGap,
+			Tag_Edition,
+			Tag_CreatedBy,
+			Tag_Offset,
+			Tag_Application,
+			Tag_Appversion,
 		};
 
 		Project( Editor * editor );

@@ -455,7 +455,12 @@ void MainWindow::act_projectSettings()
 {
 	ProjectSettings ps( m_project, true, this );
 	ps.setWindowTitle( tr("Edit project settings" ) );
-	ps.exec();
+
+	if ( ps.exec() == QDialog::Accepted )
+	{
+		if ( ps.musicFileChanged() )
+			m_player->setMusicFile( m_project );
+	}
 }
 
 void MainWindow::act_settingsGeneral()

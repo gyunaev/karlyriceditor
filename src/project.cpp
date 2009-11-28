@@ -23,6 +23,9 @@
 
 #include "mainwindow.h"
 #include "project.h"
+#include "settings.h"
+#include "version.h"
+
 
 // Project data enum
 // Formats info:
@@ -51,6 +54,8 @@ enum
 	PD_TAG_COVER,			// UltraStar tag
 	PD_TAG_BACKGROUND,		// UltraStar tag
 	PD_TAG_VIDEO,			// UltraStar tag
+	PD_TAG_VIDEOGAP,		// UltraStar tag
+	PD_TAG_EDITION,			// UltraStar tag
 };
 
 
@@ -62,6 +67,9 @@ Project::Project( Editor* editor )
 	m_modified = false;
 	m_projectData[ PD_SIGNATURE ] = "BONIFACI";
 	m_projectData[ PD_VERSION ] = 1;
+	m_projectData[ PD_TAG_OFFSET ] = pSettings->m_phononSoundDelay;
+	m_projectData[ PD_TAG_APPLICATION ] = "Karaoke Lyric Editor";
+	m_projectData[ PD_TAG_APPVERSION ] = QString("%1.%2").arg( APP_VERSION_MAJOR ).arg( APP_VERSION_MINOR );
 }
 
 void Project::setType( LyricType type )
@@ -175,6 +183,30 @@ int	Project::tagToId( Tag tag  )
 		case Tag_Video:
 			tagid = PD_TAG_VIDEO;
 			break;
+
+		case Tag_CreatedBy:
+			tagid = PD_TAG_CREATEDBY;
+			break;
+
+		case Tag_Offset:
+			tagid = PD_TAG_OFFSET;
+			break;
+
+		case Tag_Application:
+			tagid = PD_TAG_APPLICATION;
+			break;
+
+		case Tag_Appversion:
+			tagid = PD_TAG_APPVERSION;
+			break;
+
+		case Tag_VideoGap:
+			tagid = PD_TAG_VIDEOGAP;
+			break;
+
+		case Tag_Edition:
+			tagid = PD_TAG_EDITION;
+			break;
 	}
 
 	return tagid;
@@ -243,6 +275,10 @@ QString	Project::generateLRCheader()
 	appendIfPresent( PD_TAG_TITLE, "ti", hdr, LyricType_LRC1 );
 	appendIfPresent( PD_TAG_ARTIST, "ar", hdr, LyricType_LRC1 );
 	appendIfPresent( PD_TAG_ALBUM, "al", hdr, LyricType_LRC1 );
+	appendIfPresent( PD_TAG_CREATEDBY, "by", hdr, LyricType_LRC1 );
+	appendIfPresent( PD_TAG_OFFSET, "offset", hdr, LyricType_LRC1 );
+	appendIfPresent( PD_TAG_APPLICATION, "re", hdr, LyricType_LRC1 );
+	appendIfPresent( PD_TAG_APPVERSION, "ve", hdr, LyricType_LRC1 );
 
 	return hdr;
 }
@@ -259,6 +295,8 @@ QString	Project::generateUStarheader()
 	appendIfPresent( PD_TAG_COVER, "COVER", hdr, LyricType_UStar );
 	appendIfPresent( PD_TAG_BACKGROUND, "BACKGROUND", hdr, LyricType_UStar );
 	appendIfPresent( PD_TAG_VIDEO, "VIDEO", hdr, LyricType_UStar );
+	appendIfPresent( PD_TAG_VIDEOGAP, "VIDEOGAP", hdr, LyricType_UStar );
+	appendIfPresent( PD_TAG_EDITION, "EDITION", hdr, LyricType_UStar );
 
 	return hdr;
 }
