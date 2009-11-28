@@ -465,6 +465,7 @@ void MainWindow::act_projectSettings()
 
 void MainWindow::act_settingsGeneral()
 {
+	pSettings->edit();
 }
 
 void MainWindow::act_helpAbout()

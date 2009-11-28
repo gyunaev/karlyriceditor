@@ -57,7 +57,7 @@ void EditorTimeMark::updatePixmapIfNecessary( const QTextFormat &format )
 	m_timing = timing;
 
 	QString mark;
-	QColor bgcolor;
+	QColor bgcolor, fgcolor;
 
 	if ( timing > 0 )
 	{
@@ -67,13 +67,15 @@ void EditorTimeMark::updatePixmapIfNecessary( const QTextFormat &format )
 
 		mark.sprintf( "%02d:%02d.%d", minute, second, msecond / 10 );
 		m_tooltip = tr("Time: %1") .arg(mark);
-		bgcolor = pSettings->m_timeMarkBackground;
+		bgcolor = pSettings->m_timeMarkTimeBackground;
+		fgcolor = pSettings->m_timeMarkTimeText;
 	}
 	else
 	{
 		mark = "<->"; // a placeholder
 		m_tooltip = tr("Placeholder for timing mark");
-		bgcolor = pSettings->m_timeMarkHolderBackground;
+		bgcolor = pSettings->m_timeMarkPlaceholderBackground;
+		fgcolor = pSettings->m_timeMarkPlaceholderText;
 	}
 
 	// Calculate what is the size of image we need to fit the text
@@ -91,7 +93,7 @@ void EditorTimeMark::updatePixmapIfNecessary( const QTextFormat &format )
 	QPainter painter;
 	painter.begin( &m_pixmap );
 	painter.setFont( font );
-	painter.setPen( pSettings->m_timeMarkText );
+	painter.setPen( fgcolor );
 
 	painter.drawRect( drawarea );
 	textarea = painter.boundingRect( textarea, Qt::AlignLeft | Qt::AlignTop, mark );

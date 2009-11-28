@@ -28,6 +28,8 @@ class Settings
 	public:
 		Settings();
 
+		void	edit();
+
 	public:
 		// There is a delay between a note is being singed, and Phonon sends its tick()
 		// signal. To compensate for this delay, output lyrics should include it.
@@ -63,9 +65,11 @@ class Settings
 		// Time mark font family and size
 		QString		m_timeMarkFontFamily;
 		int			m_timeMarkFontSize;
-		QColor		m_timeMarkHolderBackground;
-		QColor		m_timeMarkBackground;
-		QColor		m_timeMarkText;
+
+		QColor		m_timeMarkPlaceholderBackground;
+		QColor		m_timeMarkTimeBackground;
+		QColor		m_timeMarkPlaceholderText;
+		QColor		m_timeMarkTimeText;
 
 		// Preview window font family and size
 		QString		m_previewFontFamily;

@@ -17,34 +17,129 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.         *
  ***************************************************************************/
 
+#include <QSettings>
+#include <QDialog>
+#include "ui_dialog_settings.h"
+
 #include "settings.h"
 
 Settings * pSettings;
 
 Settings::Settings()
 {
-	m_phononSoundDelay = 250;
+	QSettings settings;
 
-	m_editorStopAtLineEnd = true;
-	m_editorStopNextWord = false;
-	m_editorWordChars = 2;
-	m_editorSkipEmptyLines = true;
-	m_editorSupportBlocks = true;
-	m_editorMaxBlock = 8;
-	m_editorFontFamily = "arial";
-	m_editorFontSize = 14;
-	m_editorDoubleTimeMark = true;
+	m_phononSoundDelay = settings.value( "advanced/phononsounddelay", 250 ).toInt();
 
-	m_timeMarkFontFamily = "arial";
-	m_timeMarkFontSize = 10;
-	m_timeMarkHolderBackground = QColor( "grey" );
-	m_timeMarkBackground = QColor( "yellow" );
-	m_timeMarkText = QColor( "black" );
+	m_editorStopAtLineEnd = settings.value( "editor/stopatlineend", true ).toBool();
+	m_editorStopNextWord = settings.value( "editor/stopatlineend", false ).toBool();
+	m_editorWordChars = settings.value( "editor/charsinword", 2 ).toInt();
+	m_editorSkipEmptyLines = settings.value( "editor/skipemptylines", true ).toBool();
+	m_editorSupportBlocks = settings.value( "editor/supportblocks", true ).toBool();
+	m_editorMaxBlock = settings.value( "editor/maxlinesinblock", 8 ).toInt();
+	m_editorFontFamily = settings.value( "editor/fontfamily", "arial" ).toString();
+	m_editorFontSize = settings.value( "editor/fontsize", 14 ).toInt();
+	m_editorDoubleTimeMark = settings.value( "editor/doubletimemark", true ).toBool();
 
-	m_previewFontFamily = "arial";
-	m_previewFontSize = 24;
+	m_timeMarkFontFamily = settings.value( "timemark/fontfamily", "arial" ).toString();
+	m_timeMarkFontSize = settings.value( "timemark/fontsize", 10 ).toInt();
+	m_timeMarkPlaceholderBackground = QColor( settings.value( "timemark/placeholderbgcolor", "grey" ).toString() );
+	m_timeMarkTimeBackground = QColor( settings.value( "timemark/timebgcolor", "yellow" ).toString() );
+	m_timeMarkPlaceholderText = QColor( settings.value( "timemark/placeholdertextgcolor", "black" ).toString() );
+	m_timeMarkTimeText = QColor( settings.value( "timemark/timetextcolor", "black" ).toString() );
 
-	m_previewBackground = QColor( "black" );
-	m_previewTextInactive = QColor( "white" );
-	m_previewTextActive = QColor( "green" );
+	m_previewFontFamily = settings.value( "preview/fontfamily", "arial" ).toString();
+	m_previewFontSize = settings.value( "preview/fontsize", 24 ).toInt();
+	m_previewBackground = QColor( settings.value( "preview/bgcolor", "black" ).toString() );
+	m_previewTextInactive = QColor( settings.value( "preview/inactivecolor", "white" ).toString() );
+	m_previewTextActive = QColor( settings.value( "preview/activecolor", "green" ).toString() );
+}
+
+void Settings::edit()
+{
+	QDialog dlg;
+	Ui::DialogSettings ui;
+
+	ui.setupUi( &dlg );
+
+	// Set variables
+	ui.leTickDelay->setText( QString::number( m_phononSoundDelay ) );
+	ui.leEditorWordCount->setValue( m_editorWordChars );
+	ui.leEditorBlockLines->setValue( m_editorMaxBlock );
+
+	ui.cbEditorStopAtEnd->setChecked( m_editorStopAtLineEnd );
+	ui.cbEditorStopAtWords->setChecked( m_editorStopNextWord );
+	ui.cbEditorDoubleTags->setChecked( m_editorDoubleTimeMark );
+	ui.cbEditorSupportBlocks->setChecked( m_editorSupportBlocks );
+	ui.fontEditor->setCurrentFont( QFont( m_editorFontFamily ) );
+	ui.fontEditorSize->setValue( m_editorFontSize );
+
+	ui.fontTimeMark->setCurrentFont( QFont( m_timeMarkFontFamily ) );
+	ui.fontTimeMarkSize->setValue( m_timeMarkFontSize );
+	ui.btnTimingColorPhBg->setColor( m_timeMarkPlaceholderBackground );
+	ui.btnTimingColorPhText->setColor( m_timeMarkPlaceholderText );
+	ui.btnTimingColorTiBg->setColor( m_timeMarkTimeBackground );
+	ui.btnTimingColorTiText->setColor( m_timeMarkTimeText );
+
+	ui.fontPreview->setCurrentFont( QFont( m_previewFontFamily ) );
+	ui.fontPreviewSize->setValue( m_previewFontSize );
+	ui.btnPreviewColorActive->setColor( m_previewTextActive );
+	ui.btnPreviewColorBg->setColor( m_previewBackground );
+	ui.btnPreviewColorInactive->setColor( m_previewTextInactive );
+
+	if ( dlg.exec() == QDialog::Rejected )
+		return;
+
+	// Get the values
+	m_phononSoundDelay = ui.leTickDelay->text().toInt();
+	m_editorWordChars = ui.leEditorWordCount->text().toInt();
+	m_editorMaxBlock = ui.leEditorBlockLines->text().toInt();
+
+	m_editorStopAtLineEnd = ui.cbEditorStopAtEnd->isChecked();
+	m_editorStopNextWord = ui.cbEditorStopAtWords->isChecked();
+	m_editorDoubleTimeMark = ui.cbEditorDoubleTags->isChecked();
+	m_editorSupportBlocks = ui.cbEditorSupportBlocks->isChecked();
+	m_editorFontFamily = ui.fontEditor->currentFont().family();
+	m_editorFontSize = ui.fontEditorSize->value();
+
+	m_timeMarkFontFamily = ui.fontTimeMark->currentFont().family();
+	m_timeMarkFontSize = ui.fontTimeMarkSize->value();
+	m_timeMarkPlaceholderBackground = ui.btnTimingColorPhBg->color();
+	m_timeMarkPlaceholderText = ui.btnTimingColorPhText->color();
+	m_timeMarkTimeBackground = ui.btnTimingColorTiBg->color();
+	m_timeMarkTimeText = ui.btnTimingColorTiText->color();
+
+	m_previewFontFamily = ui.fontPreview->currentFont().family();
+	m_previewFontSize = ui.fontPreviewSize->value();
+	m_previewTextActive = ui.btnPreviewColorActive->color();
+	m_previewBackground = ui.btnPreviewColorBg->color();
+	m_previewTextInactive = ui.btnPreviewColorInactive->color();
+
+	// And save them
+	QSettings settings;
+
+	settings.setValue( "advanced/phononsounddelay", m_phononSoundDelay );
+
+	settings.setValue( "editor/stopatlineend", m_editorStopAtLineEnd );
+	settings.setValue( "editor/stopatlineend", m_editorStopNextWord );
+	settings.setValue( "editor/charsinword", m_editorWordChars );
+	settings.setValue( "editor/skipemptylines", m_editorSkipEmptyLines );
+	settings.setValue( "editor/supportblocks", m_editorSupportBlocks );
+	settings.setValue( "editor/maxlinesinblock", m_editorMaxBlock );
+	settings.setValue( "editor/fontfamily", m_editorFontFamily );
+	settings.setValue( "editor/fontsize", m_editorFontSize );
+	settings.setValue( "editor/doubletimemark", m_editorDoubleTimeMark );
+
+	settings.setValue( "timemark/fontfamily", m_timeMarkFontFamily );
+	settings.setValue( "timemark/fontsize", m_timeMarkFontSize );
+	settings.setValue( "timemark/placeholderbgcolor", m_timeMarkPlaceholderBackground.name() );
+	settings.setValue( "timemark/timebgcolor", m_timeMarkTimeBackground.name() );
+	settings.setValue( "timemark/placeholdertextgcolor", m_timeMarkPlaceholderText.name() );
+	settings.setValue( "timemark/timetextcolor", m_timeMarkTimeText.name() );
+
+	settings.setValue( "preview/fontfamily", m_previewFontFamily );
+	settings.setValue( "preview/fontsize", m_previewFontSize );
+	settings.setValue( "preview/bgcolor", m_previewBackground.name() );
+	settings.setValue( "preview/inactivecolor", m_previewTextInactive.name() );
+	settings.setValue( "preview/activecolor", m_previewTextActive.name() );
 }

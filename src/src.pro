@@ -18,7 +18,8 @@ HEADERS += mainwindow.h \
     lyrics.h \
     version.h \
     projectsettings.h \
-    recentfiles.h
+    recentfiles.h \
+    colorbutton.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -33,7 +34,8 @@ SOURCES += mainwindow.cpp \
     testwindow.cpp \
     lyrics.cpp \
     projectsettings.cpp \
-    recentfiles.cpp
+    recentfiles.cpp \
+    colorbutton.cpp
 RESOURCES += resources.qrc
 QT += phonon
 FORMS += mainwindow.ui \
@@ -46,4 +48,5 @@ FORMS += mainwindow.ui \
     viewwidget.ui \
     testwindow.ui \
     dialog_about.ui \
-	dialog_projectsettings.ui
+    dialog_projectsettings.ui \
+    dialog_settings.ui
