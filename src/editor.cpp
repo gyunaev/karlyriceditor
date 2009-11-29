@@ -481,6 +481,7 @@ bool Editor::validate()
 {
 	int linenumber = 1;
 	int linesinblock = 0;
+	qint64 last_time = 0;
 	bool time_required = true;
 
 	for ( QTextBlock block = document()->firstBlock(); block.isValid(); block = block.next() )
@@ -498,6 +499,33 @@ bool Editor::validate()
 
 			if ( fmt.objectType() == EditorTimeMark::TimeTextFormat )
 			{
+				qint64 mark = qVariantValue<qint64>( fmt.property( EditorTimeMark::TimeProperty ) );
+
+				// 0 - placeholder
+				if ( mark == 0 )
+				{
+					QMessageBox::critical( 0,
+						 tr("Placeholder found"),
+						 tr("Placeholder found at line %1\n"
+							"Placeholders are not allowed in final lyrics"). arg(linenumber) );
+
+					cursorToLine( linenumber - 1 );
+					return false;
+				}
+
+				// Time going backward?
+				if ( mark < last_time )
+				{
+					QMessageBox::critical( 0,
+							 tr("Time goes backward"),
+							 tr("Some time marks at line %1 are going backward.\n"
+								"Time marks must increase toward the line end."). arg(linenumber) );
+
+					cursorToLine( linenumber - 1 );
+					return false;
+				}
+
+				last_time = mark;
 				time_required = false;
 			}
 			else
