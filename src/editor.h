@@ -70,7 +70,8 @@ class Editor : public QTextEdit
 
 	private:
 		// Returns time mark textchar under cursor. Returns -1 if not on time mark
-		qint64 hasTimeMark( const QPoint& point );
+		qint64		timeMarkValue( const QPoint& point );
+		QTextCursor timeMark( const QPoint& point );
 
 		void	cursorToLine( int line );
 

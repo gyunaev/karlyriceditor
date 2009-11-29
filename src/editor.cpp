@@ -29,6 +29,7 @@
 #include "editor.h"
 #include "editortimemark.h"
 #include "settings.h"
+#include "ui_dialog_edittimemark.h"
 
 
 Editor::Editor( QWidget * parent )
@@ -583,24 +584,36 @@ bool Editor::validate()
 	return true;
 }
 
-qint64 Editor::hasTimeMark( const QPoint& point )
+QTextCursor Editor::timeMark( const QPoint& point )
 {
 	QAbstractTextDocumentLayout * layout = document()->documentLayout();
+	int pos;
 
-	if ( layout && layout->hitTest( point, Qt::ExactHit ) != -1 )
+	if ( layout && (pos = layout->hitTest( point, Qt::ExactHit )) != -1 )
 	{
-		QTextCursor cur = cursorForPosition ( point );
+		QTextCursor cur = textCursor();
+		cur.setPosition( pos + 1 );
 
 		if ( cur.charFormat().objectType() == EditorTimeMark::TimeTextFormat )
-			return qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::TimeProperty ) );
+			return cur;
 	}
 
-	return (qint64) -1;
+	return QTextCursor();
+}
+
+qint64 Editor::timeMarkValue( const QPoint& point )
+{
+	QTextCursor cur = timeMark( point );
+
+	if ( !cur.isNull() )
+		return qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::TimeProperty ) );
+	else
+		return -1;
 }
 
 void Editor::mouseMoveEvent( QMouseEvent * event )
 {
-	if ( hasTimeMark( event->pos() ) != -1 )
+	if ( timeMarkValue( event->pos() ) != -1 )
 		viewport()->setCursor( Qt::PointingHandCursor );
 	else
 		viewport()->setCursor( Qt::IBeamCursor );
@@ -611,7 +624,7 @@ bool Editor::event ( QEvent * event )
 	if ( event->type() == QEvent::ToolTip )
 	{
 		QHelpEvent *helpEvent = static_cast<QHelpEvent *>(event);
-		qint64 mark = hasTimeMark( helpEvent->pos() );
+		qint64 mark = timeMarkValue( helpEvent->pos() );
 
 		if ( mark == 0 )
 			QToolTip::showText( helpEvent->globalPos(), tr("Placeholder") );
@@ -626,13 +639,30 @@ bool Editor::event ( QEvent * event )
 
 void Editor::mouseReleaseEvent ( QMouseEvent * event )
 {
-	if ( event->button() == Qt::LeftButton && hasTimeMark( event->pos() ) != -1 )
+	if ( event->button() == Qt::LeftButton )
 	{
-		QTextCursor cur = cursorForPosition ( event->pos() );
-		if ( cur.charFormat().objectType() != EditorTimeMark::TimeTextFormat )
-			abort(); // something is wrong with hitTest
+		QTextCursor cur = timeMark( event->pos() );
 
-		qint64 mark = qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::TimeProperty ) );
+		if ( !cur.isNull() )
+		{
+			qint64 mark = qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::TimeProperty ) );
+
+			QDialog dlg;
+			dlg.move( event->globalPos() );
+			Ui::TimeMarkEdit ui;
+			ui.setupUi( &dlg );
+			ui.lineEdit->setText( QString::number (mark) );
+
+			if ( dlg.exec() == QDialog::Accepted )
+			{
+				QTextCharFormat timemark;
+				timemark.setObjectType( EditorTimeMark::TimeTextFormat );
+				timemark.setProperty( EditorTimeMark::TimeProperty, ui.lineEdit->text().toLongLong() );
+				timemark.setProperty( EditorTimeMark::IdProperty, cur.charFormat().property( EditorTimeMark::IdProperty ).toInt() );
+				cur.deletePreviousChar();
+				cur.insertText( QString(QChar::ObjectReplacementCharacter), timemark );
+			}
+		}
 	}
 
 	QTextEdit::mouseReleaseEvent ( event );

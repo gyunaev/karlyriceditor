@@ -49,4 +49,5 @@ FORMS += mainwindow.ui \
     testwindow.ui \
     dialog_about.ui \
     dialog_projectsettings.ui \
-    dialog_settings.ui
+    dialog_settings.ui \
+    dialog_edittimemark.ui
