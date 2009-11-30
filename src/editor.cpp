@@ -22,6 +22,7 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QToolTip>
+#include <QScrollBar>
 #include <QStack>
 
 #include "mainwindow.h"
@@ -126,7 +127,7 @@ void Editor::insertTimeTag( qint64 timing )
 			ch = block.text().at( blockPos );
 
 		// Get the current character at pos
-		qDebug("char: %s (%d), pos %d, blockpos %d", qPrintable( QString(ch)), ch.unicode(), curPos, blockPos );
+		//qDebug("char: %s (%d), pos %d, blockpos %d", qPrintable( QString(ch)), ch.unicode(), curPos, blockPos );
 
 		// If QChar::ObjectReplacementCharacter - it's a time mark
 		if ( ch == QChar::ObjectReplacementCharacter )
@@ -617,7 +618,10 @@ QTextCursor Editor::timeMark( const QPoint& point )
 	QAbstractTextDocumentLayout * layout = document()->documentLayout();
 	int pos;
 
-	if ( layout && (pos = layout->hitTest( point, Qt::ExactHit )) != -1 )
+	// from QTextEditPrivate::mapToContents
+	QPoint mapped = QPoint( point.x() + horizontalScrollBar()->value(), point.y() + verticalScrollBar()->value() );
+
+	if ( layout && (pos = layout->hitTest( mapped, Qt::ExactHit )) != -1 )
 	{
 		QTextCursor cur = textCursor();
 		cur.setPosition( pos + 1 );
