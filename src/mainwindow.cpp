@@ -88,10 +88,6 @@ MainWindow::MainWindow()
 
 MainWindow::~MainWindow()
 {
-	QSettings settings;
-
-	settings.remove( "editor/currentlyrics" );
-	settings.remove( "editor/projectmusic" );
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -102,7 +98,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 		return;
 	}
 
-	//writeSettings();
+	editor->cleanupAutoSave();
 	QMainWindow::closeEvent( event );
 	event->accept();
 }

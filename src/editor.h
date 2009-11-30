@@ -60,6 +60,8 @@ class Editor : public QTextEdit
 		QString	exportToString();
 		bool	importFromString( const QString& str );
 
+		static void cleanupAutoSave();
+
 	public slots:
 		void	textModified();
 

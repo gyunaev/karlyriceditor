@@ -243,10 +243,12 @@ void Editor::textModified()
 	if ( m_lastAutosave.elapsed() > 15 )
 	{
 		m_lastAutosave.restart();
+		QString lyrictext = exportToString();
 
 		QSettings settings;
+		settings.setValue( "editor/currentlyrics", lyrictext );
 		settings.setValue( "editor/projectmusic", m_project->musicFile() );
-		settings.setValue( "editor/currentlyrics", exportToString() );
+		settings.setValue( "editor/lyricssize", lyrictext.length() );
 	}
 
 	m_project->setModified();
@@ -328,7 +330,13 @@ bool Editor::importFromString( const QString& strlyrics )
 	if ( settings.contains( "editor/currentlyrics" )
 	&& settings.value( "editor/projectmusic" ).toString() == m_project->musicFile() )
 	{
-		lyricstr = settings.value( "editor/currentlyrics" ).toString();
+		int size = settings.value( "editor/lyricssize" ).toInt();
+
+		if ( size == settings.value( "editor/currentlyrics" ).toString().length() )
+		{
+			qDebug("Restoring presaved lyrics from a project");
+			lyricstr = settings.value( "editor/currentlyrics" ).toString();
+		}
 	}
 
 	// A simple state machine
@@ -704,4 +712,12 @@ void Editor::mouseReleaseEvent ( QMouseEvent * event )
 	}
 
 	QTextEdit::mouseReleaseEvent ( event );
+}
+
+void Editor::cleanupAutoSave()
+{
+	QSettings settings;
+	settings.remove( "editor/currentlyrics" );
+	settings.remove( "editor/projectmusic" );
+	settings.remove( "editor/lyricssize" );
 }
