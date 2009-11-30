@@ -32,7 +32,7 @@ Settings::Settings()
 	m_phononSoundDelay = settings.value( "advanced/phononsounddelay", 250 ).toInt();
 
 	m_editorStopAtLineEnd = settings.value( "editor/stopatlineend", true ).toBool();
-	m_editorStopNextWord = settings.value( "editor/stopatlineend", false ).toBool();
+	m_editorStopNextWord = settings.value( "editor/stopatnextword", false ).toBool();
 	m_editorWordChars = settings.value( "editor/charsinword", 2 ).toInt();
 	m_editorSkipEmptyLines = settings.value( "editor/skipemptylines", true ).toBool();
 	m_editorSupportBlocks = settings.value( "editor/supportblocks", true ).toBool();
@@ -121,7 +121,7 @@ void Settings::edit()
 	settings.setValue( "advanced/phononsounddelay", m_phononSoundDelay );
 
 	settings.setValue( "editor/stopatlineend", m_editorStopAtLineEnd );
-	settings.setValue( "editor/stopatlineend", m_editorStopNextWord );
+	settings.setValue( "editor/stopatnextword", m_editorStopNextWord );
 	settings.setValue( "editor/charsinword", m_editorWordChars );
 	settings.setValue( "editor/skipemptylines", m_editorSkipEmptyLines );
 	settings.setValue( "editor/supportblocks", m_editorSupportBlocks );
