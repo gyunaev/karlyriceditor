@@ -62,7 +62,7 @@ void Editor::setProject( Project* proj )
 
 static inline bool isCRLF( QChar ch )
 {
-	return (ch == QChar::LineSeparator) || (ch == QChar::ParagraphSeparator );
+	return (ch == QChar::LineSeparator) || (ch == QChar::ParagraphSeparator ) || (ch == '\n' );
 }
 
 void Editor::insertTimeTag( qint64 timing )
@@ -126,7 +126,7 @@ void Editor::insertTimeTag( qint64 timing )
 			ch = block.text().at( blockPos );
 
 		// Get the current character at pos
-		//qDebug("char: %s (%d), pos %d, blockpos %d", qPrintable( QString(ch)), ch.unicode(), curPos, blockPos );
+		qDebug("char: %s (%d), pos %d, blockpos %d", qPrintable( QString(ch)), ch.unicode(), curPos, blockPos );
 
 		// If QChar::ObjectReplacementCharacter - it's a time mark
 		if ( ch == QChar::ObjectReplacementCharacter )
@@ -157,8 +157,8 @@ void Editor::insertTimeTag( qint64 timing )
 				if ( pSettings->m_editorStopAtLineEnd )
 					break;
 			}
-			else
-				separator_found = true;
+
+			separator_found = true;
 		}
 
 		// Timing mark is always before a word, so if we find a space, this means the word is ended,
