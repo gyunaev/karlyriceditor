@@ -496,48 +496,72 @@ QString	Project::exportLyricsAsUStar()
 
 	Lyrics lyrics = m_editor->exportLyrics();
 
+	if ( lyrics.totalBlocks() > 1 )
+	{
+		QMessageBox::critical( 0,
+								QObject::tr("Block separator found"),
+								QObject::tr("UltraStart lyrics cannot contain block separators. Export aborted.") );
+		return QString::null;
+	}
+
+	const Lyrics::Block& block = lyrics.block( 0 );
+
 	// Calculate gap
 	int beat_time_ms = 1000 / (bpm / 60);
-	int gap = lyrics.block(0).front().front().timing / beat_time_ms;
+	int gap = block.front().front().timing / beat_time_ms;
 
-	QString	lrc = generateUStarheader();
-	lrc += QString("#BPM: %1\n") .arg(bpm);
-	lrc += QString("#GAP: %1\n") .arg(gap);
+	QString	lyricstext = generateUStarheader();
+	lyricstext += QString("#BPM: %1\n") .arg(bpm);
+	lyricstext += QString("#GAP: %1\n") .arg(gap);
 
-	for ( int bl = 0; bl < lyrics.totalBlocks(); bl++ )
+	for ( int ln = 0; ln < block.size(); ln++ )
 	{
-		//TODO
-/*		if ( bl > 0 )
-			lrc += "\n";
+		const Lyrics::Line& line = block[ln];
 
-		const Lyrics::Block& block = lyrics.block( bl );
-
-		for ( int ln = 0; ln < block.size(); ln++ )
+		for ( int pos = 0; pos < line.size(); pos++ )
 		{
-			const Lyrics::Line& line = block[ln];
+			Lyrics::Syllable lentry = line[pos];
+			bool last_entry = (pos == line.size() - 1);
 
-			for ( int pos = 0; pos < line.size(); pos++ )
+			// Ultrastar lyrics must have tags at the line end, so the last tag should be empty
+			if ( last_entry && !lentry.text.isEmpty() )
 			{
-				Lyrics::Syllable lentry = line[pos];
-
-				// Insert timing mark
-				QString timetag;
-				int minute = lentry.timing / 60000;
-				int second = (lentry.timing - minute * 60000) / 1000;
-				int msecond = lentry.timing - (minute * 60000 + second * 1000 );
-				timetag.sprintf( "%02d:%02d.%02d", minute, second, msecond / 10 );
-
-				if ( pos == 0 )
-					lrc += "[" + timetag + "]";
-				else
-					lrc += "<" + timetag + ">";
-
-				lrc += lentry.text;
+				QMessageBox::critical( 0,
+										QObject::tr("No timing mark at the end of line"),
+										QObject::tr("UltraStart lyrics require timing marks at the end of line. Export aborted.") );
+				return QString::null;
 			}
 
-			lrc += "\n";
-		}
-*/	}
+			// Calculate timing and duration
+			int duration, timing = lentry.timing / beat_time_ms - gap;
+			char prefix;
 
-	return lrc;
+			if ( last_entry )
+			{
+				// We're at the end of line, which is empty. Get the time to calculate duration from there
+				prefix = '-';
+
+				if ( ln == block.size() - 1 )
+					duration = 5000 / beat_time_ms; // assume 5sec duration
+				else
+					duration = block[ln+1].front().timing;
+
+				lyricstext += QString("- %1 %2\n").arg( timing ) .arg( duration );
+			}
+			else
+			{
+				prefix = 'F';
+				duration = (line[pos+1].timing - lentry.timing) / beat_time_ms;
+
+				lyricstext += QString("%1 %2 %3 %4 %5\n").arg( prefix )
+														 .arg( timing )
+														 .arg( duration )
+														 .arg( lentry.pitch )
+														 .arg( lentry.text );
+			}
+		}
+	}
+
+	lyricstext += "E\n";
+	return lyricstext;
 }

@@ -83,7 +83,13 @@ class Project
 		QString	exportLyricsAsLRC2();
 		QString	exportLyricsAsUStar();
 
+		// Import lyrics. So far the formats are fairly recognizable, so other imports are private
+		bool	importLyrics( const QString& filename );
+
 	private:
+		bool	importLyricsLRC( const QString& filename );
+		bool	importLyricsUStar( const QString& filename );
+
 		void	appendIfPresent( int id, const QString& prefix, QString& src, LyricType type );
 		QString	generateLRCheader();
 		QString	generateUStarheader();
