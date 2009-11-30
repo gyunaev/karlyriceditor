@@ -34,7 +34,6 @@ PlayerWidget::PlayerWidget(QWidget *parent)
 	setupUi(this);
 
 	m_ready = false;
-	m_lastTick = 0;
 
 	// Set up icons
 	btnFwd->setPixmap( QPixmap(":images/dryicons_forward.png") );
@@ -144,14 +143,12 @@ void PlayerWidget::phonon_StateChanged ( Phonon::State newstate, Phonon::State )
 	pMainWindow->updateState();
 }
 
-void PlayerWidget::phonon_Tick( qint64 tickvalue )
+void PlayerWidget::phonon_Tick( qint64 )
 {
-	m_lastTick = tickvalue;
+	emit tick( currentTime() );
 
-	lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( tickvalue ) ) );
+	lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( currentTime() ) ) );
 	lblTimeRemaining->setText( tr("<b>-%1</b>") .arg( tickToString( m_mediaObject->remainingTime() ) ) );
-
-	emit tick( tickvalue );
 }
 
 QString PlayerWidget::tickToString( qint64 tickvalue )
@@ -171,7 +168,6 @@ void PlayerWidget::setMusicFile( Project * project )
 					.arg( project->tag( Project::Tag_Artist ) ) );
 
 	m_ready = false;
-	m_lastTick = 0;
 	m_mediaObject->setCurrentSource( project->musicFile() );
 }
 
@@ -196,4 +192,9 @@ void PlayerWidget::btn_playerSeekForward()
 void PlayerWidget::btn_playerSeekBackward()
 {
 	m_mediaObject->seek( m_mediaObject->currentTime() - 5000 );
+}
+
+qint64 PlayerWidget::currentTime() const
+{
+	return m_mediaObject->currentTime();
 }

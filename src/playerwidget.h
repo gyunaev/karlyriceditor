@@ -45,7 +45,7 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 		// Is music file ready to play?
 		bool	isReady() const { return m_ready; }
 
-		qint64	lastTick() const { return m_lastTick; }
+		qint64	currentTime() const;
 
 	signals:
 		void	tick( qint64 tickvalue );
@@ -67,9 +67,6 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 		Phonon::AudioOutput *	m_mediaAudioOutput;
 
 		bool					m_ready;
-
-		// Last tick timestamp
-		qint64					m_lastTick;
 };
 
 #endif // PLAYERWIDGET_H

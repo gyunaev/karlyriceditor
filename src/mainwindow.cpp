@@ -329,7 +329,7 @@ void MainWindow::setCurrentProject( Project * proj )
 
 void MainWindow::act_editInsertTag()
 {
-	editor->insertTimeTag( m_player->lastTick() );
+	editor->insertTimeTag( m_player->currentTime() );
 }
 
 void MainWindow::act_editRemoveTag()
