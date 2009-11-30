@@ -72,6 +72,8 @@ void Editor::insertTimeTag( qint64 timing )
 	bool was_time_mark_deleted = false;
 
 	QTextCursor cur = textCursor();
+	cur.beginEditBlock();
+
 	if ( cur.charFormat().objectType() == EditorTimeMark::TimeTextFormat
 	&& timing > 0 // only when playing
 	&& qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::TimeProperty ) ) == 0 ) // only placeholders
@@ -92,6 +94,7 @@ void Editor::insertTimeTag( qint64 timing )
 
 	// Add the image
 	cur.insertText( QString(QChar::ObjectReplacementCharacter), timemark );
+	cur.endEditBlock();
 
 	// Move the cursor according to policy
 	if ( pSettings->m_editorDoubleTimeMark && was_time_mark_deleted )
@@ -692,7 +695,10 @@ void Editor::mouseReleaseEvent ( QMouseEvent * event )
 				timemark.setProperty( EditorTimeMark::TimeProperty, ui.lineEdit->text().toLongLong() );
 				timemark.setProperty( EditorTimeMark::IdProperty, cur.charFormat().property( EditorTimeMark::IdProperty ).toInt() );
 				cur.deletePreviousChar();
+
+				cur.beginEditBlock();
 				cur.insertText( QString(QChar::ObjectReplacementCharacter), timemark );
+				cur.endEditBlock();
 			}
 		}
 	}
