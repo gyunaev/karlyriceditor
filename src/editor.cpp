@@ -694,9 +694,9 @@ void Editor::mouseReleaseEvent ( QMouseEvent * event )
 				timemark.setObjectType( EditorTimeMark::TimeTextFormat );
 				timemark.setProperty( EditorTimeMark::TimeProperty, ui.lineEdit->text().toLongLong() );
 				timemark.setProperty( EditorTimeMark::IdProperty, cur.charFormat().property( EditorTimeMark::IdProperty ).toInt() );
-				cur.deletePreviousChar();
 
 				cur.beginEditBlock();
+				cur.deletePreviousChar();
 				cur.insertText( QString(QChar::ObjectReplacementCharacter), timemark );
 				cur.endEditBlock();
 			}
