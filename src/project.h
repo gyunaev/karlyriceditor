@@ -24,6 +24,7 @@
 #include <QString>
 
 class Editor;
+class Lyrics;
 
 
 class Project
@@ -84,11 +85,14 @@ class Project
 		QString	exportLyricsAsUStar();
 
 		// Import lyrics. So far the formats are fairly recognizable, so other imports are private
-		bool	importLyrics( const QString& filename );
+		bool	importLyrics( const QString& filename, LyricType type );
+
+		// Clear the project
+		void	clear();
 
 	private:
-		bool	importLyricsLRC( const QString& filename );
-		bool	importLyricsUStar( const QString& filename );
+		bool	importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics );
+		bool	importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics );
 
 		void	appendIfPresent( int id, const QString& prefix, QString& src, LyricType type );
 		QString	generateLRCheader();

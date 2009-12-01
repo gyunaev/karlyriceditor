@@ -35,6 +35,7 @@ class EditorTimeMark : public QObject, public QTextObjectInterface
 		enum
 		{
 			TimeProperty = 1,
+			PitchProperty,
 			IdProperty,
 		};
 

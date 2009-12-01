@@ -21,8 +21,6 @@
 
 Lyrics::Lyrics()
 {
-	m_currentBlock = 0;
-	m_currentLineInBlock = 0;
 	m_scanning = false;
 	m_added_eofs = 0;
 
@@ -151,4 +149,14 @@ int Lyrics::totalBlocks() const
 const Lyrics::Block& Lyrics::block( int index ) const
 {
 	return m_lyrics[ index ];
+}
+
+bool Lyrics::isEmpty() const
+{
+	return m_lyrics.isEmpty();
+}
+
+void Lyrics::clear()
+{
+	m_lyrics.clear();
 }

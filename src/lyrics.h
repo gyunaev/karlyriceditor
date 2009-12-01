@@ -46,6 +46,7 @@ class Lyrics
 		// Lyrics are composed from one or more blocks, depending on mode
 		// A block can contain one or more lines (up to the whole text)
 		// A line can contain one or more syllables
+		bool	isEmpty() const;
 		int		totalBlocks() const;
 		const Block&	block( int index ) const;
 
@@ -74,12 +75,11 @@ class Lyrics
 		// Indicates the lyrics are being built. No curlyric* functions may be called.
 		void	endLyrics();
 
+		// Clear the lyrics
+		void	clear();
+
 	private:
 		QList<Block>	m_lyrics;
-
-		// iterators
-		int				m_currentBlock;
-		int				m_currentLineInBlock;
 
 		// Used during scanning lyrics
 		bool			m_scanning;

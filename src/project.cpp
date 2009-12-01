@@ -25,6 +25,8 @@
 #include "project.h"
 #include "settings.h"
 #include "version.h"
+#include "lyrics.h"
+#include "dialog_selectencoding.h"
 
 
 // Project data enum
@@ -65,6 +67,12 @@ Project::Project( Editor* editor )
 	m_editor->setProject( this );
 
 	m_modified = false;
+	clear();
+}
+
+void Project::clear()
+{
+	m_projectData.clear();
 	m_projectData[ PD_SIGNATURE ] = "BONIFACI";
 	m_projectData[ PD_VERSION ] = 1;
 	m_projectData[ PD_TAG_OFFSET ] = QString::number( pSettings->m_phononSoundDelay );
@@ -564,4 +572,207 @@ QString	Project::exportLyricsAsUStar()
 
 	lyricstext += "E\n";
 	return lyricstext;
+}
+
+
+bool Project::importLyrics( const QString& filename, LyricType type )
+{
+	QFile file( filename );
+
+	// Open the file and read its content
+	if ( !file.open( QIODevice::ReadOnly ) )
+	{
+		QMessageBox::critical( 0,
+							   QObject::tr( "Cannot open file" ),
+							   QObject::tr( "Cannot open file %1: %2" ) .arg( filename ) .arg( file.errorString() ) );
+		return false;
+	}
+
+	QByteArray data = file.readAll();
+
+	// Close the file - the user might want to edit it now when we ask for encoding
+	file.close();
+
+	// Before we ask the user for the text encoding, run a loop - if all characters there are < 127, this is ASCII,
+	// and we do not need to ask.
+	QString lyrictext( data );
+
+	for ( int i = 0; i < data.size(); i++ )
+	{
+		if ( data.at(i) < 0 )
+		{
+			// This is not ASCII. Ask the text encoding
+			DialogSelectEncoding dlg( data );
+
+			if ( dlg.exec() == QDialog::Rejected )
+				return false;
+
+			lyrictext = dlg.codec()->toUnicode( data );
+			break;
+		}
+	}
+
+	// Convert CRLF to CRs and replace LFs
+	lyrictext.replace( "\r\n", "\n" );
+	lyrictext.remove( '\r' );
+	QStringList linedtext = lyrictext.split( '\n' );
+
+	// Import lyrics
+	Lyrics lyr;
+	bool success = false;
+
+	switch ( type )
+	{
+		case LyricType_UStar:
+			lyr.beginLyrics();
+			success = importLyricsUStar( linedtext, lyr );
+			lyr.endLyrics();
+			break;
+
+		case LyricType_LRC1:
+		case LyricType_LRC2:
+			lyr.beginLyrics();
+			success = importLyricsLRC( linedtext, lyr );
+			lyr.endLyrics();
+			break;
+	}
+
+	// importLyrics* already showed error message
+	if ( !success )
+		return false;
+
+	m_editor->importLyrics( lyr );
+	return true;
+}
+
+bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics )
+{
+	bool header = true;
+	bool type_lrc2 = false;
+	qint64 last_time = -1;
+
+	lyrics.clear();
+
+	for ( int i = 0; i < readlyrics.size(); i++ )
+	{
+		QString line = readlyrics[i];
+
+		// To simplify the matching
+		line.replace( '[', '<' );
+		line.replace( ']', '>' );
+
+		qDebug("Line: '%s'", qPrintable( line ) );
+
+		if ( header )
+		{
+			QRegExp regex( "^<([a-zA-Z]+):\\s*(.*)\\s*>$" );
+			regex.setMinimal( true );
+
+			if ( regex.indexIn( line ) != -1 )
+			{
+				QString tag = regex.cap( 1 );
+				QString value = regex.cap( 2 );
+				int tagid = -1;
+
+				if ( tag == "ti" )
+					tagid = PD_TAG_TITLE;
+				else if ( tag == "ar" )
+					tagid = PD_TAG_ARTIST;
+				else if ( tag == "al" )
+					tagid = PD_TAG_ALBUM;
+				else if ( tag == "by" )
+					tagid = PD_TAG_CREATEDBY;
+				else if ( tag == "offset" )
+					tagid = PD_TAG_OFFSET;
+				else if ( tag == "re" )
+					tagid = PD_TAG_APPLICATION;
+				else if ( tag == "ve" )
+					tagid = PD_TAG_APPVERSION;
+				else
+					qDebug("Unsupported LRC tag found: '%s', ignored", qPrintable( tag ) );
+
+				if ( tagid != -1 )
+					update( tagid, value );
+			}
+			else
+			{
+				// Tag not found; either header ended, or invalid file
+				if ( i == 0 )
+				{
+					QMessageBox::critical( 0,
+										   QObject::tr("Invalid LRC file"),
+										   QObject::tr("Missing LRC header") );
+					return false;
+				}
+
+				header = false;
+			}
+		}
+
+		// We may fall-through, so no else
+		if ( !header )
+		{
+			QRegExp regex( "<(\\d+):(\\d+)(.\\d+)?>([^<]*)" );
+			int pos = 0;
+
+			while ( (pos = regex.indexIn( line, pos )) != -1 )
+			{
+				if ( pos != 0 )
+					type_lrc2 = true;
+
+				QStringList match = regex.capturedTexts();
+				int minutes = match[1].toInt();
+				int seconds = match[2].toInt();
+				QString text = match[3];
+				int ms = 0;
+
+				// msecs require more precise handling
+				if ( match.size() > 4 )
+				{
+					QString strms = match[3];
+
+					// We have msecs. Remove the first dot
+					strms.remove( 0, 1 );
+
+					// Convert to full msecs. Kinda ugly, but simple
+					while ( strms.length() < 3 )
+						strms+= "0";
+
+					ms = strms.toInt();
+					text = match[4];
+				}
+
+				qDebug("Parsed timing: %d:%d, %dms, '%s' text", minutes, seconds, ms, qPrintable( text ) );
+				qint64 timing = minutes * 60000 + seconds * 1000 + ms;
+
+				if ( timing != last_time && timing != -1 )
+				{
+					lyrics.curLyricAdd();
+					lyrics.curLyricSetTime( timing );
+					last_time = timing;
+				}
+
+				lyrics.curLyricAppendText( text );
+				pos++;
+			}
+
+			lyrics.curLyricAddEndOfLine();
+		}
+	}
+
+	// Check the lyric type
+	if ( type() == LyricType_LRC1 && type_lrc2 )
+	{
+		QMessageBox::warning( 0,
+							  QObject::tr("LRC2 file read for LCR1 project"),
+							  QObject::tr("The lyric type for current project is set for LRC1, but the lyrics read were LRC2.\n\n"
+										  "Either change the project type, or fix the lyrics.") );
+	}
+
+	return true;
+}
+
+bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics )
+{
+	return false;
 }

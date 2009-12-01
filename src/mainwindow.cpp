@@ -370,6 +370,15 @@ void MainWindow::act_projectValidateLyrics()
 
 void MainWindow::act_projectOpenLyricFile()
 {
+	QString fileName = QFileDialog::getOpenFileName( this,
+			tr("Open a lyric file"),
+			".",
+			tr("LRC files (*.lrc);;UltraStar files (*.txt)") );
+
+	if ( fileName.isEmpty() )
+		return;
+
+	m_project->importLyrics( fileName, fileName.endsWith( "txt" ) ? Project::LyricType_UStar : Project::LyricType_LRC2 );
 }
 
 void MainWindow::act_projectEditHeader()

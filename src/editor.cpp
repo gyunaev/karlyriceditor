@@ -442,41 +442,42 @@ Lyrics Editor::exportLyrics()
 
 void Editor::importLyrics( const Lyrics& lyrics )
 {
-/*
 	// clear the editor
 	clear();
 
 	textCursor().beginEditBlock();
 
-	for ( int i = 0; i < lyrics.size(); ++i )
+	// Fill the editor
+	for ( int bl = 0; bl < lyrics.totalBlocks(); bl++ )
 	{
-		const Editor::LyricEntry& lentry = lyrics[i];
+		const Lyrics::Block& block = lyrics.block( bl );
 
-		// Apply flags
-		if ( lentry.flags & Editor::LYRICS_NEW_PARAGRAPH )
+		for ( int ln = 0; ln < block.size(); ln++ )
 		{
-			textCursor().insertText( QString( QChar::LineSeparator ) );
+			const Lyrics::Line& line = block[ln];
+
+			for ( int pos = 0; pos < line.size(); pos++ )
+			{
+				Lyrics::Syllable lentry = line[pos];
+
+				// Insert timing mark
+				QTextCharFormat timemark;
+				timemark.setObjectType( EditorTimeMark::TimeTextFormat );
+				timemark.setProperty( EditorTimeMark::TimeProperty, lentry.timing );
+				timemark.setProperty( EditorTimeMark::PitchProperty, lentry.pitch );
+				timemark.setProperty( EditorTimeMark::IdProperty, 0 );
+
+				textCursor().insertText( QString(QChar::ObjectReplacementCharacter), timemark );
+				textCursor().insertText( lentry.text );
+			}
+
 			textCursor().insertText( QString( QChar::LineSeparator ) );
 		}
-		else if ( lentry.flags & Editor::LYRICS_NEW_LINE )
-			textCursor().insertText( QString( QChar::LineSeparator ) );
 
-		// Insert timing mark
-		QTextCharFormat timemark;
-		timemark.setObjectType( EditorTimeMark::TimeTextFormat );
-		timemark.setProperty( EditorTimeMark::TimeProperty, lentry.timing );
-		timemark.setProperty( EditorTimeMark::FgColorProperty, palette().color( QPalette::Active, QPalette::WindowText ) );
-		timemark.setProperty( EditorTimeMark::IdProperty, 0 );
-		timemark.setProperty( EditorTimeMark::BgColorProperty, palette().color( QPalette::Active, QPalette::Base ) );
-
-		textCursor().insertText( QString(QChar::ObjectReplacementCharacter), timemark );
-
-		// Insert text
-		textCursor().insertText( lentry.text );
+		textCursor().insertText( QString( QChar::LineSeparator ) );
 	}
 
 	textCursor().endEditBlock();
-	*/
 }
 
 void Editor::cursorToLine( int line )
