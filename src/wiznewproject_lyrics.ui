@@ -43,7 +43,7 @@
          <widget class="QLineEdit" name="leFileName"/>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton">
+         <widget class="QPushButton" name="btnBrowse">
           <property name="text">
            <string>Browse...</string>
           </property>

@@ -199,7 +199,6 @@ void MainWindow::act_fileNewProject()
 		return;
 	}
 
-	editor->clear();
 	setCurrentProject( newproj );
 }
 
@@ -308,6 +307,10 @@ bool MainWindow::tryCloseCurrentProject()
 
 	delete m_project;
 	m_project = 0;
+
+	editor->setProject( 0 );
+	editor->clear();
+
 	return true;
 }
 

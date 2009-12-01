@@ -101,6 +101,9 @@ class PageLyrics : public QWizardPage, public Ui::WizNewProject_Lyrics
 		void initializePage();
 		bool validatePage();
 
+	public slots:
+		void	browse();
+
 	private:
 		Project *	m_project;
 };

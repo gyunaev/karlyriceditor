@@ -239,6 +239,9 @@ void Editor::removeLastTimeTag()
 
 void Editor::textModified()
 {
+	if ( !m_project )
+		return;
+
 	// Store the current text in settings if more than 15 seconds passed
 	if ( m_lastAutosave.elapsed() > 15 )
 	{

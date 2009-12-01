@@ -177,6 +177,8 @@ PageLyrics::PageLyrics( Project * project, QWidget *parent )
 {
 	setupUi( this );
 
+	connect( btnBrowse, SIGNAL( clicked() ), this, SLOT( browse() ) );
+
 	m_project = project;
 }
 
@@ -184,6 +186,19 @@ void PageLyrics::initializePage()
 {
 	// Reading embedded lyrics is not supported by Phonon yet
 	rbnEmbeddedLyrics->setEnabled( false );
+}
+
+void PageLyrics::browse()
+{
+	QString fileName = QFileDialog::getOpenFileName( this,
+			tr("Open a lyric file"),
+			".",
+			tr("LRC files (*.lrc);;UltraStar files (*.txt)") );
+
+	if ( fileName.isEmpty() )
+		return;
+
+	leFileName->setText( fileName );
 }
 
 bool PageLyrics::validatePage()
@@ -199,6 +214,9 @@ bool PageLyrics::validatePage()
 
 			return false;
 		}
+
+		if ( !m_project->importLyrics( leFileName->text(), m_project->type() ) )
+			return false;
 	}
 
 	return true;

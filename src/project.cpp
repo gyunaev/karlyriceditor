@@ -851,7 +851,7 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 					return false;
 				}
 
-				msecs_per_beat = 60.0 / bpm / 4.0;
+				msecs_per_beat = (int) ((60.0 / (double) bpm / 4.0) * 1000.0);
 				header = false;
 			}
 		}
