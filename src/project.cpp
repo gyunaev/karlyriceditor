@@ -506,78 +506,84 @@ QString	Project::exportLyricsAsUStar()
 
 	if ( lyrics.totalBlocks() > 1 )
 	{
-		QMessageBox::critical( 0,
+		QMessageBox::information( 0,
 								QObject::tr("Block separator found"),
-								QObject::tr("UltraStart lyrics cannot contain block separators. Export aborted.") );
-		return QString::null;
+								QObject::tr("UltraStart lyrics cannot contain block separators. Blocks will be merged.") );
 	}
-
-	const Lyrics::Block& block = lyrics.block( 0 );
 
 	// Calculate gap
 	int beat_time_ms = 1000 / (bpm / 60);
-	int gap = block.front().front().timing / beat_time_ms;
+	int gap = lyrics.block(0).front().front().timing;
 
 	QString	lyricstext = generateUStarheader();
 	lyricstext += QString("#BPM: %1\n") .arg(bpm);
 	lyricstext += QString("#GAP: %1\n") .arg(gap);
 
-	for ( int ln = 0; ln < block.size(); ln++ )
+	for ( int i = 0; i < lyrics.totalBlocks(); i++ )
 	{
-		const Lyrics::Line& line = block[ln];
+		const Lyrics::Block& block = lyrics.block( i );
 
-		for ( int pos = 0; pos < line.size(); pos++ )
+		for ( int ln = 0; ln < block.size(); ln++ )
 		{
-			Lyrics::Syllable lentry = line[pos];
-			bool last_entry = (pos == line.size() - 1);
+			const Lyrics::Line& line = block[ln];
 
-			// Ultrastar lyrics must have tags at the line end, so the last tag should be empty
-			if ( last_entry && !lentry.text.isEmpty() )
+			for ( int pos = 0; pos < line.size(); pos++ )
 			{
-				QMessageBox::critical( 0,
-										QObject::tr("No timing mark at the end of line"),
-										QObject::tr("UltraStart lyrics require timing marks at the end of line. Export aborted.") );
-				return QString::null;
-			}
+				Lyrics::Syllable lentry = line[pos];
+				bool last_entry = (pos == line.size() - 1);
 
-			// Calculate timing and duration
-			int duration, timing = lentry.timing / beat_time_ms - gap;
-			char prefix;
+				// Ultrastar lyrics must have tags at the line end, so the last tag should be empty
+				if ( last_entry && !lentry.text.isEmpty() )
+				{
+					QMessageBox::critical( 0,
+											QObject::tr("No timing mark at the end of line"),
+											QObject::tr("UltraStart lyrics require timing marks at the end of line. Export aborted.") );
+					return QString::null;
+				}
 
-			if ( last_entry )
-			{
-				// We're at the end of line, which is empty. Get the time to calculate duration from there
-				prefix = '-';
+				// Calculate timing and duration
+				int duration, timing = (lentry.timing - gap) / beat_time_ms;
+				char prefix;
 
-				if ( ln == block.size() - 1 )
-					duration = 5000 / beat_time_ms; // assume 5sec duration
+				if ( last_entry )
+				{
+					// We're at the end of line, which is empty. Get the time to calculate duration from there
+					prefix = '-';
+
+					if ( ln == block.size() - 1 )
+						duration = 5000 / beat_time_ms; // assume 5sec duration
+					else
+						duration = (block[ln+1].front().timing - lentry.timing) / beat_time_ms;
+
+					lyricstext += QString("- %1 %2\n").arg( timing ) .arg( duration );
+				}
 				else
-					duration = block[ln+1].front().timing;
-
-				lyricstext += QString("- %1 %2\n").arg( timing ) .arg( duration );
-			}
-			else
-			{
-				prefix = ':';
-				duration = (line[pos+1].timing - lentry.timing) / beat_time_ms;
-				int pitch = lentry.pitch;
-
-				if ( pitch & Lyrics::PITCH_NOTE_FREESTYLE )
 				{
-					prefix = 'F';
-					pitch &= ~Lyrics::PITCH_NOTE_FREESTYLE;
-				}
-				else if ( pitch & Lyrics::PITCH_NOTE_GOLDEN )
-				{
-					prefix = '*';
-					pitch &= ~Lyrics::PITCH_NOTE_GOLDEN;
-				}
+					prefix = ':';
+					duration = (line[pos+1].timing - lentry.timing) / beat_time_ms;
+					int pitch = lentry.pitch;
 
-				lyricstext += QString("%1 %2 %3 %4 %5\n").arg( prefix )
-														 .arg( timing )
-														 .arg( duration )
-														 .arg( pitch )
-														 .arg( lentry.text );
+					// If lyrics is not set, ignore it
+					if ( pitch == -1 )
+						pitch = 0;
+
+					if ( pitch & Lyrics::PITCH_NOTE_FREESTYLE )
+					{
+						prefix = 'F';
+						pitch &= ~Lyrics::PITCH_NOTE_FREESTYLE;
+					}
+					else if ( pitch & Lyrics::PITCH_NOTE_GOLDEN )
+					{
+						prefix = '*';
+						pitch &= ~Lyrics::PITCH_NOTE_GOLDEN;
+					}
+
+					lyricstext += QString("%1 %2 %3 %4 %5\n").arg( prefix )
+															 .arg( timing )
+															 .arg( duration )
+															 .arg( pitch )
+															 .arg( lentry.text );
+				}
 			}
 		}
 	}
