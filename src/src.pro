@@ -19,7 +19,8 @@ HEADERS += mainwindow.h \
     version.h \
     projectsettings.h \
     recentfiles.h \
-    colorbutton.h
+    colorbutton.h \
+    dialog_selectencoding.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -35,7 +36,8 @@ SOURCES += mainwindow.cpp \
     lyrics.cpp \
     projectsettings.cpp \
     recentfiles.cpp \
-    colorbutton.cpp
+    colorbutton.cpp \
+    dialog_selectencoding.cpp
 RESOURCES += resources.qrc
 QT += phonon
 FORMS += mainwindow.ui \
@@ -50,4 +52,5 @@ FORMS += mainwindow.ui \
     dialog_about.ui \
     dialog_projectsettings.ui \
     dialog_settings.ui \
-    dialog_edittimemark.ui
+    dialog_edittimemark.ui \
+    dialog_selectencoding.ui
