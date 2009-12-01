@@ -30,6 +30,9 @@ class Lyrics
 	public:
 		Lyrics();
 
+		static const int PITCH_NOTE_FREESTYLE = (1 << 17);
+		static const int PITCH_NOTE_GOLDEN = (1 << 18);
+
 		//
 		// Those functions are used to access lyrics
 		//

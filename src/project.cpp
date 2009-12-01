@@ -661,8 +661,6 @@ bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics )
 		line.replace( '[', '<' );
 		line.replace( ']', '>' );
 
-		qDebug("Line: '%s'", qPrintable( line ) );
-
 		if ( header )
 		{
 			QRegExp regex( "^<([a-zA-Z]+):\\s*(.*)\\s*>$" );
@@ -742,7 +740,7 @@ bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics )
 					text = match[4];
 				}
 
-				qDebug("Parsed timing: %d:%d, %dms, '%s' text", minutes, seconds, ms, qPrintable( text ) );
+				//qDebug("Parsed timing: %d:%d, %dms, '%s' text", minutes, seconds, ms, qPrintable( text ) );
 				qint64 timing = minutes * 60000 + seconds * 1000 + ms;
 
 				if ( timing != last_time && timing != -1 )
@@ -774,5 +772,144 @@ bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics )
 
 bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics )
 {
-	return false;
+	bool header = true;
+	bool relative = false;
+	int bpm = -1, gap = -1;
+	double msecs_per_beat = 0;
+	int last_time_ms = 0;
+	int next_time_ms = 0;
+	int last_pitch = 0;
+
+	lyrics.clear();
+
+	for ( int i = 0; i < readlyrics.size(); i++ )
+	{
+		QString line = readlyrics[i];
+
+		if ( header )
+		{
+			QRegExp regex( "^#([a-zA-Z]+):\\s*(.*)\\s*$" );
+
+			if ( regex.indexIn( line ) != -1 )
+			{
+				QString tag = regex.cap( 1 );
+				QString value = regex.cap( 2 );
+				int tagid = -1;
+
+				if ( tag == "TITLE" )
+					tagid = PD_TAG_TITLE;
+				else if ( tag == "ARTIST" )
+					tagid = PD_TAG_ARTIST;
+				else if ( tag == "LANGUAGE" )
+					tagid = PD_TAG_LANGUAGE;
+				else if ( tag == "GENRE" )
+					tagid = PD_TAG_GENRE;
+				else if ( tag == "MP3FILE" )
+					tagid = PD_TAG_MP3FILE;
+				else if ( tag == "COVER" )
+					tagid = PD_TAG_COVER;
+				else if ( tag == "BACKGROUND" )
+					tagid = PD_TAG_BACKGROUND;
+				else if ( tag == "VIDEO" )
+					tagid = PD_TAG_VIDEO;
+				else if ( tag == "VIDEOGAP" )
+					tagid = PD_TAG_VIDEOGAP;
+				else if ( tag == "EDITION" )
+					tagid = PD_TAG_EDITION;
+				else if ( tag == "BPM" )
+					bpm = value.toInt();
+				else if ( tag == "GAP" )
+					gap = value.toInt();
+				else if ( tag == "RELATIVE" )
+					relative = value.compare( "yes" );
+				else
+					qDebug("Unsupported UltraStar tag found: '%s', ignored", qPrintable( tag ) );
+
+				if ( tagid != -1 )
+					update( tagid, value );
+			}
+			else
+			{
+				// Tag not found; either header ended, or invalid file
+				if ( bpm == -1 || gap == -1 )
+				{
+					QMessageBox::critical( 0,
+										   QObject::tr("Invalid UltraStar file"),
+										   QObject::tr("This file is not a valid UltraStar lyric file; BPM and/or GAP is missing.") );
+					return false;
+				}
+
+				msecs_per_beat = 60.0 / bpm / 4.0;
+				header = false;
+			}
+		}
+
+		// We may fall-through, so no else
+		if ( !header )
+		{
+			if ( line[0] != 'E' && line[0] != ':' && line[0] != '*' && line[0] != 'F' && line[0] != '-' )
+			{
+				QMessageBox::critical( 0,
+						   QObject::tr("Invalid UltraStar file"),
+						   QObject::tr("This file is not a valid UltraStar lyric file; error at line %1.") .arg(i+1) );
+
+				return false;
+			}
+
+			// End?
+			if ( line[0] == 'E' )
+				break;
+
+			QStringList parsed = line.split( QRegExp("\\s+") );
+
+			if ( parsed.size() < 3 )
+			{
+				QMessageBox::critical( 0,
+									   QObject::tr("Invalid UltraStar file"),
+									   QObject::tr("This file is not a valid UltraStar lyric file; error at line %1.").arg(i) );
+				return false;
+			}
+
+			int timing = relative ? last_time_ms : 0;
+			timing += parsed[1].toInt() * msecs_per_beat;
+
+			// Should we add an empty field?
+			if ( next_time_ms != 0 && timing > next_time_ms )
+			{
+				lyrics.curLyricSetTime( next_time_ms );
+				lyrics.curLyricSetPitch( last_pitch );
+				lyrics.curLyricAdd();
+			}
+
+			next_time_ms = timing + parsed[2].toInt() * msecs_per_beat;
+			lyrics.curLyricSetTime( timing );
+
+			if ( parsed[0] == "F" || parsed[0] == "*"  || parsed[0] == ":" )
+			{
+				if ( parsed.size() < 5 )
+				{
+					QMessageBox::critical( 0,
+										   QObject::tr("Invalid UltraStar file"),
+										   QObject::tr("This file is not a valid UltraStar lyric file; error at line %1.").arg(i) );
+					return false;
+				}
+
+				int pitch = parsed[3].toInt();
+
+				if ( parsed[0] == "F" )
+					pitch |= Lyrics::PITCH_NOTE_FREESTYLE;
+				else if ( parsed[0] == "*" )
+					pitch |= Lyrics::PITCH_NOTE_GOLDEN;
+
+				lyrics.curLyricSetPitch( pitch );
+				lyrics.curLyricAppendText( parsed[4] );
+			}
+			else if ( parsed[0] == "-" )
+				lyrics.curLyricAddEndOfLine();
+			else
+				abort(); // should never happen
+		}
+	}
+
+	return true;
 }
