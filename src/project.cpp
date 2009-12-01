@@ -558,13 +558,25 @@ QString	Project::exportLyricsAsUStar()
 			}
 			else
 			{
-				prefix = 'F';
+				prefix = ':';
 				duration = (line[pos+1].timing - lentry.timing) / beat_time_ms;
+				int pitch = lentry.pitch;
+
+				if ( pitch & Lyrics::PITCH_NOTE_FREESTYLE )
+				{
+					prefix = 'F';
+					pitch &= ~Lyrics::PITCH_NOTE_FREESTYLE;
+				}
+				else if ( pitch & Lyrics::PITCH_NOTE_GOLDEN )
+				{
+					prefix = '*';
+					pitch &= ~Lyrics::PITCH_NOTE_GOLDEN;
+				}
 
 				lyricstext += QString("%1 %2 %3 %4 %5\n").arg( prefix )
 														 .arg( timing )
 														 .arg( duration )
-														 .arg( lentry.pitch )
+														 .arg( pitch )
 														 .arg( lentry.text );
 			}
 		}
