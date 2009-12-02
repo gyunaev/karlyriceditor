@@ -51,85 +51,108 @@ void TestWindow::setLyrics( const Lyrics& lyrics )
 
 	// Index the lyrics
 	m_lyricIndex.clear();
-	int lineidx = 1;
+	m_blockIndex.clear();
 
-	// Fill the m_lyricIndex array
-	for ( int bl = 0; bl < lyrics.totalBlocks(); bl++ )
+	if ( pSettings->m_editorSupportBlocks )
 	{
-		const Lyrics::Block& block = lyrics.block( bl );
-
-		for ( int ln = 0; ln < block.size(); ln++ )
+		// Block mode - fill the m_lyricIndex array
+		for ( int bl = 0; bl < lyrics.totalBlocks(); bl++ )
 		{
-			const Lyrics::Line& line = block[ln];
-
-			for ( int pos = 0; pos < line.size(); pos++ )
+			const Lyrics::Block& block = lyrics.block( bl );
+	
+			for ( int ln = 0; ln < block.size(); ln++ )
 			{
-				Lyrics::Syllable lentry = line[pos];
-				LyricIndex lidx;
-
-				lidx.timestart = lentry.timing;
-				lidx.blockindex = bl;
-				lidx.lineindex = lineidx;
-				lidx.text = lentry.text;
-
-				if ( pos == line.size() - 1 )
+				const Lyrics::Line& line = block[ln];
+	
+				for ( int pos = 0; pos < line.size(); pos++ )
 				{
-					lidx.text += "\n";
-					m_lyricIndex.push_back( lidx );
-					lineidx++;
+					Lyrics::Syllable lentry = line[pos];
+					LyricIndex lidx;
+	
+					lidx.timestart = lentry.timing;
+					lidx.blockindex = bl;
+					lidx.text = lentry.text;
+	
+					if ( pos == line.size() - 1 )
+					{
+						lidx.text += "\n";
+						m_lyricIndex.push_back( lidx );
+					}
+					else
+						m_lyricIndex.push_back( lidx );
 				}
-				else
-					m_lyricIndex.push_back( lidx );
+			}
+		}
+	
+		// Now rescan the index, and split any which have more than one char
+		for ( int i = 0; i < m_lyricIndex.size(); i++ )
+		{
+			if ( m_lyricIndex[i].text.trimmed().length() > 1 )
+				splitSyllable( i );
+		}
+	
+		// Create the m_blockIndex
+		int current_block = -1;
+	
+		for ( int i = 0; i < m_lyricIndex.size(); i++ )
+		{
+			if ( m_lyricIndex[i].blockindex != current_block )
+			{
+				Time blocktime;
+				blocktime.timestart = blocktime.timeend = m_lyricIndex[i].timestart;
+				blocktime.index = i;
+				m_blockIndex.push_back( blocktime );
+	
+				current_block = m_lyricIndex[i].blockindex;
+			}
+			else
+				m_blockIndex.back().timeend = m_lyricIndex[i].timestart;
+		}
+	
+		// Apply before/after delays
+		for ( int i = 0; i < m_blockIndex.size(); i++ )
+		{
+			if ( i == 0 || m_blockIndex[i].timestart - LYRICS_SHOW_BEFORE > m_blockIndex[i-1].timeend )
+				m_blockIndex[i].timestart = qMax( (qint64) 0, m_blockIndex[i].timestart - LYRICS_SHOW_BEFORE );
+			else
+				m_blockIndex[i].timestart = m_blockIndex[i-1].timeend + 1;
+	
+			if ( i == m_blockIndex.size() - 1 || m_blockIndex[i].timeend + LYRICS_SHOW_AFTER < m_blockIndex[i+1].timestart )
+				m_blockIndex[i].timeend += LYRICS_SHOW_AFTER;
+			else
+				m_blockIndex[i].timeend = m_blockIndex[i+1].timestart - 1;
+		}
+	
+		// Dump block index
+//		for ( int i = 0; i < m_blockIndex.size(); i++ )
+//			qDebug("BlockIndex for block %d: idx %d, %d - %d", i, m_blockIndex[i].index, (int) m_blockIndex[i].timestart, (int) m_blockIndex[i].timeend );
+	
+		// Dump regular index
+//		for ( int i = 0; i < m_lyricIndex.size(); i++ )
+//			qDebug("lyric %d: time %d, block %d, text %s", i, (int) m_lyricIndex[i].timestart, m_lyricIndex[i].blockindex, qPrintable( m_lyricIndex[i].text ) );
+	}
+	else
+	{
+		// Line mode
+		for ( int bl = 0; bl < lyrics.totalBlocks(); bl++ )
+		{
+			const Lyrics::Block& block = lyrics.block( bl );
+	
+			for ( int ln = 0; ln < block.size(); ln++ )
+			{
+				const Lyrics::Line& line = block[ln];
+				LyricIndex lidx;
+	
+				lidx.timestart = line[0].timing;
+				lidx.blockindex = bl;
+
+				for ( int pos = 0; pos < line.size(); pos++ )
+					lidx.text += line[pos].text;
+				
+				m_lyricIndex.push_back( lidx );
 			}
 		}
 	}
-
-	// Now rescan the index, and split any which have more than one char
-	for ( int i = 0; i < m_lyricIndex.size(); i++ )
-	{
-		if ( m_lyricIndex[i].text.trimmed().length() > 1 )
-			splitSyllable( i );
-	}
-
-	// Create the m_blockIndex
-	int current_block = -1;
-
-	for ( int i = 0; i < m_lyricIndex.size(); i++ )
-	{
-		if ( m_lyricIndex[i].blockindex != current_block )
-		{
-			Time blocktime;
-			blocktime.timestart = blocktime.timeend = m_lyricIndex[i].timestart;
-			blocktime.index = i;
-			m_blockIndex.push_back( blocktime );
-
-			current_block = m_lyricIndex[i].blockindex;
-		}
-		else
-			m_blockIndex.back().timeend = m_lyricIndex[i].timestart;
-	}
-
-	// Apply before/after delays
-	for ( int i = 0; i < m_blockIndex.size(); i++ )
-	{
-		if ( i == 0 || m_blockIndex[i].timestart - LYRICS_SHOW_BEFORE > m_blockIndex[i-1].timeend )
-			m_blockIndex[i].timestart = qMax( (qint64) 0, m_blockIndex[i].timestart - LYRICS_SHOW_BEFORE );
-		else
-			m_blockIndex[i].timestart = m_blockIndex[i-1].timeend + 1;
-
-		if ( i == m_blockIndex.size() - 1 || m_blockIndex[i].timeend + LYRICS_SHOW_AFTER < m_blockIndex[i+1].timestart )
-			m_blockIndex[i].timeend += LYRICS_SHOW_AFTER;
-		else
-			m_blockIndex[i].timeend = m_blockIndex[i+1].timestart - 1;
-	}
-
-	// Dump block index
-//	for ( int i = 0; i < m_blockIndex.size(); i++ )
-//		qDebug("BlockIndex for block %d: idx %d, %d - %d", i, m_blockIndex[i].index, (int) m_blockIndex[i].timestart, (int) m_blockIndex[i].timeend );
-
-	// Dump regular index
-//	for ( int i = 0; i < m_lyricIndex.size(); i++ )
-//		qDebug("lyric %d: time %d, block %d, text %s", i, (int) m_lyricIndex[i].timestart, m_lyricIndex[i].blockindex, qPrintable( m_lyricIndex[i].text ) );
 }
 
 void TestWindow::tick( qint64 tickmark )
@@ -192,6 +215,48 @@ void TestWindow::redrawBlocks( qint64 tickmark )
 
 void TestWindow::redrawLines( qint64 tickmark )
 {
+	static const int LINES_TO_SHOW = 4;
+
+	// Find the first line to show	
+	int activeline = -1;
+
+	// Find the last active line
+	for ( int i = 0; i < m_lyricIndex.size(); i++ )
+	{
+		if ( tickmark < m_lyricIndex[i].timestart )
+			break;
+		else
+			activeline = i;
+	}
+
+	// If no line is active, the song is not started; start at the line 0.
+	// If a line N is active, start at line N-1 (if any), or at size() - LINES_TO_SHOW, which is less
+	int startline = 0;
+	
+	if ( activeline > 0 )
+		startline =	qMin( activeline - 1, m_lyricIndex.size() - LINES_TO_SHOW );
+
+	int limit = qMin( startline + LINES_TO_SHOW, m_lyricIndex.size() );
+
+	// Color to text
+	QString colorActive = pSettings->m_previewTextActive.name();
+	QString colorInactive = pSettings->m_previewTextInactive.name();
+	
+	// Create a multiline string.
+	QString text = "<qt>";
+	
+	for ( int i = startline; i < limit; i++ )
+	{
+		if ( i == activeline )
+			text += QString("<font color=\"%1\">%2</font>") .arg( colorActive ) .arg( m_lyricIndex[i].text );
+		else
+			text += QString("<font color=\"%1\">%2</font>") .arg( colorInactive ) .arg( m_lyricIndex[i].text );
+
+		text += "<br>";
+	}
+
+	text += "</qt>";
+	setText( text );
 }
 
 void TestWindow::setText( const QString& text )
@@ -221,7 +286,6 @@ void TestWindow::splitSyllable( int index )
 
 		lidx.timestart = timestart + i * ticksperchar;
 		lidx.blockindex = orig.blockindex;
-		lidx.lineindex = orig.lineindex;
 		lidx.text = QString( text[i] );
 
 		m_lyricIndex.insert( index, 1, lidx );

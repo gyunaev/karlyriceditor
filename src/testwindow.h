@@ -49,7 +49,6 @@ class TestWindow : public QDialog, public Ui::TestWindow
 			qint64	timestart;
 			QString	text;		// converted to HTML; includes <br> on line ends
 			int		blockindex;
-			int		lineindex;
 
 		} LyricIndex;
 
@@ -62,8 +61,10 @@ class TestWindow : public QDialog, public Ui::TestWindow
 		} Time;
 
 		QVector<LyricIndex>	m_lyricIndex;
-		QVector<Time>		m_lineIndex;
+
+		// This one is used in block mode (LRC2 and UltraStar)
 		QVector<Time>		m_blockIndex;
+
 		QString	m_labelText; // to prevent unnecessary updates
 };
 
