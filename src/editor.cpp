@@ -590,7 +590,7 @@ bool Editor::validate()
 					{
 						linesinblock++;
 
-						if ( linesinblock > pSettings->m_editorMaxBlock )
+						if ( pSettings->m_editorSupportBlocks && linesinblock > pSettings->m_editorMaxBlock )
 						{
 							QMessageBox::critical( 0,
 								 tr("Block size exceeded"),
