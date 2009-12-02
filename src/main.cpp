@@ -27,9 +27,9 @@ int main(int argc, char *argv[])
 	QApplication app(argc, argv);
 
 	//FIXME
-	QCoreApplication::setOrganizationName("UlduzSoft");
-	QCoreApplication::setOrganizationDomain("ulduzsoft.com");
-	QCoreApplication::setApplicationName("Karaoke Lyric Editor");
+	QCoreApplication::setOrganizationName("gyunaev");
+	QCoreApplication::setOrganizationDomain("george.ulduzsoft.com");
+	QCoreApplication::setApplicationName("karlyriceditor");
 
 	MainWindow wnd;
 	wnd.show();

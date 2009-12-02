@@ -163,7 +163,7 @@ p, li { white-space: pre-wrap; }
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="lrceditor.qrc">:/images/dryicons_clock.png</pixmap>
+          <pixmap resource="resources.qrc">:/images/dryicons_clock.png</pixmap>
          </property>
         </widget>
        </item>
@@ -192,7 +192,7 @@ p, li { white-space: pre-wrap; }
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="lrceditor.qrc">:/images/dryicons_sound.png</pixmap>
+          <pixmap resource="resources.qrc">:/images/dryicons_sound.png</pixmap>
          </property>
         </widget>
        </item>
@@ -222,7 +222,7 @@ p, li { white-space: pre-wrap; }
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="lrceditor.qrc"/>
- </resources>
+  <include location="resources.qrc"/>
+   </resources>
  <connections/>
 </ui>

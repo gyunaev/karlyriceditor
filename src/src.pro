@@ -1,5 +1,5 @@
 TEMPLATE = app
-TARGET = ../bin/lrceditor
+TARGET = ../bin/karlyriceditor
 DEPENDPATH += .
 INCLUDEPATH += .
 
