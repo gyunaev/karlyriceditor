@@ -296,9 +296,12 @@ QString	Editor::exportToString()
 	{
 		for ( QTextBlock::iterator it = block.begin(); ; ++it )
 		{
+			// Add an empty line at the end of block unless last block
 			if ( it == block.end() )
 			{
-				outstr += QChar::LineSeparator;
+				if ( block.next().isValid() )
+					outstr += QChar::LineSeparator;
+
 				break;
 			}
 
