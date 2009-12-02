@@ -26,7 +26,6 @@ int main(int argc, char *argv[])
 	
 	QApplication app(argc, argv);
 
-	//FIXME
 	QCoreApplication::setOrganizationName("gyunaev");
 	QCoreApplication::setOrganizationDomain("george.ulduzsoft.com");
 	QCoreApplication::setApplicationName("karlyriceditor");
