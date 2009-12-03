@@ -1,0 +1,4 @@
+"I will survive.mp3" was generated from iwillsurvive.mid downloaded from http://bendigolive.com/music/karaoke.htm 
+using timidity (timidity -Ow -o out.wav) and encoding it to MP3 using Lame. The file is encoded using 16kb bitrate
+to save space, so sound quality is awful - but good enough to serve as example.
+
