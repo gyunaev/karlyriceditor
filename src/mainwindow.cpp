@@ -22,6 +22,7 @@
 #include <QCloseEvent>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QWhatsThis>
 
 #include "wizard_newproject.h"
 #include "mainwindow.h"
@@ -51,9 +52,6 @@ MainWindow::MainWindow()
 	// Call UIC-generated code
 	setupUi( this );
 
-	// Set the window icon
-	setWindowIcon( QIcon(":/images/application_icon.png") );
-
 	// Initialize stuff
 	m_project = 0;
 
@@ -61,6 +59,7 @@ MainWindow::MainWindow()
 	m_player = new PlayerWidget( this );
 	addDockWidget( Qt::BottomDockWidgetArea, m_player );
 
+	// Create a lyric viewer window, hidden so far
 	m_viewer = new ViewWidget( this );
 
 	// Test window
@@ -75,7 +74,9 @@ MainWindow::MainWindow()
 	connectActions();
 	createToolbars();
 
-	setUnifiedTitleAndToolBarOnMac(true);
+	// Add WhatsThis action to the help menu
+	QAction * whatsthis = QWhatsThis::createAction( this );
+	menuHelp->insertAction( actionAbout, whatsthis );
 
 	// Validator icons
 	m_validatorIconRegular.addFile( ":/images/dryicons_application_search.png", QSize(), QIcon::Normal, QIcon::Off );
