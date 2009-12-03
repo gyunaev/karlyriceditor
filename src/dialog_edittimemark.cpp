@@ -30,7 +30,10 @@ DialogEditTimeMark::DialogEditTimeMark( bool has_pitch, QWidget * parent )
 	connect( pitchSpin, SIGNAL(valueChanged(int)), this, SLOT(pitchValueChanged(int)) );
 
 	if ( !has_pitch )
+	{
 		framePitch->hide();
+		resize( width(), 1 );
+	}
 }
 
 void DialogEditTimeMark::setPitch( int pitch )
