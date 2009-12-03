@@ -35,7 +35,7 @@
         <file>images/clear.png</file>
         <file>images/nocover.png</file>
         <file>images/quit.png</file>
-        <file>images/view_media_lyrics.png</file>
         <file>images/casio.jpg</file>
+        <file>images/application_icon.png</file>
     </qresource>
 </RCC>

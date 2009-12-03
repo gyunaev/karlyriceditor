@@ -52,7 +52,7 @@ MainWindow::MainWindow()
 	setupUi( this );
 
 	// Set the window icon
-	setWindowIcon( QIcon(":/images/view_media_lyrics.png") );
+	setWindowIcon( QIcon(":/images/application_icon.png") );
 
 	// Initialize stuff
 	m_project = 0;
