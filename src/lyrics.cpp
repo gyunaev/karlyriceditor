@@ -160,3 +160,10 @@ void Lyrics::clear()
 {
 	m_lyrics.clear();
 }
+
+QString Lyrics::pitchToNore( int pitch )
+{
+	static const char * notes[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+
+	return QString("%1, oct. %2") .arg( notes[ pitch % 12 ] ) .arg( pitch / 12 );
+}

@@ -61,6 +61,13 @@ enum
 };
 
 
+void Project::splitTimeMark( qint64 mark, int * min, int * sec, int * msec )
+{
+	*min = mark / 60000;
+	*sec = (mark - *min * 60000) / 1000;
+	*msec = mark - (*min * 60000 + *sec * 1000 );
+}
+
 Project::Project( Editor* editor )
 {
 	m_editor = editor;
@@ -381,9 +388,9 @@ QString	Project::exportLyricsAsLRC1()
 
 				// Insert timing mark
 				QString timetag;
-				int minute = lentry.timing / 60000;
-				int second = (lentry.timing - minute * 60000) / 1000;
-				int msecond = lentry.timing - (minute * 60000 + second * 1000 );
+				int minute, second, msecond;
+
+				splitTimeMark( lentry.timing, &minute, &second, &msecond );
 				timetag.sprintf( "%02d:%02d.%02d", minute, second, msecond / 10 );
 
 				if ( pos == 0 )
@@ -446,9 +453,9 @@ QString	Project::exportLyricsAsLRC2()
 
 				// Insert timing mark
 				QString timetag;
-				int minute = lentry.timing / 60000;
-				int second = (lentry.timing - minute * 60000) / 1000;
-				int msecond = lentry.timing - (minute * 60000 + second * 1000 );
+				int minute, second, msecond;
+
+				splitTimeMark( lentry.timing, &minute, &second, &msecond );
 				timetag.sprintf( "%02d:%02d.%02d", minute, second, msecond / 10 );
 
 				if ( pos == 0 )

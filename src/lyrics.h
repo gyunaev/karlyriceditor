@@ -81,6 +81,9 @@ class Lyrics
 		// Clear the lyrics
 		void	clear();
 
+		// Pitch text representation
+		static QString pitchToNore( int pitch );
+
 	private:
 		QList<Block>	m_lyrics;
 

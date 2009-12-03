@@ -90,6 +90,9 @@ class Project
 		// Clear the project
 		void	clear();
 
+		// Split the time mark
+		static void splitTimeMark( qint64 mark, int * min, int * sec, int * msec );
+
 	private:
 		bool	importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics );
 		bool	importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics );

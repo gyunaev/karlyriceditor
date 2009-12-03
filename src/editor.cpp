@@ -30,7 +30,7 @@
 #include "editor.h"
 #include "editortimemark.h"
 #include "settings.h"
-#include "ui_dialog_edittimemark.h"
+#include "dialog_edittimemark.h"
 
 
 Editor::Editor( QWidget * parent )
@@ -696,18 +696,19 @@ void Editor::mouseReleaseEvent ( QMouseEvent * event )
 		if ( !cur.isNull() )
 		{
 			qint64 mark = qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::TimeProperty ) );
+			int pitch = qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::PitchProperty ) );
 
-			QDialog dlg;
+			DialogEditTimeMark dlg( m_project->type() == Project::LyricType_UStar, this );
 			dlg.move( event->globalPos() );
-			Ui::TimeMarkEdit ui;
-			ui.setupUi( &dlg );
-			ui.lineEdit->setText( QString::number (mark) );
+			dlg.setTimemark( mark );
+			dlg.setPitch( pitch );
 
 			if ( dlg.exec() == QDialog::Accepted )
 			{
 				QTextCharFormat timemark;
 				timemark.setObjectType( EditorTimeMark::TimeTextFormat );
-				timemark.setProperty( EditorTimeMark::TimeProperty, ui.lineEdit->text().toLongLong() );
+				timemark.setProperty( EditorTimeMark::TimeProperty, dlg.timemark() );
+				timemark.setProperty( EditorTimeMark::PitchProperty, dlg.pitch() );
 				timemark.setProperty( EditorTimeMark::IdProperty, cur.charFormat().property( EditorTimeMark::IdProperty ).toInt() );
 
 				cur.beginEditBlock();
