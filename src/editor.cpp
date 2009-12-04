@@ -118,10 +118,7 @@ void Editor::insertTimeTag( qint64 timing )
 		{
 			// Text end?
 			if ( !block.next().isValid() )
-			{
-				curPos--;
 				break;
-			}
 
 			// Tell the rest of the code this is end of line
 			ch = QChar::LineSeparator;
@@ -203,7 +200,7 @@ void Editor::insertTimeTag( qint64 timing )
 
 	cur.setPosition( curPos, QTextCursor::MoveAnchor );
 	setTextCursor( cur );
-	ensureCursorVisible();
+	ensureCursorMiddle();
 }
 
 void Editor::removeLastTimeTag()
@@ -728,4 +725,20 @@ void Editor::cleanupAutoSave()
 	settings.remove( "editor/currentlyrics" );
 	settings.remove( "editor/projectmusic" );
 	settings.remove( "editor/lyricssize" );
+}
+
+
+void Editor::ensureCursorMiddle()
+{
+	// Adjust for non-common cases and horizontally
+	ensureCursorVisible();
+
+	// Now adjust vertically
+	QScrollBar * vbar = verticalScrollBar();
+	QRect crect = cursorRect( textCursor() );
+	const int halfHeight = viewport()->height() / 2;
+	const int curBottom = crect.y() + crect.height() + vbar->value();
+
+	if ( curBottom > vbar->value() + halfHeight )
+		vbar->setValue( qMax( 0, curBottom - halfHeight ) );
 }
