@@ -101,6 +101,7 @@ void PageMusicFile::browse()
 		return;
 
 	// Set the source, and wait for state change
+	m_mediaObject->clear();
 	m_mediaObject->setCurrentSource( filename );
 }
 
@@ -150,10 +151,17 @@ void PageMusicFile::phonon_StateChanged ( Phonon::State newstate, Phonon::State 
 		 || !m_mediaObject->isSeekable()
 		 || m_mediaObject->totalTime() == 0 )
 	{
-		QMessageBox::critical( 0,
+		// Phonon tends to send duplicate StateChanged messages when the previous file cannot be loaded
+		if ( m_lastMusicFile != m_mediaObject->currentSource().fileName() )
+		{
+			QMessageBox::critical( 0,
 							   tr("Error loading file"),
 							   tr("Music file %1 cannot be loaded.")
 								.arg( m_mediaObject->currentSource().fileName() ) );
+
+			m_lastMusicFile = m_mediaObject->currentSource().fileName();
+		}
+
 		return;
 	}
 
@@ -161,6 +169,7 @@ void PageMusicFile::phonon_StateChanged ( Phonon::State newstate, Phonon::State 
 		return;
 
 	// Fill the data
+	m_lastMusicFile = m_mediaObject->currentSource().fileName();
 	leSongFile->setText( m_mediaObject->currentSource().fileName() );
 
 	// Unfortunately Phonon-parsed metadata is a complete disaster.

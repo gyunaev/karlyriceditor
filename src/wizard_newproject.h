@@ -86,6 +86,7 @@ class PageMusicFile : public QWizardPage, public Ui::WizNewProject_MusicFile
 	private:
 		Phonon::MediaObject *	m_mediaObject;
 		Project *	m_project;
+		QString		m_lastMusicFile;
 };
 
 

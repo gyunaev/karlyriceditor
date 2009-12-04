@@ -75,6 +75,9 @@ class Editor : public QTextEdit
 		qint64		timeMarkValue( const QPoint& point );
 		QTextCursor timeMark( const QPoint& point );
 
+		// Ensure the cursor is in the middle of the screen if possible
+		void		ensureCursorMiddle();
+
 		void	cursorToLine( int line );
 
 		Project		 *	m_project;
