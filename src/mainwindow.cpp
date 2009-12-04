@@ -83,6 +83,9 @@ MainWindow::MainWindow()
 	m_validatorIconAccepted.addFile( ":/images/dryicons_application_accept.png", QSize(), QIcon::Normal, QIcon::Off );
 	m_validatorIconFailed.addFile( ":/images/dryicons_application_deny.png", QSize(), QIcon::Normal, QIcon::Off );
 
+	// Restore current directory
+	QDir::setCurrent( QSettings().value( "general/currentdirectory", "." ).toString() );
+
 	// Update window state
 	updateState();
 }
@@ -100,6 +103,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
 	}
 
 	editor->cleanupAutoSave();
+
+	// Save current directory
+	QSettings().setValue( "general/currentdirectory", QDir::currentPath() );
+
 	QMainWindow::closeEvent( event );
 	event->accept();
 }
