@@ -132,6 +132,7 @@
     <value type="QString" >KDE_SESSION_UID=1000</value>
     <value type="QString" >KDE_SESSION_VERSION=4</value>
     <value type="QString" >LANG=en_US.UTF-8</value>
+    <value type="QString" >LANGUAGE=</value>
     <value type="QString" >LD_LIBRARY_PATH=/usr/lib/qtcreator:/usr/lib/mpi/gcc/openmpi/lib</value>
     <value type="QString" >LESS=-M -I</value>
     <value type="QString" >LESSCLOSE=lessclose.sh %s %s</value>
@@ -235,6 +236,7 @@
     <value type="QString" >KDE_SESSION_UID=1000</value>
     <value type="QString" >KDE_SESSION_VERSION=4</value>
     <value type="QString" >LANG=en_US.UTF-8</value>
+    <value type="QString" >LANGUAGE=</value>
     <value type="QString" >LD_LIBRARY_PATH=/usr/lib/qtcreator:/usr/lib/mpi/gcc/openmpi/lib</value>
     <value type="QString" >LESS=-M -I</value>
     <value type="QString" >LESSCLOSE=lessclose.sh %s %s</value>

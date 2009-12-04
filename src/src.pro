@@ -21,7 +21,8 @@ HEADERS += mainwindow.h \
     recentfiles.h \
     colorbutton.h \
     dialog_selectencoding.h \
-    dialog_edittimemark.h
+    dialog_edittimemark.h \
+    gentlemessagebox.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -39,7 +40,8 @@ SOURCES += mainwindow.cpp \
     recentfiles.cpp \
     colorbutton.cpp \
     dialog_selectencoding.cpp \
-    dialog_edittimemark.cpp
+    dialog_edittimemark.cpp \
+    gentlemessagebox.cpp
 RESOURCES += resources.qrc
 QT += phonon
 FORMS += mainwindow.ui \
@@ -55,4 +57,5 @@ FORMS += mainwindow.ui \
     dialog_projectsettings.ui \
     dialog_settings.ui \
     dialog_edittimemark.ui \
-    dialog_selectencoding.ui
+    dialog_selectencoding.ui \
+    gentlemessagebox.ui

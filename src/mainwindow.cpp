@@ -34,6 +34,7 @@
 #include "version.h"
 #include "projectsettings.h"
 #include "recentfiles.h"
+#include "gentlemessagebox.h"
 #include "ui_dialog_about.h"
 
 
@@ -88,6 +89,14 @@ MainWindow::MainWindow()
 
 	// Update window state
 	updateState();
+
+	// Show some message boxes about Phonon
+	GentleMessageBox::warning( this,
+							   "phonongstreamer",
+							   tr("Advice: Is Phonon backend set to GStreamer?"),
+							   tr("GStreamer Phonon backend is more reliable than Xine for reporting time, "
+								  "so it is suggested to use it." ) );
+
 }
 
 MainWindow::~MainWindow()
@@ -208,6 +217,14 @@ void MainWindow::act_fileNewProject()
 	}
 
 	setCurrentProject( newproj );
+
+	GentleMessageBox::warning( this,
+							   "phononseeking",
+							   tr("Advice: Do not seek when using player"),
+							   tr("There is a bug in Qt 4.5 Phonon implementation which results in incorrect timings "
+								  "reported once the music file position has been changed by seeking. Do not move "
+								  "the position marker when you play the song if you're inserting timing marks, or "
+								  "testing the lyrics." ) );
 }
 
 void MainWindow::act_fileOpenProject()
@@ -483,6 +500,7 @@ void MainWindow::act_settingsGeneral()
 {
 	pSettings->edit();
 }
+
 
 void MainWindow::act_helpAbout()
 {
