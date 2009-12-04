@@ -53,6 +53,9 @@
         <property name="text">
          <string>Pause</string>
         </property>
+        <property name="shortcut">
+         <string>Alt+P</string>
+        </property>
        </widget>
       </item>
       <item>
@@ -223,6 +226,6 @@ p, li { white-space: pre-wrap; }
  </customwidgets>
  <resources>
   <include location="resources.qrc"/>
-   </resources>
+ </resources>
  <connections/>
 </ui>
