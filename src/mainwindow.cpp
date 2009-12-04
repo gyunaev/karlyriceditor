@@ -93,9 +93,9 @@ MainWindow::MainWindow()
 	// Show some message boxes about Phonon
 	GentleMessageBox::warning( this,
 							   "phonongstreamer",
-							   tr("Advice: Is Phonon backend set to GStreamer?"),
-							   tr("GStreamer Phonon backend is more reliable than Xine for reporting time, "
-								  "so it is suggested to use it." ) );
+							   tr("Advice: set Phonon backend to Xine?"),
+							   tr("GStreamer Phonon backend is less reliable than Xine for reporting time, "
+								  "so it is suggested to use Xine backend." ) );
 
 }
 
