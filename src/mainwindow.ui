@@ -301,7 +301,7 @@ If you want to delete the timing mark or placeholder under cursor, just press'De
      <normaloff>:/images/dryicons_process.png</normaloff>:/images/dryicons_process.png</iconset>
    </property>
    <property name="text">
-    <string>Settings...</string>
+    <string>Application Settings...</string>
    </property>
    <property name="toolTip">
     <string>Change the application settings</string>
