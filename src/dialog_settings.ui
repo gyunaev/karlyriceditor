@@ -560,7 +560,7 @@ p, li { white-space: pre-wrap; }
           <item>
            <widget class="QLabel" name="label_15">
             <property name="text">
-             <string>Delay between Phonon plays the song and tick() signal:</string>
+             <string>Audio delay introduced by Phonon:</string>
             </property>
            </widget>
           </item>

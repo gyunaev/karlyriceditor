@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Terminal=false
+Categories=Multimedia;Karaoke
+Name=Karaoke Lyric Editor
+Encoding=UTF-8
+Icon=/usr/share/pixmaps/karlyriceditor.png
+Exec=karlyriceditor

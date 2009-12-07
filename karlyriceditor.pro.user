@@ -133,7 +133,6 @@
     <value type="QString" >KDE_SESSION_VERSION=4</value>
     <value type="QString" >LADSPA_PATH=/usr/lib/ladspa</value>
     <value type="QString" >LANG=en_US.UTF-8</value>
-    <value type="QString" >LANGUAGE=</value>
     <value type="QString" >LD_LIBRARY_PATH=/usr/lib/qtcreator:/usr/lib/mpi/gcc/openmpi/lib</value>
     <value type="QString" >LESS=-M -I</value>
     <value type="QString" >LESSCLOSE=lessclose.sh %s %s</value>
@@ -193,7 +192,7 @@
     <value type="QString" >CONFIG+=debug</value>
    </valuelist>
    <value key="abstractProcess.command" type="QString" >/usr/bin/qmake</value>
-   <value key="abstractProcess.enabled" type="bool" >false</value>
+   <value key="abstractProcess.enabled" type="bool" >true</value>
    <value key="abstractProcess.workingDirectory" type="QString" >/home/tim/work/my/karlyriceditor</value>
    <value key="buildConfiguration" type="int" >2</value>
   </valuemap>
@@ -238,7 +237,6 @@
     <value type="QString" >KDE_SESSION_VERSION=4</value>
     <value type="QString" >LADSPA_PATH=/usr/lib/ladspa</value>
     <value type="QString" >LANG=en_US.UTF-8</value>
-    <value type="QString" >LANGUAGE=</value>
     <value type="QString" >LD_LIBRARY_PATH=/usr/lib/qtcreator:/usr/lib/mpi/gcc/openmpi/lib</value>
     <value type="QString" >LESS=-M -I</value>
     <value type="QString" >LESSCLOSE=lessclose.sh %s %s</value>
