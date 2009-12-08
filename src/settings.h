@@ -67,8 +67,12 @@ class Settings
 
 		QColor		m_timeMarkPlaceholderBackground;
 		QColor		m_timeMarkTimeBackground;
+		QColor		m_timeMarkPitchBackground; // background for timing marks which have both time and pitch
 		QColor		m_timeMarkPlaceholderText;
 		QColor		m_timeMarkTimeText;
+
+		// Whether to show pitch in timing mark
+		bool		m_timeMarkShowPitch;
 
 		// Preview window font family and size
 		QString		m_previewFontFamily;

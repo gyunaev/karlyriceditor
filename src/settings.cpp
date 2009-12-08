@@ -46,6 +46,8 @@ Settings::Settings()
 	m_timeMarkTimeBackground = QColor( settings.value( "timemark/timebgcolor", "yellow" ).toString() );
 	m_timeMarkPlaceholderText = QColor( settings.value( "timemark/placeholdertextgcolor", "black" ).toString() );
 	m_timeMarkTimeText = QColor( settings.value( "timemark/timetextcolor", "black" ).toString() );
+	m_timeMarkPitchBackground = QColor( settings.value( "timemark/pitchbgcolor", "green" ).toString() );
+	m_timeMarkShowPitch = settings.value( "timemark/showpitch", true ).toBool();;
 
 	m_previewFontFamily = settings.value( "preview/fontfamily", "arial" ).toString();
 	m_previewFontSize = settings.value( "preview/fontsize", 24 ).toInt();
@@ -79,6 +81,8 @@ void Settings::edit()
 	ui.btnTimingColorPhText->setColor( m_timeMarkPlaceholderText );
 	ui.btnTimingColorTiBg->setColor( m_timeMarkTimeBackground );
 	ui.btnTimingColorTiText->setColor( m_timeMarkTimeText );
+	ui.btnTimingColorTiPitch->setColor( m_timeMarkPitchBackground );
+	ui.cbShowPitchTimingMark->setChecked( m_timeMarkShowPitch );
 
 	ui.fontPreview->setCurrentFont( QFont( m_previewFontFamily ) );
 	ui.fontPreviewSize->setValue( m_previewFontSize );
@@ -107,6 +111,8 @@ void Settings::edit()
 	m_timeMarkPlaceholderText = ui.btnTimingColorPhText->color();
 	m_timeMarkTimeBackground = ui.btnTimingColorTiBg->color();
 	m_timeMarkTimeText = ui.btnTimingColorTiText->color();
+	m_timeMarkPitchBackground = ui.btnTimingColorTiPitch->color();
+	m_timeMarkShowPitch = ui.cbShowPitchTimingMark->isChecked();
 
 	m_previewFontFamily = ui.fontPreview->currentFont().family();
 	m_previewFontSize = ui.fontPreviewSize->value();
@@ -135,6 +141,8 @@ void Settings::edit()
 	settings.setValue( "timemark/timebgcolor", m_timeMarkTimeBackground.name() );
 	settings.setValue( "timemark/placeholdertextgcolor", m_timeMarkPlaceholderText.name() );
 	settings.setValue( "timemark/timetextcolor", m_timeMarkTimeText.name() );
+	settings.setValue( "timemark/pitchbgcolor", m_timeMarkPitchBackground.name() );
+	settings.setValue( "timemark/showpitch", m_timeMarkShowPitch );
 
 	settings.setValue( "preview/fontfamily", m_previewFontFamily );
 	settings.setValue( "preview/fontsize", m_previewFontSize );

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>574</width>
-    <height>334</height>
+    <height>351</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -382,6 +382,64 @@ p, li { white-space: pre-wrap; }
           </widget>
          </item>
         </layout>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_9">
+         <property name="title">
+          <string>Ultrastar-specific</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_9">
+          <item>
+           <widget class="QLabel" name="label_18">
+            <property name="whatsThis">
+             <string>Background color for a timing mark which contains both time and pitch. Making it different from timing mark background color above would make it easier to detect timing marks which do not have pitch seet yet.</string>
+            </property>
+            <property name="text">
+             <string>Background color:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="ColorButton" name="btnTimingColorTiPitch">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>1</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="whatsThis">
+             <string>Background color for a timing mark which contains both time and pitch. Making it different from timing mark background color above would make it easier to detect timing marks which do not have pitch seet yet.</string>
+            </property>
+            <property name="text">
+             <string>PushButton</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>26</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="cbShowPitchTimingMark">
+            <property name="whatsThis">
+             <string>If checked, the timing mark will also show the pitch. It takes more screen space, but also provides more information. The pitch will only be shown for lyric formats which suport it (only UltraStar so far).</string>
+            </property>
+            <property name="text">
+             <string>Show pitch in timing mark if available</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </item>
        <item>
         <spacer name="verticalSpacer">
