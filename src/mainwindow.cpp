@@ -543,9 +543,16 @@ void MainWindow::updateState()
 
 	if ( project_ready )
 	{
-		setWindowModified( m_project->isModified() );
-
 		if ( m_project->isModified() )
+		{
 			actionValidate_lyrics->setIcon( m_validatorIconRegular );
+			setWindowModified( true );
+			actionSave->setEnabled( true );
+		}
+		else
+		{
+			setWindowModified( false );
+			actionSave->setEnabled( false );
+		}
 	}
 }
