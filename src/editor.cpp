@@ -75,7 +75,7 @@ void Editor::insertTimeTag( qint64 timing )
 
 	if ( cur.charFormat().objectType() == EditorTimeMark::TimeTextFormat
 	&& timing > 0 // only when playing
-	&& qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::TimeProperty ) ) == 0 ) // only placeholders
+	&& cur.charFormat().property( EditorTimeMark::TimeProperty ).toLongLong() == 0 ) // only placeholders
 	{
 		cur.deletePreviousChar();
 		was_time_mark_deleted = true;
@@ -86,9 +86,8 @@ void Editor::insertTimeTag( qint64 timing )
 
 	QTextCharFormat timemark;
 	timemark.setObjectType( EditorTimeMark::TimeTextFormat );
-
-	// Since the EditorTimeMark object is not constructed directly, pass the values
 	timemark.setProperty( EditorTimeMark::TimeProperty, timing );
+	timemark.setProperty( EditorTimeMark::PitchProperty, (int) -1 );
 	timemark.setProperty( EditorTimeMark::IdProperty, m_timeId );
 
 	// Add the image
@@ -216,7 +215,7 @@ void Editor::removeLastTimeTag()
 
 			if ( fmt.objectType() == EditorTimeMark::TimeTextFormat )
 			{
-				unsigned int mark = qVariantValue<unsigned int>( fmt.property( EditorTimeMark::IdProperty ) );
+				unsigned int mark = fmt.property( EditorTimeMark::IdProperty ).toUInt();
 
 				if ( mark == m_timeId )
 				{
@@ -304,7 +303,16 @@ QString	Editor::exportToString()
 			QTextCharFormat fmt = it.fragment().charFormat();
 
 			if ( fmt.objectType() == EditorTimeMark::TimeTextFormat )
-				outstr += QString("<%1>").arg( qVariantValue<qint64>( fmt.property( EditorTimeMark::TimeProperty ) ) );
+			{
+				if ( fmt.property( EditorTimeMark::PitchProperty ).toInt() != -1 )
+				{
+					outstr += QString("<%1|%2>")
+						.arg( fmt.property( EditorTimeMark::TimeProperty ).toLongLong() )
+						.arg( fmt.property( EditorTimeMark::PitchProperty ).toInt() );
+				}
+				else
+					outstr += QString("<%1>").arg( fmt.property( EditorTimeMark::TimeProperty ).toLongLong() );
+			}
 			else
 			{
 				QString saved = it.fragment().text();
@@ -372,9 +380,20 @@ bool Editor::importFromString( const QString& strlyrics )
 		{
 			QTextCharFormat timemark;
 			timemark.setObjectType( EditorTimeMark::TimeTextFormat );
+			qint64 timing = 0;
+			int pitch = -1;
 
-			// Since the EditorTimeMark object is not constructed directly, pass the values
-			timemark.setProperty( EditorTimeMark::TimeProperty, (qint64) saved.toLongLong() );
+			if ( saved.contains( '|' ) )
+			{
+				QStringList values = saved.split( '|' );
+				timing = values[0].toLongLong();
+				pitch = values[1].toInt();
+			}
+			else
+				timing = saved.toLongLong();
+
+			timemark.setProperty( EditorTimeMark::TimeProperty, timing );
+			timemark.setProperty( EditorTimeMark::PitchProperty, pitch );
 			timemark.setProperty( EditorTimeMark::IdProperty, 0 );
 
 			textCursor().insertText( QString(QChar::ObjectReplacementCharacter), timemark );
@@ -416,7 +435,8 @@ Lyrics Editor::exportLyrics()
 				// Store old entry if any
 				lyrics.curLyricAdd();
 
-				lyrics.curLyricSetTime( qVariantValue<qint64>( fmt.property( EditorTimeMark::TimeProperty ) ) );
+				lyrics.curLyricSetTime( fmt.property( EditorTimeMark::TimeProperty ).toLongLong() );
+				lyrics.curLyricSetPitch( fmt.property( EditorTimeMark::PitchProperty ).toInt() );
 			}
 			else
 			{
@@ -514,7 +534,7 @@ bool Editor::validate()
 
 			if ( fmt.objectType() == EditorTimeMark::TimeTextFormat )
 			{
-				qint64 mark = qVariantValue<qint64>( fmt.property( EditorTimeMark::TimeProperty ) );
+				qint64 mark = fmt.property( EditorTimeMark::TimeProperty ).toLongLong();
 
 				// 0 - placeholder
 				if ( mark == 0 )
@@ -652,7 +672,7 @@ qint64 Editor::timeMarkValue( const QPoint& point )
 	QTextCursor cur = timeMark( point );
 
 	if ( !cur.isNull() )
-		return qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::TimeProperty ) );
+		return cur.charFormat().property( EditorTimeMark::TimeProperty ).toLongLong();
 	else
 		return -1;
 }
@@ -691,8 +711,8 @@ void Editor::mouseReleaseEvent ( QMouseEvent * event )
 
 		if ( !cur.isNull() )
 		{
-			qint64 mark = qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::TimeProperty ) );
-			int pitch = qVariantValue<qint64>( cur.charFormat().property( EditorTimeMark::PitchProperty ) );
+			qint64 mark = cur.charFormat().property( EditorTimeMark::TimeProperty ).toLongLong();
+			int pitch = cur.charFormat().property( EditorTimeMark::PitchProperty ).toInt();
 
 			DialogEditTimeMark dlg( m_project->type() == Project::LyricType_UStar, this );
 			dlg.move( event->globalPos() );

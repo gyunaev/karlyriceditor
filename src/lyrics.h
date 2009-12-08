@@ -81,7 +81,7 @@ class Lyrics
 		void	clear();
 
 		// Pitch text representation
-		static QString pitchToNore( int pitch );
+		static QString pitchToNote( int pitch, bool show_octave = true );
 
 	private:
 		QList<Block>	m_lyrics;

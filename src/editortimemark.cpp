@@ -21,6 +21,7 @@
 
 #include "editortimemark.h"
 #include "settings.h"
+#include "lyrics.h"
 
 // constants
 static const int X_SPACE = 3;
@@ -31,6 +32,7 @@ EditorTimeMark::EditorTimeMark()
 	: QObject(), QTextObjectInterface()
 {
 	m_timing = -1;
+	m_pitch = -1;
 }
 
 QSizeF EditorTimeMark::intrinsicSize( QTextDocument *, int, const QTextFormat& format )
@@ -48,12 +50,14 @@ void EditorTimeMark::drawObject( QPainter *painter, const QRectF &rect, QTextDoc
 
 void EditorTimeMark::updatePixmapIfNecessary( const QTextFormat &format )
 {
-	qint64 timing = qVariantValue<qint64>( format.property( TimeProperty ) );
+	qint64 timing = format.property( TimeProperty ).toLongLong();
+	int pitch = format.property( PitchProperty ).toInt();
 
-	if ( timing == m_timing )
+	if ( timing == m_timing && pitch == m_pitch )
 		return;
 
 	m_timing = timing;
+	m_pitch = pitch;
 
 	QString mark;
 	QColor bgcolor, fgcolor;
@@ -65,14 +69,18 @@ void EditorTimeMark::updatePixmapIfNecessary( const QTextFormat &format )
 		int msecond = timing - (minute * 60000 + second * 1000 );
 
 		mark.sprintf( "%02d:%02d.%d", minute, second, msecond / 10 );
-		m_tooltip = tr("Time: %1") .arg(mark);
 		bgcolor = pSettings->m_timeMarkTimeBackground;
 		fgcolor = pSettings->m_timeMarkTimeText;
+
+		if ( pitch != -1 && pSettings->m_timeMarkShowPitch )
+		{
+			mark += " " + Lyrics::pitchToNote( pitch, false );
+			bgcolor = pSettings->m_timeMarkPitchBackground;
+		}
 	}
 	else
 	{
 		mark = "<->"; // a placeholder
-		m_tooltip = tr("Placeholder for timing mark");
 		bgcolor = pSettings->m_timeMarkPlaceholderBackground;
 		fgcolor = pSettings->m_timeMarkPlaceholderText;
 	}
