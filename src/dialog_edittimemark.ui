@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>165</width>
-    <height>79</height>
+    <width>188</width>
+    <height>134</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -52,14 +52,24 @@
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QLabel" name="pitchNote">
-        <property name="text">
-         <string>&lt;note&gt;</string>
-        </property>
-       </widget>
-      </item>
      </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="pitchNote">
+     <property name="text">
+      <string>&lt;note&gt;</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
     </widget>
    </item>
   </layout>
@@ -67,34 +77,34 @@
  <resources/>
  <connections>
   <connection>
-   <sender>timeEdit</sender>
-   <signal>editingFinished()</signal>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
    <receiver>TimeMarkEdit</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>133</x>
-     <y>18</y>
+     <x>45</x>
+     <y>88</y>
     </hint>
     <hint type="destinationlabel">
-     <x>169</x>
-     <y>79</y>
+     <x>57</x>
+     <y>113</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>pitchSpin</sender>
-   <signal>editingFinished()</signal>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
    <receiver>TimeMarkEdit</receiver>
-   <slot>accept()</slot>
+   <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>79</x>
-     <y>61</y>
+     <x>137</x>
+     <y>101</y>
     </hint>
     <hint type="destinationlabel">
-     <x>98</x>
-     <y>85</y>
+     <x>150</x>
+     <y>113</y>
     </hint>
    </hints>
   </connection>

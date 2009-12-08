@@ -45,15 +45,13 @@ class EditorTimeMark : public QObject, public QTextObjectInterface
 		void drawObject( QPainter *painter, const QRectF &rect, QTextDocument *doc,
 						 int posInDocument, const QTextFormat &format );
 
-		QString toolTip() const { return m_tooltip; }
-
 	private:
 		void updatePixmapIfNecessary( const QTextFormat &format );
 
 	private:
 		qint64		m_timing;
+		int			m_pitch;
 		QPixmap		m_pixmap;
-		QString		m_tooltip;
 };
 
 

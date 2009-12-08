@@ -26,12 +26,17 @@ DialogEditTimeMark::DialogEditTimeMark( bool has_pitch, QWidget * parent )
 {
 	setupUi( this );
 
-	connect( pitchSpin, SIGNAL(valueChanged(int)), this, SLOT(pitchValueChanged(int)) );
-
 	if ( !has_pitch )
 	{
 		framePitch->hide();
+		buttonBox->hide();
+
+		connect( timeEdit, SIGNAL(editingFinished()), this, SLOT(accept()) );
 		resize( width(), 1 );
+	}
+	else
+	{
+		connect( pitchSpin, SIGNAL(valueChanged(int)), this, SLOT(pitchValueChanged(int)) );
 	}
 }
 
@@ -63,7 +68,7 @@ qint64 DialogEditTimeMark::timemark() const
 void DialogEditTimeMark::pitchValueChanged( int newpitch )
 {
 	if ( newpitch == -1 )
-		pitchNote->setText( tr("None") );
+		pitchNote->setText( tr("Note: none") );
 	else
-		pitchNote->setText( Lyrics::pitchToNore( newpitch ) );
+		pitchNote->setText( tr("Note: %1") .arg( Lyrics::pitchToNote( newpitch ) ) );
 }
