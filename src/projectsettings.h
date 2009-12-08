@@ -34,6 +34,7 @@ class ProjectSettings : public QDialog, public Ui::DialogProjectSettings
 
 	public slots:
 		void	browseMusicFile();
+		void	changeProjectType();
 		void	accept();
 
 	private:

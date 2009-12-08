@@ -29,6 +29,9 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 	setupUi( this );
 
 	connect( btnBrowse, SIGNAL(clicked()), this, SLOT(browseMusicFile()) );
+	connect( rbLRC1, SIGNAL( toggled(bool)), this, SLOT(changeProjectType()) );
+	connect( rbLRC2, SIGNAL( toggled(bool)), this, SLOT(changeProjectType()) );
+	connect( rbLRC3, SIGNAL( toggled(bool)), this, SLOT(changeProjectType()) );
 
 	m_project = proj;
 	m_musicFileChanged = false;
@@ -116,6 +119,36 @@ void ProjectSettings::browseMusicFile()
 		return;
 
 	leSongFile->setText( filename );
+}
+
+void ProjectSettings::changeProjectType()
+{
+	// Init advanced params
+	if ( !rbLRC3->isChecked() )
+	{
+		groupLRC->show();
+
+		// Hide Ultrastar-specific fields
+		labelUSbpmgap->hide();
+		labelMusicFile->hide();
+		leUSmp3->hide();
+
+		// Hide ultrastar group
+		groupUStar->hide();
+	}
+	else
+	{
+		// Hide LRC group
+		groupLRC->hide();
+
+		// Hide Ultrastar-specific fields
+		labelUSbpmgap->show();
+		labelMusicFile->show();
+		leUSmp3->show();
+
+		// Hide ultrastar group
+		groupUStar->show();
+	}
 }
 
 void ProjectSettings::accept()
