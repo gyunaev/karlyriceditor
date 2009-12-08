@@ -33,8 +33,14 @@ class ColorButton : public QPushButton
 		void	setColor( const QColor& color );
 		QColor	color() const;
 
+	protected:
+		void	paintEvent( QPaintEvent * event );
+
 	private slots:
 		void	btnClicked();
+
+	private:
+		QColor	m_selectedColor;
 };
 
 #endif // COLORBUTTON_H

@@ -17,6 +17,7 @@
  **************************************************************************/
 
 #include <QColorDialog>
+#include <QPainter>
 
 #include "colorbutton.h"
 
@@ -29,18 +30,15 @@ ColorButton::ColorButton( QWidget * parent )
 void ColorButton::setColor( const QColor& color )
 {
 	// After the constructor is called, UIC-generated code calls setLabel, so we overwrite it here
-	setText( tr("Select") );
+	setText( tr("") );
 
-	// Background color
-	QPalette pal = palette();
-	pal.setColor( QPalette::Button, color );
-	setPalette( pal );
+	m_selectedColor = color;
 	update();
 }
 
 QColor ColorButton::color() const
 {
-	return palette().color( QPalette::Button );
+	return m_selectedColor;
 }
 
 void ColorButton::btnClicked()
@@ -49,4 +47,24 @@ void ColorButton::btnClicked()
 
 	if ( newcolor.isValid() )
 		setColor( newcolor );
+}
+
+void ColorButton::paintEvent( QPaintEvent * event )
+{
+	QPushButton::paintEvent( event );
+
+	// Paint a rectangle
+	QPainter painter (this);
+
+	// Take 50% of height and 80% of width
+	int rectwidth = width() * 0.8;
+	int rectheight = height() * 0.5;
+
+	QRect rect( (width() - rectwidth) / 2, (height() - rectheight) / 2, rectwidth, rectheight );
+
+	if ( isDown() )
+		rect.translate( 1, 1 );
+
+	painter.fillRect( rect, m_selectedColor );
+	painter.end();
 }
