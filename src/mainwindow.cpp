@@ -22,6 +22,9 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QWhatsThis>
+#include <QDateTime>
+#include <QDesktopServices>
+#include <QUrl>
 
 #include "wizard_newproject.h"
 #include "mainwindow.h"
@@ -34,6 +37,7 @@
 #include "projectsettings.h"
 #include "recentfiles.h"
 #include "gentlemessagebox.h"
+#include "checknewversion.h"
 #include "ui_dialog_about.h"
 
 
@@ -96,10 +100,37 @@ MainWindow::MainWindow()
 							   tr("GStreamer Phonon backend is less reliable than Xine for reporting time, "
 								  "so it is suggested to use Xine backend." ) );
 
+	checkNewVersionAvailable();
 }
 
 MainWindow::~MainWindow()
 {
+}
+
+void MainWindow::checkNewVersionAvailable()
+{
+	QSettings settings;
+
+	if ( !pSettings->m_checkForUpdates )
+		return;
+
+	if ( settings.contains( "advanced/lastupdate" ) )
+	{
+		QDateTime lastupdate = settings.value( "advanced/lastupdate" ).toDateTime();
+
+		if ( lastupdate.secsTo( QDateTime::currentDateTime() ) < 86400 )
+			return;
+	}
+
+	// Create a New version available object if necessary. This object will auto-delete itself
+	CheckNewVersion * pNewVer = new CheckNewVersion();
+
+	connect( pNewVer, SIGNAL(error(int)), this, SLOT(newVerAvailError(int)) );
+	connect( pNewVer, SIGNAL(newVersionAvailable(QMap<QString,QString>)), this, SLOT(newVerAvailable(QMap<QString,QString>)) );
+
+	pNewVer->setUrl( "http://www.karlyriceditor.com/latestversion.txt" );
+	pNewVer->setCurrentVersion( QString("%1.%2").arg( APP_VERSION_MAJOR ) . arg( APP_VERSION_MINOR ) );
+	pNewVer->start();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -555,4 +586,26 @@ void MainWindow::updateState()
 			actionSave->setEnabled( false );
 		}
 	}
+}
+
+void MainWindow::newVerAvailError( int  )
+{
+	statusBar()->showMessage( tr("Unable to check whether a new version is available"), 2000 );
+}
+
+void MainWindow::newVerAvailable( QMap<QString,QString> metadata )
+{
+	QSettings().setValue( "advanced/lastupdate", QDateTime::currentDateTime() );
+
+	if ( QMessageBox::question( 0,
+			tr("New version available"),
+			tr("<html>A new version <b>%1</b> of Karaoke Lyrics Editor is available!\n\n"
+			   "Do you want to visit the application web site %2?")
+					.arg( metadata["Version"] )
+					.arg( metadata["URL"] ),
+				QMessageBox::Yes | QMessageBox::No,
+				QMessageBox::Yes ) == QMessageBox::No )
+			return;
+
+	QDesktopServices::openUrl ( QUrl(metadata["URL"]) );
 }

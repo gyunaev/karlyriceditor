@@ -34,6 +34,9 @@ class Settings
 		// signal. To compensate for this delay, output lyrics should include it.
 		int			m_phononSoundDelay;
 
+		// Check for updates
+		bool		m_checkForUpdates;
+
 		// When moving the cursor after inserting the tag,
 		// also stop at the line ends.
 		bool		m_editorStopAtLineEnd;

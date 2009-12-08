@@ -22,7 +22,8 @@ HEADERS += mainwindow.h \
     colorbutton.h \
     dialog_selectencoding.h \
     dialog_edittimemark.h \
-    gentlemessagebox.h
+    gentlemessagebox.h \
+    checknewversion.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -41,7 +42,8 @@ SOURCES += mainwindow.cpp \
     colorbutton.cpp \
     dialog_selectencoding.cpp \
     dialog_edittimemark.cpp \
-    gentlemessagebox.cpp
+    gentlemessagebox.cpp \
+    checknewversion.cpp
 RESOURCES += resources.qrc
 QT += phonon
 FORMS += mainwindow.ui \

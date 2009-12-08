@@ -68,10 +68,15 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 
 		void	openRecentFile( const QString& file );
 
+		// New version available
+		void	newVerAvailError( int errorcode );
+		void	newVerAvailable( QMap<QString,QString> metadata );
+
 	protected:
 		void	closeEvent(QCloseEvent *event);
 
 	private:
+		void	checkNewVersionAvailable();
 		void	connectActions();
 		void	createToolbars();
 		void	setCurrentProject( Project * proj );

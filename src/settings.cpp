@@ -17,6 +17,7 @@
  **************************************************************************/
 
 #include <QSettings>
+#include <QDateTime>
 #include <QDialog>
 #include "ui_dialog_settings.h"
 
@@ -29,6 +30,7 @@ Settings::Settings()
 	QSettings settings;
 
 	m_phononSoundDelay = settings.value( "advanced/phononsounddelay", 250 ).toInt();
+	m_checkForUpdates = settings.value( "advanced/checkforupdates", true ).toBool();
 
 	m_editorStopAtLineEnd = settings.value( "editor/stopatlineend", true ).toBool();
 	m_editorStopNextWord = settings.value( "editor/stopatnextword", false ).toBool();
@@ -58,6 +60,7 @@ Settings::Settings()
 
 void Settings::edit()
 {
+	QSettings settings;
 	QDialog dlg;
 	Ui::DialogSettings ui;
 
@@ -90,11 +93,19 @@ void Settings::edit()
 	ui.btnPreviewColorBg->setColor( m_previewBackground );
 	ui.btnPreviewColorInactive->setColor( m_previewTextInactive );
 
+	ui.cbCheckForUpdates->setChecked( m_checkForUpdates );
+
+	if ( settings.contains( "advanced/lastupdate" ) )
+		ui.lblLastUpdate->setText( QObject::tr("Last checked: %1")
+			.arg( settings.value( "advanced/lastupdate" ).toDateTime().toString( Qt::SystemLocaleShortDate ) ) );
+
 	if ( dlg.exec() == QDialog::Rejected )
 		return;
 
 	// Get the values
 	m_phononSoundDelay = ui.leTickDelay->text().toInt();
+	m_checkForUpdates = ui.cbCheckForUpdates->isChecked();
+
 	m_editorWordChars = ui.leEditorWordCount->text().toInt();
 	m_editorMaxBlock = ui.leEditorBlockLines->text().toInt();
 
@@ -121,9 +132,8 @@ void Settings::edit()
 	m_previewTextInactive = ui.btnPreviewColorInactive->color();
 
 	// And save them
-	QSettings settings;
-
 	settings.setValue( "advanced/phononsounddelay", m_phononSoundDelay );
+	settings.setValue( "advanced/checkforupdates", m_checkForUpdates );
 
 	settings.setValue( "editor/stopatlineend", m_editorStopAtLineEnd );
 	settings.setValue( "editor/stopatnextword", m_editorStopNextWord );
