@@ -65,6 +65,8 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	act_projectSettings();
 
 		void	act_settingsGeneral();
+		void	act_settingsShowPlayer( bool checked );
+		void	act_settingsShowPianoRoll( bool checked );
 
 		void	act_helpAbout();
 
@@ -77,6 +79,10 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		// Piano roll
 		void	noteMouseOver( unsigned int pitch );
 		void	noteClicked( unsigned int pitch );
+
+		// Dock widgets
+		void	visibilityPianoRoll( bool visible );
+		void	visibilityPlayer( bool visible );
 
 	protected:
 		void	closeEvent(QCloseEvent *event);

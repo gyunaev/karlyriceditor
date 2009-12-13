@@ -37,5 +37,6 @@
         <file>images/quit.png</file>
         <file>images/casio.jpg</file>
         <file>images/application_icon.png</file>
+        <file>images/piano.png</file>
     </qresource>
 </RCC>

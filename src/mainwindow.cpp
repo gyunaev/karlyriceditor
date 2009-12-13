@@ -62,10 +62,12 @@ MainWindow::MainWindow()
 	// Create dock widgets
 	m_player = new PlayerWidget( this );
 	addDockWidget( Qt::BottomDockWidgetArea, m_player );
+	actionShow_Player_dock_wingow->setChecked( true );
 
 	m_pianoRoll = new PianoRollDock( this );
 	addDockWidget( Qt::TopDockWidgetArea, m_pianoRoll );
 	m_pianoRoll->hide();
+	actionShow_Piano_Roll_dock_window->setChecked( false );
 
 	// Create a lyric viewer window, hidden so far
 	m_viewer = new ViewWidget( this );
@@ -175,6 +177,12 @@ void MainWindow::connectActions()
 	connect( actionValidate_lyrics, SIGNAL( triggered()), this, SLOT( act_projectValidateLyrics()) );
 	connect( actionView_lyric_file, SIGNAL( triggered()), this, SLOT( act_projectViewLyricFile()) );
 	connect( actionTest_lyric_file, SIGNAL( triggered()), this, SLOT( act_projectTest()) );
+	connect( actionShow_Piano_Roll_dock_window, SIGNAL(triggered(bool)), this, SLOT(act_settingsShowPianoRoll(bool)) );
+	connect( actionShow_Player_dock_wingow, SIGNAL(triggered(bool)), this, SLOT(act_settingsShowPlayer(bool)) );
+
+	// docks
+	connect( m_player,SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPlayer(bool)) );
+	connect( m_pianoRoll, SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPianoRoll(bool)) );
 
 	// Text editor
 	connect( actionUndo, SIGNAL( triggered()), editor, SLOT( undo()) );
@@ -631,4 +639,30 @@ void MainWindow::noteMouseOver( unsigned int pitch )
 void MainWindow::noteClicked( unsigned int pitch )
 {
 	editor->pianoRollClicked( pitch );
+}
+
+void MainWindow::act_settingsShowPlayer( bool checked )
+{
+	if ( checked )
+		m_player->show();
+	else
+		m_player->hide();
+}
+
+void MainWindow::act_settingsShowPianoRoll( bool checked )
+{
+	if ( checked )
+		m_pianoRoll->show();
+	else
+		m_pianoRoll->hide();
+}
+
+void MainWindow::visibilityPianoRoll( bool visible )
+{
+	actionShow_Piano_Roll_dock_window->setChecked( visible );
+}
+
+void MainWindow::visibilityPlayer( bool visible )
+{
+	actionShow_Player_dock_wingow->setChecked( visible );
 }

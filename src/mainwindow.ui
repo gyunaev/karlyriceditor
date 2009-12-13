@@ -70,6 +70,9 @@
      <string>Settings</string>
     </property>
     <addaction name="actionGeneral"/>
+    <addaction name="separator"/>
+    <addaction name="actionShow_Player_dock_wingow"/>
+    <addaction name="actionShow_Piano_Roll_dock_window"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -425,6 +428,30 @@ Note that for formats which support blocks nothing will be shown until it's less
    </property>
    <property name="whatsThis">
     <string>This action validates the lyrics according to current format. Validation makes sure the format is correct, that all required timing tags are present, and all restrictions set up in settings are met. Export, view and testing lyrics also execute validation before doing the action.</string>
+   </property>
+  </action>
+  <action name="actionShow_Player_dock_wingow">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/images/dryicons_music.png</normaloff>:/images/dryicons_music.png</iconset>
+   </property>
+   <property name="text">
+    <string>Show Player dock wingow</string>
+   </property>
+  </action>
+  <action name="actionShow_Piano_Roll_dock_window">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/images/piano.png</normaloff>:/images/piano.png</iconset>
+   </property>
+   <property name="text">
+    <string>Show Piano Roll dock window</string>
    </property>
   </action>
  </widget>
