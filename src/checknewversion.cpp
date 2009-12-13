@@ -29,7 +29,7 @@
 #include "checknewversion.h"
 
 // Uncomment this to enable debugging messages
-#define ENABLE_DEBUG_MESSAGES
+//#define ENABLE_DEBUG_MESSAGES
 
 
 CheckNewVersion::CheckNewVersion()
@@ -40,7 +40,7 @@ CheckNewVersion::CheckNewVersion()
 	m_inputOffset = 0;
 	m_inputBuffer.resize( 8192 );
 
-	qRegisterMetaType< QMap<QString,QString> >("QMap<QString,QString>");
+	qRegisterMetaType< NewVersionMetaMap >("NewVersionMetaMap");
 }
 
 void CheckNewVersion::setUrl( const QString& url )

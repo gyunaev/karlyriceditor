@@ -37,7 +37,7 @@
 #include "projectsettings.h"
 #include "recentfiles.h"
 #include "gentlemessagebox.h"
-#include "checknewversion.h"
+#include "pianorollwidget.h"
 #include "ui_dialog_about.h"
 
 
@@ -62,6 +62,10 @@ MainWindow::MainWindow()
 	// Create dock widgets
 	m_player = new PlayerWidget( this );
 	addDockWidget( Qt::BottomDockWidgetArea, m_player );
+
+	m_pianoRoll = new PianoRollDock( this );
+	addDockWidget( Qt::BottomDockWidgetArea, m_pianoRoll );
+	tabifyDockWidget( m_pianoRoll, m_player );
 
 	// Create a lyric viewer window, hidden so far
 	m_viewer = new ViewWidget( this );
@@ -126,7 +130,7 @@ void MainWindow::checkNewVersionAvailable()
 	CheckNewVersion * pNewVer = new CheckNewVersion();
 
 	connect( pNewVer, SIGNAL(error(int)), this, SLOT(newVerAvailError(int)) );
-	connect( pNewVer, SIGNAL(newVersionAvailable(QMap<QString,QString>)), this, SLOT(newVerAvailable(QMap<QString,QString>)) );
+	connect( pNewVer, SIGNAL(newVersionAvailable( NewVersionMetaMap )), this, SLOT(newVerAvailable(NewVersionMetaMap)) );
 
 	pNewVer->setUrl( "http://www.karlyriceditor.com/latestversion.txt" );
 	pNewVer->setCurrentVersion( QString("%1.%2").arg( APP_VERSION_MAJOR ) . arg( APP_VERSION_MINOR ) );
@@ -571,6 +575,7 @@ void MainWindow::updateState()
 	actionProject_settings->setEnabled( project_available );
 
 	editor->setEnabled( project_ready );
+	m_pianoRoll->setEnabled( project_ready );
 
 	if ( project_ready )
 	{
@@ -593,7 +598,7 @@ void MainWindow::newVerAvailError( int  )
 	statusBar()->showMessage( tr("Unable to check whether a new version is available"), 2000 );
 }
 
-void MainWindow::newVerAvailable( QMap<QString,QString> metadata )
+void MainWindow::newVerAvailable( NewVersionMetaMap metadata )
 {
 	QSettings().setValue( "advanced/lastupdate", QDateTime::currentDateTime() );
 
@@ -608,4 +613,17 @@ void MainWindow::newVerAvailable( QMap<QString,QString> metadata )
 			return;
 
 	QDesktopServices::openUrl ( QUrl(metadata["URL"]) );
+}
+
+void MainWindow::noteMouseOver( unsigned int pitch )
+{
+	int octave;
+	QString note = PianoRollWidget::pitchToNote( pitch, &octave );
+
+	statusBar()->showMessage( tr("Selected note: %1 at octave %2") .arg(note) .arg(octave), 2000 );
+}
+
+void MainWindow::noteClicked( unsigned int pitch )
+{
+	editor->pianoRollClicked( pitch );
 }

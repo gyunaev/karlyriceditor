@@ -50,7 +50,10 @@
 //
 
 #include <QThread>
+#include <QMetaType>
 #include <QMap>
+
+typedef QMap<QString,QString>	NewVersionMetaMap;
 
 class CheckNewVersion : public QThread
 {
@@ -91,7 +94,7 @@ class CheckNewVersion : public QThread
 		void	setCurrentVersion( const QString& version );
 
 	signals:
-		void	newVersionAvailable( const QMap<QString,QString>& metadata );
+		void	newVersionAvailable( const NewVersionMetaMap& metadata );
 		void	statusChanged( int newstatus );
 		void	error( int errorcode );
 
@@ -120,5 +123,7 @@ class CheckNewVersion : public QThread
 		int				m_inputOffset;  // in m_inputBuffer
 		QByteArray      m_inputBuffer;	// for socket input
 };
+
+Q_DECLARE_METATYPE(NewVersionMetaMap);
 
 #endif // CHECKNEWVERSION_H

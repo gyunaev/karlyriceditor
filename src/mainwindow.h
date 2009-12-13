@@ -21,11 +21,13 @@
 
 #include <QSettings>
 
+#include "checknewversion.h"
 #include "ui_mainwindow.h"
 
 class Project;
 class ViewWidget;
 class PlayerWidget;
+class PianoRollDock;
 class TestWindow;
 class RecentFiles;
 
@@ -70,7 +72,11 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 
 		// New version available
 		void	newVerAvailError( int errorcode );
-		void	newVerAvailable( QMap<QString,QString> metadata );
+		void	newVerAvailable( NewVersionMetaMap metadata );
+
+		// Piano roll
+		void	noteMouseOver( unsigned int pitch );
+		void	noteClicked( unsigned int pitch );
 
 	protected:
 		void	closeEvent(QCloseEvent *event);
@@ -87,6 +93,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		bool	tryCloseCurrentProject();
 
 		PlayerWidget		*	m_player;
+		PianoRollDock		*	m_pianoRoll;
 
 		Project				*	m_project;
 		ViewWidget			*	m_viewer;

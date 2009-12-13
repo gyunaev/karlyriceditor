@@ -763,3 +763,59 @@ void Editor::ensureCursorMiddle()
 		vbar->setValue( qMax( 0, curBottom - halfHeight ) );
 }
 
+void Editor::pianoRollClicked( unsigned int tone )
+{
+	QTextCursor cur = textCursor();
+
+	if ( cur.charFormat().objectType() != EditorTimeMark::TimeTextFormat )
+	{
+		pMainWindow->statusBar()->showMessage( tr("You need to position the cursor after existing timing mark") );
+		return;
+	}
+
+	QTextCharFormat timemark;
+	timemark.setObjectType( EditorTimeMark::TimeTextFormat );
+	timemark.setProperty( EditorTimeMark::TimeProperty, cur.charFormat().property( EditorTimeMark::TimeProperty ) );
+	timemark.setProperty( EditorTimeMark::PitchProperty, tone );
+	timemark.setProperty( EditorTimeMark::IdProperty, cur.charFormat().property( EditorTimeMark::IdProperty ) );
+
+	// Add the image
+	cur.beginEditBlock();
+	cur.deletePreviousChar();
+	cur.insertText( QString(QChar::ObjectReplacementCharacter), timemark );
+	cur.endEditBlock();
+
+	// Move the cursor to the next timing mark
+	int curPos = cur.position();
+
+	while ( 1 )
+	{
+		// Find the block
+		QTextBlock block = document()->findBlock( curPos );
+
+		// Cursor position in the block
+		int blockPos = curPos - block.position();
+
+		// If we're out of range, this is the end of block.
+		if ( blockPos >= block.text().size() )
+		{
+			// Text end?
+			if ( !block.next().isValid() )
+				break;
+
+			continue;
+		}
+
+		if ( block.text().at( blockPos ) == QChar::ObjectReplacementCharacter )
+		{
+			curPos++;
+			break;
+		}
+
+		curPos++;
+	}
+
+	cur.setPosition( curPos, QTextCursor::MoveAnchor );
+	setTextCursor( cur );
+	ensureCursorMiddle();
+}

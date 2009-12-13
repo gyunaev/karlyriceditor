@@ -63,6 +63,7 @@ class Editor : public QTextEdit
 
 	public slots:
 		void	textModified();
+		void	pianoRollClicked( unsigned int tone ); // from piano roll
 
 	protected:
 		void mouseReleaseEvent( QMouseEvent * event );
