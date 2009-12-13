@@ -29,6 +29,7 @@
 #include "editor.h"
 #include "editortimemark.h"
 #include "settings.h"
+#include "pianorollwidget.h"
 #include "dialog_edittimemark.h"
 
 
@@ -691,14 +692,33 @@ bool Editor::event ( QEvent * event )
 	if ( event->type() == QEvent::ToolTip )
 	{
 		QHelpEvent *helpEvent = static_cast<QHelpEvent *>(event);
-		qint64 mark = timeMarkValue( helpEvent->pos() );
+		QTextCursor cur = timeMark( helpEvent->pos() );
 
-		if ( mark == 0 )
-			QToolTip::showText( helpEvent->globalPos(), tr("Placeholder") );
-		else if ( mark > 0 )
-			QToolTip::showText( helpEvent->globalPos(), tr("Time mark: %1 ms") .arg( mark ) );
+		if ( !cur.isNull() )
+		{
+			qint64 mark = cur.charFormat().property( EditorTimeMark::TimeProperty ).toLongLong();
+			QString text;
 
-		return true;
+			if ( mark != 0 )
+			{
+				text = tr("Timing mark: %1ms") .arg(mark);
+				int pitch = cur.charFormat().property( EditorTimeMark::PitchProperty ).toInt();
+
+				if ( pitch != -1 )
+				{
+					int octave;
+					QString note = PianoRollWidget::pitchToNote( pitch, &octave );
+
+					text += "\n";
+					text += tr("Pitch value: %1, Note %2 at octave %3") .arg(pitch) .arg(note) .arg(octave);
+				}
+			}
+			else
+				text = tr("Placeholder");
+
+			QToolTip::showText( helpEvent->globalPos(), text );
+			return true;
+		}
 	}
 
 	return QTextEdit::event( event );
