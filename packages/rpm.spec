@@ -1,6 +1,6 @@
 Summary: Karaoke Lyrics Editor
 Name: karlyriceditor
-Version: 0.6
+Version: 0.7
 Release: 1
 License: GPLv3+
 Group: Applications/Multimedia

@@ -1,0 +1,26 @@
+2009-12-13 gyunaev <gyunaev@ulduzsoft.com>
+  - Released version 0.7 (rev. 67)
+
+2009-12-13 gyunaev <gyunaev@ulduzsoft.com>
+  - Added "Show player" and "Show piano roll" actions to Settings menu.
+  - Piano roll is now only shown for UltraStar projects.
+  - Fixed timing mark tooltips; now show the note and pitch as well.
+  - Piano roll now generates pitch;
+  - CheckNewVersion now uses special type;
+  - Fixed pitch applicator for editor;
+
+2009-12-12 gyunaev <gyunaev@ulduzsoft.com>
+  - Fixed import into disabled editor window.
+  - Added "check for new version" feature.
+  - If lyrics type changed, project settings change accordingly.
+
+2009-12-07 gyunaev <gyunaev@ulduzsoft.com>
+  - Fixed UltraStar export, import and other specific stuff.
+  - Color button is now drawn better way.
+  - Added new Ultrastar-specific settings
+  - Timing mark editor dialog redesigned.
+  - "Save project" button is disabled unless changes are made to the project.
+
+2009-12-06 gyunaev <gyunaev@ulduzsoft.com>
+  - Initial release, version 0.6.
+  
