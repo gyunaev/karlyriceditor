@@ -333,6 +333,7 @@ bool Editor::importFromString( const QString& strlyrics )
 {
 	QString lyricstr = strlyrics;
 	clear();
+	setEnabled( true );
 
 	// If we have autosaved values, restore them instead
 	QSettings settings;
@@ -761,3 +762,4 @@ void Editor::ensureCursorMiddle()
 	if ( curBottom > vbar->value() + halfHeight )
 		vbar->setValue( qMax( 0, curBottom - halfHeight ) );
 }
+
