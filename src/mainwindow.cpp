@@ -64,8 +64,8 @@ MainWindow::MainWindow()
 	addDockWidget( Qt::BottomDockWidgetArea, m_player );
 
 	m_pianoRoll = new PianoRollDock( this );
-	addDockWidget( Qt::BottomDockWidgetArea, m_pianoRoll );
-	tabifyDockWidget( m_pianoRoll, m_player );
+	addDockWidget( Qt::TopDockWidgetArea, m_pianoRoll );
+	m_pianoRoll->hide();
 
 	// Create a lyric viewer window, hidden so far
 	m_viewer = new ViewWidget( this );
@@ -369,6 +369,7 @@ bool MainWindow::tryCloseCurrentProject()
 
 	editor->setProject( 0 );
 	editor->clear();
+	m_pianoRoll->hide();
 
 	return true;
 }
@@ -383,6 +384,10 @@ void MainWindow::setCurrentProject( Project * proj )
 
 	// Set the music file into player; it will call updateState()
 	m_player->setMusicFile( m_project );
+
+	// Open a piano roll if this is UltraStar project
+	if ( proj->type() == Project::LyricType_UStar )
+		m_pianoRoll->show();
 }
 
 void MainWindow::act_editInsertTag()
