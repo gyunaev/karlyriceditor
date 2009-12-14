@@ -39,6 +39,9 @@ strip --strip-all "$BUILDDIR/bin/karlyriceditor" -o "$BUILDDIR/buildroot/usr/bin
 cp packages/karlyriceditor.desktop "$BUILDDIR/buildroot/usr/share/applications"
 cp packages/karlyriceditor.png "$BUILDDIR/buildroot/usr/share/pixmaps"
 
-rpmbuild -bb --target=$RPM_ARCH --buildroot `pwd`"/$BUILDDIR/buildroot/" packages/rpm.spec || exit 1
+# Prepare a spec file
+sed "s/^Version: [0-9.]\\+/Version: $CURRENTVER/" packages/rpm.spec > $BUILDDIR/rpm.spec
+
+rpmbuild -bb --target=$RPM_ARCH --buildroot `pwd`"/$BUILDDIR/buildroot/" $BUILDDIR/rpm.spec || exit 1
 mv $RPM_OUTDIR/*.rpm . || exit 1
 rm -rf "$BUILDDIR"
