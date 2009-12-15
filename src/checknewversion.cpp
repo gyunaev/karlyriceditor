@@ -20,11 +20,16 @@
 #include <QStringList>
 #include <QMetaType>
 
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <errno.h>
+#if !defined (WIN32)
+	#include <sys/socket.h>
+	#include <netdb.h>
+	#include <arpa/inet.h>
+	#include <netinet/in.h>
+	#include <errno.h>
+	#include <unistd.h>
+#else
+	#include <winsock.h>
+#endif
 
 #include "checknewversion.h"
 
@@ -122,6 +127,18 @@ void CheckNewVersion::run()
 		fatalError( Error_URL_Invalid );
 		return;
 	}
+
+	// Win32s-specific socket initialization
+#if defined (WIN32)
+	WORD wVersionRequested = MAKEWORD (1, 1);
+	WSADATA wsaData;
+
+	if ( WSAStartup (wVersionRequested, &wsaData) != 0 )
+	{
+		fatalError( Error_System );
+		return;
+	}
+#endif
 
 	// IPv4 address resolving
 	struct sockaddr_in saddr;
