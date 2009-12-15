@@ -55,6 +55,15 @@ class RecentFiles : public QObject
 		// when attempt to open a recent project failed.
 		void	removeRecentFile( const QString& file );
 
+		// Returns the last added recent file
+		QString	latestFile();
+
+	protected:
+		// Override those functions in a derived class to store/load the
+		// list of recent files from a different place
+		QStringList	loadRecentFiles();
+		void		saveRecentFiles( const QStringList& files );
+
 	private slots:
 		void	actionRecent();
 		void	updateMenu();

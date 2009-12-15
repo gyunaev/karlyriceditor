@@ -54,24 +54,24 @@ RecentFiles::~RecentFiles()
 
 void RecentFiles::setCurrentFile( const QString& file )
 {
-	QSettings settings;
-	QStringList files = settings.value("recentFileList").toStringList();
+	QStringList files = loadRecentFiles();
 	files.removeAll( file );
 	files.prepend( file );
 
 	while ( files.size() > m_actions.size() )
 		files.removeLast();
 
-	settings.setValue( "recentFileList", files );
+	saveRecentFiles( files );
+
 	updateMenu();
 }
 
 void RecentFiles::removeRecentFile( const QString& file )
 {
-	QSettings settings;
-	QStringList files = settings.value("recentFileList").toStringList();
+	QStringList files = loadRecentFiles();
 	files.removeAll( file );
-	settings.setValue( "recentFileList", files );
+	saveRecentFiles( files );
+
 	updateMenu();
 }
 
@@ -85,9 +85,7 @@ void RecentFiles::actionRecent()
 
 void RecentFiles::updateMenu()
 {
-	QSettings settings;
-	QStringList files = settings.value("recentFileList").toStringList();
-
+	QStringList files = loadRecentFiles();
 	int numRecentFiles = qMin( files.size(), m_actions.size() );
 
 	for ( int i = 0; i < m_actions.size(); ++i )
@@ -105,4 +103,26 @@ void RecentFiles::updateMenu()
 	}
 
 	m_separator->setVisible( numRecentFiles > 0 );
+}
+
+QString	RecentFiles::latestFile()
+{
+	QStringList files = loadRecentFiles();
+
+	if ( files.isEmpty() )
+		return QString::null;
+	else
+		return files[0];
+}
+
+QStringList	RecentFiles::loadRecentFiles()
+{
+	QSettings settings;
+	return settings.value("recentFileList").toStringList();
+}
+
+void RecentFiles::saveRecentFiles( const QStringList& files )
+{
+	QSettings settings;
+	settings.setValue( "recentFileList", files );
 }
