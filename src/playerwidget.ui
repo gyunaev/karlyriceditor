@@ -16,6 +16,9 @@
     <verstretch>0</verstretch>
    </sizepolicy>
   </property>
+  <property name="allowedAreas">
+   <set>Qt::BottomDockWidgetArea|Qt::TopDockWidgetArea</set>
+  </property>
   <property name="windowTitle">
    <string>Player controls</string>
   </property>
