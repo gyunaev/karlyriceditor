@@ -259,14 +259,6 @@ void MainWindow::act_fileNewProject()
 	}
 
 	setCurrentProject( newproj );
-
-	GentleMessageBox::warning( this,
-							   "phononseeking",
-							   tr("Advice: Do not seek when using player"),
-							   tr("There is a bug in Qt 4.5 Phonon implementation which results in incorrect timings "
-								  "reported once the music file position has been changed by seeking. Do not move "
-								  "the position marker when you play the song if you're inserting timing marks, or "
-								  "testing the lyrics." ) );
 }
 
 void MainWindow::act_fileOpenProject()
@@ -378,6 +370,7 @@ bool MainWindow::tryCloseCurrentProject()
 	editor->setProject( 0 );
 	editor->clear();
 	m_pianoRoll->hide();
+	updateState();
 
 	return true;
 }
