@@ -22,11 +22,12 @@
 
 #include "recentfiles.h"
 
-RecentFiles::RecentFiles( QMenu * menu, QAction * before, int maxfiles )
+RecentFiles::RecentFiles( QMenu * menu, QAction * before, int maxfiles, const QString& settingsname )
 {
 	if ( maxfiles < 1 )
 		qFatal( "RecentFiles::RecentFiles: maxfiles (%d) is < 1 ", maxfiles );
 
+	m_settingsName = settingsname.isEmpty() ? "recentFileList" : settingsname;
 	m_actions.resize( maxfiles );
 
 	// Create the actions
@@ -118,11 +119,11 @@ QString	RecentFiles::latestFile()
 QStringList	RecentFiles::loadRecentFiles()
 {
 	QSettings settings;
-	return settings.value("recentFileList").toStringList();
+	return settings.value( m_settingsName ).toStringList();
 }
 
 void RecentFiles::saveRecentFiles( const QStringList& files )
 {
 	QSettings settings;
-	settings.setValue( "recentFileList", files );
+	settings.setValue( m_settingsName, files );
 }
