@@ -20,6 +20,8 @@
 #include <QDataStream>
 #include <QMessageBox>
 #include <QMouseEvent>
+#include <QTextDocumentFragment>
+#include <QMimeData>
 #include <QToolTip>
 #include <QScrollBar>
 #include <QStack>
@@ -838,4 +840,33 @@ void Editor::pianoRollClicked( unsigned int tone )
 	cur.setPosition( curPos, QTextCursor::MoveAnchor );
 	setTextCursor( cur );
 	ensureCursorMiddle();
+}
+
+bool Editor::canInsertFromMimeData ( const QMimeData * source ) const
+{
+	return source->hasText() && !source->text().isEmpty();
+}
+
+QMimeData * Editor::createMimeDataFromSelection () const
+{
+	const QTextDocumentFragment fragment( textCursor() );
+	QString text = fragment.toPlainText();
+
+	QMimeData * m = new QMimeData();
+	m->setText( text );
+
+	return m;
+}
+
+void Editor::insertFromMimeData ( const QMimeData * source )
+{
+	QString text = source->text();
+	text.remove( QChar::ObjectReplacementCharacter );
+
+	if ( !text.isNull() )
+	{
+		QTextDocumentFragment fragment = QTextDocumentFragment::fromPlainText( text );
+		textCursor().insertFragment( fragment );
+		ensureCursorVisible();
+	}
 }

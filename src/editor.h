@@ -69,6 +69,9 @@ class Editor : public QTextEdit
 		void mouseReleaseEvent( QMouseEvent * event );
 		void mouseMoveEvent( QMouseEvent * event );
 		bool event ( QEvent * event ); // tooltips
+		bool canInsertFromMimeData ( const QMimeData * source ) const;
+		QMimeData * createMimeDataFromSelection () const;
+		void insertFromMimeData ( const QMimeData * source );
 
 	private:
 		// Returns time mark textchar under cursor. Returns -1 if not on time mark
