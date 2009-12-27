@@ -250,6 +250,7 @@ void Editor::textModified()
 		settings.setValue( "editor/currentlyrics", lyrictext );
 		settings.setValue( "editor/projectmusic", m_project->musicFile() );
 		settings.setValue( "editor/lyricssize", lyrictext.length() );
+		settings.setValue( "editor/savedatetime", QDateTime::currentDateTime() );
 	}
 
 	m_project->setModified();
@@ -345,11 +346,22 @@ bool Editor::importFromString( const QString& strlyrics )
 	&& settings.value( "editor/projectmusic" ).toString() == m_project->musicFile() )
 	{
 		int size = settings.value( "editor/lyricssize" ).toInt();
+		QString saved = "unknown";
+
+		if ( settings.contains( "editor/savedatetime" ) )
+			saved = settings.value( "editor/savedatetime" ).toDateTime().toString();
 
 		if ( size == settings.value( "editor/currentlyrics" ).toString().length() )
 		{
-			qDebug("Restoring presaved lyrics from a project");
-			lyricstr = settings.value( "editor/currentlyrics" ).toString();
+			if ( QMessageBox::question( 0,
+										tr("Load autosave?"),
+										tr("It looks like the project was not saved properly, and a more recent copy "
+										   "of lyrics was found, dated %1.\n\nDo you want to load this copy instead?")
+										.arg(saved),
+										QMessageBox::Yes | QMessageBox::No ) == QMessageBox::Yes )
+			{
+				lyricstr = settings.value( "editor/currentlyrics" ).toString();
+			}
 		}
 	}
 
@@ -767,6 +779,7 @@ void Editor::cleanupAutoSave()
 	settings.remove( "editor/currentlyrics" );
 	settings.remove( "editor/projectmusic" );
 	settings.remove( "editor/lyricssize" );
+	settings.remove( "editor/savedatetime" );
 }
 
 
