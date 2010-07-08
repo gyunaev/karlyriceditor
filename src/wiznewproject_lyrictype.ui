@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>477</width>
-    <height>265</height>
+    <height>282</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -64,6 +64,13 @@ p, li { white-space: pre-wrap; }
        <widget class="QRadioButton" name="rbLRC3">
         <property name="text">
          <string>UltraStar lyrics</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="rbLRC4">
+        <property name="text">
+         <string>CD+G lyrics</string>
         </property>
        </widget>
       </item>

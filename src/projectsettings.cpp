@@ -54,6 +54,10 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 			case Project::LyricType_UStar:
 				rbLRC3->setChecked( true );
 				break;
+
+			case Project::LyricType_CDG:
+				rbLRC4->setChecked( true );
+				break;
 		}
 
 		leSongFile->setText( m_project->musicFile() );

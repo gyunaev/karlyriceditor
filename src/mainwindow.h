@@ -29,6 +29,7 @@ class ViewWidget;
 class PlayerWidget;
 class PianoRollDock;
 class TestWindow;
+class TestCDGWindow;
 class RecentFiles;
 
 
@@ -61,6 +62,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	act_projectValidateLyrics();
 		void	act_projectViewLyricFile();
 		void	act_projectTest();
+		void	act_projectTestCDG();
 		void	act_projectExportLyricFile();
 		void	act_projectSettings();
 
@@ -104,6 +106,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		Project				*	m_project;
 		ViewWidget			*	m_viewer;
 		TestWindow			*	m_testWindow;
+		TestCDGWindow		*	m_testCDGWindow;
 		RecentFiles			*	m_recentFiles;
 		QString					m_projectFile;
 

@@ -84,6 +84,13 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QRadioButton" name="rbLRC4">
+            <property name="text">
+             <string>CD+G lyrics</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>

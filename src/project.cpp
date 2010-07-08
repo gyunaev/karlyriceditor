@@ -279,6 +279,9 @@ void Project::appendIfPresent( int id, const QString& prefix, QString& src, Lyri
 		case LyricType_UStar:
 			src += "#" + prefix + ":" + m_projectData[id] + "\n";
 			break;
+
+		case LyricType_CDG:
+			break; // unused
 	}
 }
 
@@ -315,7 +318,7 @@ QString	Project::generateUStarheader()
 	return hdr;
 }
 
-QString	Project::exportLyrics()
+QByteArray Project::exportLyrics()
 {
 	switch ( type() )
 	{
@@ -327,19 +330,28 @@ QString	Project::exportLyrics()
 
 		case LyricType_UStar:
 			return exportLyricsAsUStar();
-			break;
+
+		case LyricType_CDG:
+			return exportLyricsAsCDG();
 	}
 
 	return "UNSUPORTED";
 }
 
-QString	Project::exportLyricsAsLRC1()
+QByteArray Project::exportLyricsAsLRC1()
 {
 	// Generate warnings about conversion consequences
 	QString warntext;
 
 	switch ( type() )
 	{
+		case LyricType_CDG:
+			warntext = QObject::tr("Current lyrics format is set to CD+G.\n\n"
+			"When exporting it as LRC version 1 all time tags except the one in front of the line "
+			"will be ignored.\n\n"
+			"Do you want to proceed with export?");
+			break;
+
 		case LyricType_LRC2:
 			warntext = QObject::tr("Current lyrics format is set to LRC version 2.\n\n"
 				"When exporting it as LRC version 1 all time tags except the one in front of the line "
@@ -364,7 +376,7 @@ QString	Project::exportLyricsAsLRC1()
 									QObject::tr("Exporting lyrics"),
 									warntext,
 									QMessageBox::Yes|QMessageBox::No ) == QMessageBox::No )
-			return QString::null;
+			return QByteArray();
 	}
 
 	QString	lrc = generateLRCheader();
@@ -402,10 +414,10 @@ QString	Project::exportLyricsAsLRC1()
 		}
 	}
 
-	return lrc;
+	return lrc.toUtf8();
 }
 
-QString	Project::exportLyricsAsLRC2()
+QByteArray Project::exportLyricsAsLRC2()
 {
 	// Generate warnings about conversion consequences
 	QString warntext;
@@ -414,6 +426,7 @@ QString	Project::exportLyricsAsLRC2()
 	{
 		case LyricType_LRC1:
 		case LyricType_LRC2:
+		case LyricType_CDG:
 			break; // seamless conversion
 
 		case LyricType_UStar:
@@ -429,7 +442,7 @@ QString	Project::exportLyricsAsLRC2()
 									QObject::tr("Exporting lyrics"),
 									warntext,
 									QMessageBox::Yes|QMessageBox::No ) == QMessageBox::No )
-			return QString::null;
+			return QByteArray();
 	}
 
 	QString	lrc = generateLRCheader();
@@ -469,10 +482,10 @@ QString	Project::exportLyricsAsLRC2()
 		}
 	}
 
-	return lrc;
+	return lrc.toUtf8();
 }
 
-QString	Project::exportLyricsAsUStar()
+QByteArray Project::exportLyricsAsUStar()
 {
 	// 5 beats per second should give us good enough precision
 	int bpm = 300;
@@ -497,6 +510,12 @@ QString	Project::exportLyricsAsUStar()
 				"When exporting it as UltraStar format the output lyrics will not contain pitch information.\n\n"
 				"Do you want to proceed with export?");
 			break;
+
+		case LyricType_CDG:
+			warntext = QObject::tr("Current lyrics format is set to CD+G.\n\n"
+				"When exporting it as UltraStar format the output lyrics will not contain pitch information.\n\n"
+				"Do you want to proceed with export?");
+			break;
 	}
 
 	if ( !warntext.isEmpty() )
@@ -505,7 +524,7 @@ QString	Project::exportLyricsAsUStar()
 									QObject::tr("Exporting lyrics"),
 									warntext,
 									QMessageBox::Yes|QMessageBox::No ) == QMessageBox::No )
-			return QString::null;
+			return QByteArray();
 	}
 
 	Lyrics lyrics = m_editor->exportLyrics();
@@ -544,7 +563,7 @@ QString	Project::exportLyricsAsUStar()
 					QMessageBox::critical( 0,
 											QObject::tr("No timing mark at the end of line"),
 											QObject::tr("UltraStart lyrics require timing marks at the end of line. Export aborted.") );
-					return QString::null;
+					return QByteArray();
 				}
 
 				// Calculate timing and duration
@@ -595,7 +614,7 @@ QString	Project::exportLyricsAsUStar()
 	}
 
 	lyricstext += "E\n";
-	return lyricstext;
+	return lyricstext.toUtf8();
 }
 
 
@@ -659,6 +678,9 @@ bool Project::importLyrics( const QString& filename, LyricType type )
 			success = importLyricsLRC( linedtext, lyr );
 			lyr.endLyrics();
 			break;
+
+		case LyricType_CDG:
+			qFatal("No import for CD+G lyrics");
 	}
 
 	// importLyrics* already showed error message
@@ -936,4 +958,10 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 	}
 
 	return true;
+}
+
+
+QByteArray Project::exportLyricsAsCDG()
+{
+	return QByteArray();
 }

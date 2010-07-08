@@ -77,7 +77,7 @@ PlayerWidget::PlayerWidget(QWidget *parent)
 PlayerWidget::~PlayerWidget()
 {
 	delete m_mediaObject;
-	delete m_mediaAudioOutput;
+//	delete m_mediaAudioOutput;
 }
 
 void PlayerWidget::phonon_StateChanged ( Phonon::State newstate, Phonon::State )

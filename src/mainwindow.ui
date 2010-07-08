@@ -37,7 +37,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>25</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -89,6 +89,7 @@
     <addaction name="actionValidate_lyrics"/>
     <addaction name="actionView_lyric_file"/>
     <addaction name="actionTest_lyric_file"/>
+    <addaction name="actionTest_CDG_lyrics"/>
     <addaction name="actionExport_lyric_file"/>
     <addaction name="separator"/>
     <addaction name="actionEdit_header_data"/>
@@ -452,6 +453,22 @@ Note that for formats which support blocks nothing will be shown until it's less
    </property>
    <property name="text">
     <string>Show Piano Roll dock window</string>
+   </property>
+  </action>
+  <action name="actionTest_CDG_lyrics">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/images/dryicons_computer.png</normaloff>:/images/dryicons_computer.png</iconset>
+   </property>
+	<property name="text">
+    <string>Test lyrics as CD+G</string>
+   </property>
+   <property name="toolTip">
+		<string>Test the lyrics if you gonna export them as CD+G</string>
+   </property>
+   <property name="whatsThis">
+    <string>This action shows the lyrics test window, which is a mini Karaoke player, but is limited in size as CD+G, so
+    it can be used to test the lyrics to see how they would be played on a real CD+G player.</string>
    </property>
   </action>
  </widget>

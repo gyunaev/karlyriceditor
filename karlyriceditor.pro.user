@@ -121,14 +121,14 @@
     <value type="QString">CPU=i686</value>
     <value type="QString">CSHEDIT=emacs</value>
     <value type="QString">CVS_RSH=ssh</value>
-    <value type="QString">DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-kvJrCALOVk,guid=9ba5036ea70a7700646ea6584b3411cb</value>
+    <value type="QString">DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-LI8cIAfPcx,guid=74f9f18fe4260b6b2c7e05274c3522c8</value>
     <value type="QString">DESKTOP_SESSION=default</value>
     <value type="QString">DISPLAY=:0.0</value>
     <value type="QString">DM_CONTROL=/var/run/xdmctl</value>
     <value type="QString">EDITOR=/usr/bin/vim</value>
     <value type="QString">ENV=/etc/bash.bashrc</value>
     <value type="QString">FROM_HEADER=</value>
-    <value type="QString">GPG_AGENT_INFO=/tmp/gpg-HX8QPr/S.gpg-agent:3134:1</value>
+    <value type="QString">GPG_AGENT_INFO=/tmp/gpg-9g2UBu/S.gpg-agent:8889:1</value>
     <value type="QString">GS_LIB=/home/tim/.fonts</value>
     <value type="QString">GTK2_RC_FILES=/etc/gtk-2.0/gtkrc:/home/tim/.gtkrc-2.0-kde4::/home/tim/.gtkrc-2.0-qtengine:/home/tim/.gtkrc-2.0:/home/tim/.kde4/share/config/gtkrc-2.0</value>
     <value type="QString">GTK_IM_MODULE=cedilla</value>
@@ -151,7 +151,8 @@
     <value type="QString">KDE_SESSION_VERSION=4</value>
     <value type="QString">LADSPA_PATH=/usr/lib/ladspa</value>
     <value type="QString">LANG=en_US.UTF-8</value>
-    <value type="QString">LD_LIBRARY_PATH=/home/tim/bin/qt-4.6.0/lib/qtcreator:/usr/lib/mpi/gcc/openmpi/lib</value>
+    <value type="QString">LANGUAGE=</value>
+    <value type="QString">LD_LIBRARY_PATH=/usr/lib/qtcreator:/usr/lib/mpi/gcc/openmpi/lib</value>
     <value type="QString">LESS=-M -I</value>
     <value type="QString">LESSCLOSE=lessclose.sh %s %s</value>
     <value type="QString">LESSKEY=/etc/lesskey.bin</value>
@@ -162,7 +163,7 @@
     <value type="QString">LS_OPTIONS=-N --color=tty -T 0</value>
     <value type="QString">MACHTYPE=i686-suse-linux</value>
     <value type="QString">MAIL=/var/spool/mail/tim</value>
-    <value type="QString">MANPATH=/usr/lib/mpi/gcc/openmpi/share/man:/usr/local/man:/usr/share/man</value>
+    <value type="QString">MANPATH=/usr/lib/mpi/gcc/openmpi/share/man:/usr/local/man:/usr/share/man:/usr/man</value>
     <value type="QString">MINICOM=-c on</value>
     <value type="QString">MORE=-sl</value>
     <value type="QString">NNTPSERVER=news</value>
@@ -177,12 +178,12 @@
     <value type="QString">QT_IM_SWITCHER=imsw-multi</value>
     <value type="QString">QT_PLUGIN_PATH=/home/tim/.kde4/lib/kde4/plugins/:/usr/lib/kde4/plugins/</value>
     <value type="QString">QT_SYSTEM_DIR=/usr/share/desktop-data</value>
-    <value type="QString">SESSION_MANAGER=local/tim:@/tmp/.ICE-unix/8383,unix/tim:/tmp/.ICE-unix/8383</value>
+    <value type="QString">SESSION_MANAGER=local/tim:@/tmp/.ICE-unix/8998,unix/tim:/tmp/.ICE-unix/8998</value>
     <value type="QString">SHELL=/bin/bash</value>
     <value type="QString">SHLVL=1</value>
-    <value type="QString">SSH_AGENT_PID=8275</value>
+    <value type="QString">SSH_AGENT_PID=8890</value>
     <value type="QString">SSH_ASKPASS=/usr/lib/ssh/x11-ssh-askpass</value>
-    <value type="QString">SSH_AUTH_SOCK=/tmp/ssh-dDbvv8228/agent.8228</value>
+    <value type="QString">SSH_AUTH_SOCK=/tmp/ssh-GqwEa8838/agent.8838</value>
     <value type="QString">TERM=xterm</value>
     <value type="QString">TMPDIR=/tmp</value>
     <value type="QString">USER=tim</value>
@@ -193,8 +194,8 @@
     <value type="QString">XCURSOR_THEME=Oxygen_White</value>
     <value type="QString">XDG_CONFIG_DIRS=/etc/xdg</value>
     <value type="QString">XDG_DATA_DIRS=/usr/share:/etc/opt/kde3/share:/opt/kde3/share</value>
-    <value type="QString">XDG_SESSION_COOKIE=b2e56319d428f9d142adb0634aef416d-1261703627.333745-839253699</value>
-    <value type="QString">XDM_MANAGED=method=classic,auto</value>
+    <value type="QString">XDG_SESSION_COOKIE=b2e56319d428f9d142adb0634aef416d-1278550726.530673-1835710400</value>
+    <value type="QString">XDM_MANAGED=method=classic</value>
     <value type="QString">XKEYSYMDB=/usr/share/X11/XKeysymDB</value>
     <value type="QString">XMODIFIERS=@im=local</value>
     <value type="QString">XNLSPATH=/usr/share/X11/nls</value>
@@ -224,14 +225,14 @@
     <value type="QString">CPU=i686</value>
     <value type="QString">CSHEDIT=emacs</value>
     <value type="QString">CVS_RSH=ssh</value>
-    <value type="QString">DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-kvJrCALOVk,guid=9ba5036ea70a7700646ea6584b3411cb</value>
+    <value type="QString">DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-LI8cIAfPcx,guid=74f9f18fe4260b6b2c7e05274c3522c8</value>
     <value type="QString">DESKTOP_SESSION=default</value>
     <value type="QString">DISPLAY=:0.0</value>
     <value type="QString">DM_CONTROL=/var/run/xdmctl</value>
     <value type="QString">EDITOR=/usr/bin/vim</value>
     <value type="QString">ENV=/etc/bash.bashrc</value>
     <value type="QString">FROM_HEADER=</value>
-    <value type="QString">GPG_AGENT_INFO=/tmp/gpg-HX8QPr/S.gpg-agent:3134:1</value>
+    <value type="QString">GPG_AGENT_INFO=/tmp/gpg-9g2UBu/S.gpg-agent:8889:1</value>
     <value type="QString">GS_LIB=/home/tim/.fonts</value>
     <value type="QString">GTK2_RC_FILES=/etc/gtk-2.0/gtkrc:/home/tim/.gtkrc-2.0-kde4::/home/tim/.gtkrc-2.0-qtengine:/home/tim/.gtkrc-2.0:/home/tim/.kde4/share/config/gtkrc-2.0</value>
     <value type="QString">GTK_IM_MODULE=cedilla</value>
@@ -254,7 +255,8 @@
     <value type="QString">KDE_SESSION_VERSION=4</value>
     <value type="QString">LADSPA_PATH=/usr/lib/ladspa</value>
     <value type="QString">LANG=en_US.UTF-8</value>
-    <value type="QString">LD_LIBRARY_PATH=/home/tim/bin/qt-4.6.0/lib/qtcreator:/usr/lib/mpi/gcc/openmpi/lib</value>
+    <value type="QString">LANGUAGE=</value>
+    <value type="QString">LD_LIBRARY_PATH=/usr/lib/qtcreator:/usr/lib/mpi/gcc/openmpi/lib</value>
     <value type="QString">LESS=-M -I</value>
     <value type="QString">LESSCLOSE=lessclose.sh %s %s</value>
     <value type="QString">LESSKEY=/etc/lesskey.bin</value>
@@ -265,7 +267,7 @@
     <value type="QString">LS_OPTIONS=-N --color=tty -T 0</value>
     <value type="QString">MACHTYPE=i686-suse-linux</value>
     <value type="QString">MAIL=/var/spool/mail/tim</value>
-    <value type="QString">MANPATH=/usr/lib/mpi/gcc/openmpi/share/man:/usr/local/man:/usr/share/man</value>
+    <value type="QString">MANPATH=/usr/lib/mpi/gcc/openmpi/share/man:/usr/local/man:/usr/share/man:/usr/man</value>
     <value type="QString">MINICOM=-c on</value>
     <value type="QString">MORE=-sl</value>
     <value type="QString">NNTPSERVER=news</value>
@@ -280,12 +282,12 @@
     <value type="QString">QT_IM_SWITCHER=imsw-multi</value>
     <value type="QString">QT_PLUGIN_PATH=/home/tim/.kde4/lib/kde4/plugins/:/usr/lib/kde4/plugins/</value>
     <value type="QString">QT_SYSTEM_DIR=/usr/share/desktop-data</value>
-    <value type="QString">SESSION_MANAGER=local/tim:@/tmp/.ICE-unix/8383,unix/tim:/tmp/.ICE-unix/8383</value>
+    <value type="QString">SESSION_MANAGER=local/tim:@/tmp/.ICE-unix/8998,unix/tim:/tmp/.ICE-unix/8998</value>
     <value type="QString">SHELL=/bin/bash</value>
     <value type="QString">SHLVL=1</value>
-    <value type="QString">SSH_AGENT_PID=8275</value>
+    <value type="QString">SSH_AGENT_PID=8890</value>
     <value type="QString">SSH_ASKPASS=/usr/lib/ssh/x11-ssh-askpass</value>
-    <value type="QString">SSH_AUTH_SOCK=/tmp/ssh-dDbvv8228/agent.8228</value>
+    <value type="QString">SSH_AUTH_SOCK=/tmp/ssh-GqwEa8838/agent.8838</value>
     <value type="QString">TERM=xterm</value>
     <value type="QString">TMPDIR=/tmp</value>
     <value type="QString">USER=tim</value>
@@ -296,8 +298,8 @@
     <value type="QString">XCURSOR_THEME=Oxygen_White</value>
     <value type="QString">XDG_CONFIG_DIRS=/etc/xdg</value>
     <value type="QString">XDG_DATA_DIRS=/usr/share:/etc/opt/kde3/share:/opt/kde3/share</value>
-    <value type="QString">XDG_SESSION_COOKIE=b2e56319d428f9d142adb0634aef416d-1261703627.333745-839253699</value>
-    <value type="QString">XDM_MANAGED=method=classic,auto</value>
+    <value type="QString">XDG_SESSION_COOKIE=b2e56319d428f9d142adb0634aef416d-1278550726.530673-1835710400</value>
+    <value type="QString">XDM_MANAGED=method=classic</value>
     <value type="QString">XKEYSYMDB=/usr/share/X11/XKeysymDB</value>
     <value type="QString">XMODIFIERS=@im=local</value>
     <value type="QString">XNLSPATH=/usr/share/X11/nls</value>

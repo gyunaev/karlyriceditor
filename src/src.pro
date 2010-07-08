@@ -24,7 +24,9 @@ HEADERS += mainwindow.h \
     dialog_edittimemark.h \
     gentlemessagebox.h \
     checknewversion.h \
-    pianorollwidget.h
+    pianorollwidget.h \
+    testcdgwindow.h \
+    cdg.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -45,7 +47,8 @@ SOURCES += mainwindow.cpp \
     dialog_edittimemark.cpp \
     gentlemessagebox.cpp \
     checknewversion.cpp \
-    pianorollwidget.cpp
+    pianorollwidget.cpp \
+    testcdgwindow.cpp
 RESOURCES += resources.qrc
 QT += phonon
 FORMS += mainwindow.ui \
@@ -62,4 +65,5 @@ FORMS += mainwindow.ui \
     dialog_settings.ui \
     dialog_edittimemark.ui \
     dialog_selectencoding.ui \
-    gentlemessagebox.ui
+    gentlemessagebox.ui \
+    testcdgwindow.ui
