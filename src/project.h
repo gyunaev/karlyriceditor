@@ -91,6 +91,8 @@ class Project
 		// Clear the project
 		void	clear();
 
+		void	setSongLength( qint64 length );
+
 		// Split the time mark
 		static void splitTimeMark( qint64 mark, int * min, int * sec, int * msec );
 
@@ -106,6 +108,7 @@ class Project
 		int		tagToId( Tag tagid  );
 		bool	m_modified;
 		Editor* m_editor;
+		qint64	m_totalSongLength;
 
 		// This container stores all project-related data
 		QMap< int, QString>	m_projectData;

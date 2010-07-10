@@ -16,57 +16,30 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#ifndef PLAYERWIDGET_H
-#define PLAYERWIDGET_H
+#ifndef CDGRENDERER_H
+#define CDGRENDERER_H
 
-#include <QDockWidget>
+#include <QByteArray>
+#include <QImage>
+#include "cdg.h"
 
-#include <phonon/mediaobject.h>
-#include <phonon/audiooutput.h>
-
-#include "playerbutton.h"
-#include "ui_playerwidget.h"
-
-class Project;
-
-class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
+class CDGRenderer
 {
-    Q_OBJECT
-
 	public:
-		PlayerWidget(QWidget *parent = 0);
-		~PlayerWidget();
+		CDGRenderer();
 
-		// Sets the current music file from a project. This operation is asynchronous, everything is
-		// handled in phonon_StateChanged() and propagated via MainWindow::updateState().
-		void	setMusicFile( Project * project );
-
-		// Is music file ready to play?
-		bool	isReady() const { return m_ready; }
-
-		qint64	currentTime() const;
-		qint64	totalTime() const;
-
-	signals:
-		void	tick( qint64 tickvalue );
-
-	private slots:
-		void	phonon_StateChanged ( Phonon::State newstate, Phonon::State oldstate );
-		void	phonon_Tick( qint64 tickvalue );
-
-		void	btn_playerStop();
-		void	btn_playerPlayPause();
-		void	btn_playerSeekForward();
-		void	btn_playerSeekBackward();
+		void	setCDGdata( const QByteArray& cdgdata );
+		QImage	update( qint64 timing, bool * screen_changed = 0 );
 
 	private:
-		QString tickToString( qint64 tick );
+		void	cmdMemoryPreset( const char * data );
+		void	cmdBorderPreset( const char * data );
+		void	cmdLoadColorTable( const char * data, int index );
+		void	cmdTileBlockXor( const char * data );
 
-	private:
-		Phonon::MediaObject *	m_mediaObject;
-		Phonon::AudioOutput *	m_mediaAudioOutput;
-
-		bool					m_ready;
+		unsigned int		m_packet;		// packet offset which hasn't been processed yet
+		QVector< SubCode >	m_stream;		// CD+G stream
+		QImage				m_cdgimage;		// rendered image
 };
 
-#endif // PLAYERWIDGET_H
+#endif // CDGRENDERER_H

@@ -20,8 +20,12 @@
 #define TESTWINDOW_H
 
 #include <QDialog>
+#include <QString>
+
 #include "ui_testwindow.h"
 #include "lyrics.h"
+#include "lyricsrenderer.h"
+#include "cdgrenderer.h"
 
 
 class TestWindow : public QDialog, public Ui::TestWindow
@@ -30,41 +34,25 @@ class TestWindow : public QDialog, public Ui::TestWindow
 
 	public:
 		TestWindow(QWidget *parent = 0);
-		void setLyrics( const Lyrics& lyrics );
+
+		// For lyrics
+		void	setLyrics( const Lyrics& lyrics );
+		void	setTitleData( const QString& titledata );
+
+		// For CD+G
+		void	setCDGdata( const QByteArray& cdgdata );
 
 	public slots:
 		void	tick( qint64 tickmark );
 
 	private:
-		// Redraw the label using block or line mode
-		void	redrawBlocks( qint64 tickmark );
-		void	redrawLines( qint64 tickmark );
-		void	setText( const QString& text );
-		int		findBlockToShow( qint64 tickmark );
-		void	splitSyllable( int index );
+		// For rendering text-based lyrics
+		bool			m_renderingLyrics;		// false if CD+G
+		LyricsRenderer	m_lyricrenderer;		// To render lyrics
 
-		typedef struct
-		{
-			qint64	timestart;
-			QString	text;		// converted to HTML; includes <br> on line ends
-			int		blockindex;
-
-		} LyricIndex;
-
-		typedef struct
-		{
-			qint64	timestart;	// for block
-			qint64	timeend;	// for block
-			int		index;		// in LyricIndex
-
-		} Time;
-
-		QVector<LyricIndex>	m_lyricIndex;
-
-		// This one is used in block mode (LRC2 and UltraStar)
-		QVector<Time>		m_blockIndex;
-
-		QString	m_labelText; // to prevent unnecessary updates
+		// For rendering CD+G lyrics
+		CDGRenderer		m_cdgrenderer;			// To render cd+g
+		QSize			m_pixsize;				// output pixmap size
 };
 
 

@@ -33,7 +33,6 @@
 #include "settings.h"
 #include "viewwidget.h"
 #include "testwindow.h"
-#include "testcdgwindow.h"
 #include "version.h"
 #include "projectsettings.h"
 #include "recentfiles.h"
@@ -76,10 +75,6 @@ MainWindow::MainWindow()
 	// Test window
 	m_testWindow = new TestWindow( this );
 	connect( m_player, SIGNAL(tick(qint64)), m_testWindow, SLOT(tick(qint64)) );
-
-	// CD+G test window
-	m_testCDGWindow = new TestCDGWindow( this );
-	connect( m_player, SIGNAL(tick(qint64)), m_testCDGWindow, SLOT(tick(qint64)) );
 
 	// Recent files
 	m_recentFiles = new RecentFiles( menuFile, actionQuit );
@@ -464,15 +459,6 @@ void MainWindow::act_projectEditHeader()
 	ps.exec();
 }
 
-void MainWindow::act_projectTest()
-{
-	if ( !editor->validate() )
-		return;
-
-	m_testWindow->setLyrics( editor->exportLyrics() );
-	m_testWindow->show();
-}
-
 void MainWindow::act_projectExportLyricFile()
 {
 	if ( !editor->validate() )
@@ -587,7 +573,6 @@ void MainWindow::updateState()
 	actionRemove_tag->setEnabled( project_ready );
 	actionEdit_header_data->setEnabled( project_ready );
 	actionValidate_lyrics->setEnabled( project_ready );
-	actionView_lyric_file->setEnabled( project_ready );
 	actionTest_lyric_file->setEnabled( project_ready );
 	actionTest_CDG_lyrics->setEnabled( project_ready );
 	actionRemove_all_tags->setEnabled( project_ready );
@@ -597,11 +582,18 @@ void MainWindow::updateState()
 	actionEdit_header_data->setEnabled( project_available );
 	actionProject_settings->setEnabled( project_available );
 
+	actionView_lyric_file->setEnabled( project_ready && m_project->type() != Project::LyricType_CDG );
+
 	editor->setEnabled( project_ready );
 	m_pianoRoll->setEnabled( project_ready );
 
 	if ( project_ready )
 	{
+		qint64 totaltime = m_player->totalTime();
+
+		if ( totaltime > 0 )
+			m_project->setSongLength( totaltime );
+
 		if ( m_project->isModified() )
 		{
 			actionValidate_lyrics->setIcon( m_validatorIconRegular );
@@ -677,8 +669,27 @@ void MainWindow::visibilityPlayer( bool visible )
 	actionShow_Player_dock_wingow->setChecked( visible );
 }
 
+void MainWindow::act_projectTest()
+{
+	if ( !editor->validate() )
+		return;
+
+	// Generate the title
+	QString title = QString("<qt><center><font color='white'>%1<br><br>%2<br><br>Created by Karaoke Lyric Editor %3.%4<br>%5</font></center></qt>")
+					.arg( m_project->tag( Project::Tag_Artist ) )
+					.arg( m_project->tag( Project::Tag_Title ) )
+					.arg( APP_VERSION_MAJOR )
+					.arg( APP_VERSION_MINOR )
+					.arg( "http://www.karlyriceditor.com/" );
+
+	m_testWindow->setLyrics( editor->exportLyrics() );
+	m_testWindow->setTitleData( title );
+	m_testWindow->show();
+}
+
 void MainWindow::act_projectTestCDG()
 {
+/*
 	QString fileName = QFileDialog::getOpenFileName( this,
 			tr("Open a CD+G file"),
 			".",
@@ -693,7 +704,16 @@ void MainWindow::act_projectTestCDG()
 		return;
 
 	QByteArray cdgdata = f.readAll();
+*/
+	QByteArray cdgdata = m_project->exportLyricsAsCDG();
+	m_testWindow->setCDGdata( cdgdata );
 
-	m_testCDGWindow->setCDGdata( cdgdata );
-	m_testCDGWindow->show();
+	QFile f( "out.cdg");
+
+	if ( !f.open( QIODevice::WriteOnly ) )
+		return;
+
+	f.write( cdgdata );
+
+	m_testWindow->show();
 }

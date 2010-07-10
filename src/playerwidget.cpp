@@ -197,3 +197,8 @@ qint64 PlayerWidget::currentTime() const
 {
 	return m_mediaObject->currentTime();
 }
+
+qint64 PlayerWidget::totalTime() const
+{
+	return m_mediaObject->totalTime();
+}

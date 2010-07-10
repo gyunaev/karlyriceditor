@@ -16,38 +16,61 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#ifndef TESTCDGWINDOW_H
-#define TESTCDGWINDOW_H
+#ifndef LYRICSRENDERER_H
+#define LYRICSRENDERER_H
 
-#include <QImage>
-#include <QDialog>
+#include <QVector>
+#include "lyrics.h"
 
-#include "ui_testcdgwindow.h"
-#include "cdg.h"
-
-class TestCDGWindow : public QDialog, public Ui::TestCDGWindow
+class LyricsRenderer
 {
-	Q_OBJECT
-
 	public:
-		TestCDGWindow( QWidget * parent = 0 );
+		LyricsRenderer();
+		void setLyrics( const Lyrics& lyrics );
+		void setColors( const QString& active, const QString& inactive  );
+		void setTitlePage( const QString& titlepage );
 
-		bool	setCDGdata( const QByteArray& cdgdata );
-
-	public slots:
-		void	tick( qint64 tickmark );
+		QString update( qint64 tickmark );
 
 	private:
-		void	cmdMemoryPreset( const char * data );
-		void	cmdBorderPreset( const char * data );
-		void	cmdLoadColorTable( const char * data, int index );
-		void	cmdTileBlockXor( const char * data );
+		// Redraw the label using block or line mode
+		void	redrawBlocks( qint64 tickmark );
+		void	redrawLines( qint64 tickmark );
+		void	setText( const QString& text );
+		int		findBlockToShow( qint64 tickmark );
+		void	splitSyllable( int index );
 
-		unsigned int		m_packet;		// packet offset which hasn't been processed yet
-		QVector< SubCode >	m_stream;		// CD+G stream
-		QImage				m_cdgimage;		// rendered image
-		qint64				m_lastupdate;	// last screen update time
-		QSize				m_pixsize;		// output pixmap size
+		typedef struct
+		{
+			qint64	timestart;
+			QString	text;		// converted to HTML; includes <br> on line ends
+			int		blockindex;
+
+		} LyricIndex;
+
+		typedef struct
+		{
+			qint64	timestart;	// for block
+			qint64	timeend;	// for block
+			int		index;		// in LyricIndex
+
+		} Time;
+
+		QVector<LyricIndex>	m_lyricIndex;
+
+		// This one is used in block mode (LRC2 and UltraStar)
+		QVector<Time>		m_blockIndex;
+
+		// Rendered text
+		QString				m_text;
+
+		// Title page (if set, is shown at the beginning of the song). HTML allowed.
+		QString				m_titlePage;
+		qint64				m_titleTimingCut;
+
+		// Colors
+		QString				m_colorActive;
+		QString				m_colorInactive;
 };
 
-#endif // TESTCDGWINDOW_H
+#endif // LYRICSRENDERER_H

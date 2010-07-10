@@ -25,8 +25,10 @@ HEADERS += mainwindow.h \
     gentlemessagebox.h \
     checknewversion.h \
     pianorollwidget.h \
-    testcdgwindow.h \
-    cdg.h
+    cdg.h \
+    cdgrenderer.h \
+    lyricsrenderer.h \
+    cdggenerator.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -48,7 +50,9 @@ SOURCES += mainwindow.cpp \
     gentlemessagebox.cpp \
     checknewversion.cpp \
     pianorollwidget.cpp \
-    testcdgwindow.cpp
+    cdgrenderer.cpp \
+    lyricsrenderer.cpp \
+    cdggenerator.cpp
 RESOURCES += resources.qrc
 QT += phonon
 FORMS += mainwindow.ui \
@@ -65,5 +69,4 @@ FORMS += mainwindow.ui \
     dialog_settings.ui \
     dialog_edittimemark.ui \
     dialog_selectencoding.ui \
-    gentlemessagebox.ui \
-    testcdgwindow.ui
+	gentlemessagebox.ui

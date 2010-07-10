@@ -26,7 +26,7 @@
 #include "version.h"
 #include "lyrics.h"
 #include "dialog_selectencoding.h"
-
+#include "cdggenerator.h"
 
 // Project data enum
 // Formats info:
@@ -84,6 +84,7 @@ void Project::clear()
 	m_projectData[ PD_TAG_OFFSET ] = QString::number( pSettings->m_phononSoundDelay );
 	m_projectData[ PD_TAG_APPLICATION ] = "Karaoke Lyric Editor";
 	m_projectData[ PD_TAG_APPVERSION ] = QString("%1.%2").arg( APP_VERSION_MAJOR ).arg( APP_VERSION_MINOR );
+	m_totalSongLength = 0;
 }
 
 void Project::setType( LyricType type )
@@ -960,8 +961,24 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 	return true;
 }
 
+void Project::setSongLength( qint64 length )
+{
+	m_totalSongLength = length;
+}
+
 
 QByteArray Project::exportLyricsAsCDG()
 {
-	return QByteArray();
+	CDGGenerator cdggen;
+
+	QFont font( pSettings->m_previewFontFamily, 16 );
+
+	cdggen.init( pSettings->m_previewBackground,
+				 QColor(Qt::white),
+				 pSettings->m_previewTextActive,
+				 pSettings->m_previewTextInactive,
+				 font );
+
+	cdggen.generate( m_editor->exportLyrics(), m_totalSongLength );
+	return cdggen.stream();
 }

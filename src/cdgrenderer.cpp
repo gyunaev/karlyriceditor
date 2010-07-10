@@ -16,23 +16,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#include "testcdgwindow.h"
+#include "cdgrenderer.h"
 
-
-TestCDGWindow::TestCDGWindow( QWidget * parent )
-	: QDialog( parent ),
-	  Ui::TestCDGWindow(),
-	  m_cdgimage( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_Indexed8 ),
-	  m_pixsize( 2*CDG_FULL_WIDTH, 2*CDG_FULL_HEIGHT )
+CDGRenderer::CDGRenderer()
+	: m_cdgimage( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_Indexed8 )
 {
-	setupUi( this );
-
-	resize( m_pixsize );
 }
 
-bool TestCDGWindow::setCDGdata( const QByteArray& cdgdata )
+void CDGRenderer::setCDGdata( const QByteArray& cdgdata )
 {
-	m_lastupdate = 0;
 	m_packet = 0;
 
 	m_stream.clear();
@@ -66,17 +58,17 @@ bool TestCDGWindow::setCDGdata( const QByteArray& cdgdata )
 
 		m_stream.push_back( *sc );
 	}
-
-	return true;
 }
 
-void TestCDGWindow::tick( qint64 tickmark )
+QImage CDGRenderer::update( qint64 tickmark, bool * screen_changed )
 {
-	bool screen_updated = false;
+	if ( screen_changed )
+		*screen_changed = false;
+
 	unsigned int packets_due = tickmark * 300 / 1000;
 
 	if ( packets_due <= m_packet )
-		return;
+		return m_cdgimage;
 
 	for ( ; m_packet < packets_due; m_packet++ )
 	{
@@ -89,12 +81,18 @@ void TestCDGWindow::tick( qint64 tickmark )
 		{
 			case CDG_INST_MEMORY_PRESET:
 				cmdMemoryPreset( sc.data );
-				screen_updated = true;
+
+				if ( screen_changed )
+					*screen_changed = true;
+
 				break;
 
 			case CDG_INST_BORDER_PRESET:
 				cmdBorderPreset( sc.data );
-				screen_updated = true;
+
+				if ( screen_changed )
+					*screen_changed = true;
+
 				break;
 
 			case CDG_INST_LOAD_COL_TBL_0_7:
@@ -107,7 +105,10 @@ void TestCDGWindow::tick( qint64 tickmark )
 
 			case CDG_INST_TILE_BLOCK_XOR:
 				cmdTileBlockXor( sc.data );
-				screen_updated = true;
+
+				if ( screen_changed )
+					*screen_changed = true;
+
 				break;
 
 			default:
@@ -115,17 +116,10 @@ void TestCDGWindow::tick( qint64 tickmark )
 		}
 	}
 
-	if ( !screen_updated )
-		return;
-
-	if ( tickmark - m_lastupdate < 100 )
-		return;
-
-	// Update the pixmap
-	label->setPixmap( QPixmap::fromImage( m_cdgimage.scaled( m_pixsize ) ) );
+	return m_cdgimage;
 }
 
-void TestCDGWindow::cmdMemoryPreset( const char * data )
+void CDGRenderer::cmdMemoryPreset( const char * data )
 {
 	CDG_MemPreset* preset = (CDG_MemPreset*) data;
 
@@ -141,7 +135,7 @@ void TestCDGWindow::cmdMemoryPreset( const char * data )
 //	qDebug( "MemPreset: filling memory with color %d (%08X)", preset->color & 0x0F, bgColor );
 }
 
-void TestCDGWindow::cmdBorderPreset( const char * data )
+void CDGRenderer::cmdBorderPreset( const char * data )
 {
 	CDG_BorderPreset* preset = (CDG_BorderPreset*) data;
 
@@ -168,7 +162,7 @@ void TestCDGWindow::cmdBorderPreset( const char * data )
 //	qDebug( "BorderPreset: filling border with color %d (%08X)", preset->color & 0x0F, borderColor );
 }
 
-void TestCDGWindow::cmdLoadColorTable( const char * data, int index )
+void CDGRenderer::cmdLoadColorTable( const char * data, int index )
 {
 	CDG_LoadColorTable* table = (CDG_LoadColorTable*) data;
 
@@ -191,16 +185,15 @@ void TestCDGWindow::cmdLoadColorTable( const char * data, int index )
 	}
 }
 
-void TestCDGWindow::cmdTileBlockXor( const char * data )
+void CDGRenderer::cmdTileBlockXor( const char * data )
 {
 	CDG_Tile* tile = (CDG_Tile*) data;
-	quint32 row_offset_y = (tile->row & 0x1F) * 12;
-	quint32 col_offset_x = (tile->column & 0x3F) * 6;
+	quint32 offset_y = (tile->row & 0x1F) * 12;
+	quint32 offset_x = (tile->column & 0x3F) * 6;
 
-//	qDebug( "TileBlockXor: %d, %d", col_offset_x, row_offset_y );
+//	qDebug( "TileBlockXor: %d, %d", offset_x, offset_y );
 
-	if ( col_offset_x + 12 >= CDG_FULL_WIDTH - CDG_BORDER_WIDTH
-		 || row_offset_y + 6 >  CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT )
+	if ( offset_x + 6 >= CDG_FULL_WIDTH || offset_y + 12 >= CDG_FULL_HEIGHT )
 		return;
 
 	// In the XOR variant, the color values are combined with the color values that are
@@ -218,7 +211,7 @@ void TestCDGWindow::cmdTileBlockXor( const char * data )
 
 		for ( int j = 0; j < 6; j++ )
 		{
-			QPoint p( col_offset_x + j, row_offset_y + i );
+			QPoint p( offset_x + j, offset_y + i );
 
 			// Find the original color index
 			quint8 origindex = m_cdgimage.pixelIndex( p );

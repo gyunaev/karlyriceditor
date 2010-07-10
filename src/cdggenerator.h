@@ -16,57 +16,53 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#ifndef PLAYERWIDGET_H
-#define PLAYERWIDGET_H
+#ifndef CDGGENERATOR_H
+#define CDGGENERATOR_H
 
-#include <QDockWidget>
+#include <QColor>
+#include <QImage>
+#include <QLabel>
+#include <QVector>
 
-#include <phonon/mediaobject.h>
-#include <phonon/audiooutput.h>
+#include "cdg.h"
+#include "lyrics.h"
 
-#include "playerbutton.h"
-#include "ui_playerwidget.h"
-
-class Project;
-
-class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
+class CDGGenerator
 {
-    Q_OBJECT
-
 	public:
-		PlayerWidget(QWidget *parent = 0);
-		~PlayerWidget();
+		CDGGenerator();
 
-		// Sets the current music file from a project. This operation is asynchronous, everything is
-		// handled in phonon_StateChanged() and propagated via MainWindow::updateState().
-		void	setMusicFile( Project * project );
+		// Initializes the stream, fills up the color tables and clears screen
+		void	init( const QColor& bgcolor,
+					  const QColor& titlecolor,
+					  const QColor& actcolor,
+					  const QColor& inactcolor,
+					  const QFont& font );
 
-		// Is music file ready to play?
-		bool	isReady() const { return m_ready; }
+		// Generate the CD+G lyrics
+		void	generate( const Lyrics& lyrics, qint64 total_length );
 
-		qint64	currentTime() const;
-		qint64	totalTime() const;
-
-	signals:
-		void	tick( qint64 tickvalue );
-
-	private slots:
-		void	phonon_StateChanged ( Phonon::State newstate, Phonon::State oldstate );
-		void	phonon_Tick( qint64 tickvalue );
-
-		void	btn_playerStop();
-		void	btn_playerPlayPause();
-		void	btn_playerSeekForward();
-		void	btn_playerSeekBackward();
+		// Returns the CD+G stream
+		QByteArray	stream();
 
 	private:
-		QString tickToString( qint64 tick );
+		void	addSubcode( const SubCode& sc );
+		void	addEmpty();
+		void	addLoadColors( const QColor& bgcolor, const QColor& titlecolor,
+							   const QColor& actcolor, const QColor& inactcolor );
+		void	clearScreen();
+		void	applyTileChanges( const QImage& orig,const QImage& newimg );
+
+		void	fillColor( char * buffer, const QColor& color );
+		QString	stripHTML( const QString& str );
+		int		getColor( QRgb color );
+		void	checkTile( int offset_x, int offset_y, const QImage& orig,const QImage& newimg );
 
 	private:
-		Phonon::MediaObject *	m_mediaObject;
-		Phonon::AudioOutput *	m_mediaAudioOutput;
+		QVector< SubCode >		m_stream;		// CD+G stream
 
-		bool					m_ready;
+		QFont					m_renderFont;
 };
 
-#endif // PLAYERWIDGET_H
+
+#endif // CDGGENERATOR_H
