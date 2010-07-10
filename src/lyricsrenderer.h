@@ -30,7 +30,12 @@ class LyricsRenderer
 		void setColors( const QString& active, const QString& inactive  );
 		void setTitlePage( const QString& titlepage );
 
+		// Sets time necessary for the block to be drawn, even if the previous block would
+		// be hidden earlier
+		void setPrefetch( int prefetch );
+
 		QString update( qint64 tickmark );
+
 
 	private:
 		// Redraw the label using block or line mode
@@ -71,6 +76,9 @@ class LyricsRenderer
 		// Colors
 		QString				m_colorActive;
 		QString				m_colorInactive;
+
+		// Prefetch
+		int					m_prefetch;
 };
 
 #endif // LYRICSRENDERER_H

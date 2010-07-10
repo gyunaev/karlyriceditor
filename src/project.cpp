@@ -1019,6 +1019,14 @@ QByteArray Project::exportLyricsAsCDG()
 				 tag( Project::Tag_CDG_inactivecolor ),
 				 font );
 
-	cdggen.generate( m_editor->exportLyrics(), m_totalSongLength );
+	// Generate the title
+	QString title = QString("<qt><center><font color='white'><b>%1<br><br>%2</b><br><br>Created by Karaoke Lyric Editor %3.%4<br>%5</font></center></qt>")
+					.arg( tag( Project::Tag_Artist ) )
+					.arg( tag( Project::Tag_Title ) )
+					.arg( APP_VERSION_MAJOR )
+					.arg( APP_VERSION_MINOR )
+					.arg( "http://www.karlyriceditor.com/" );
+
+	cdggen.generate( m_editor->exportLyrics(), m_totalSongLength, title );
 	return cdggen.stream();
 }

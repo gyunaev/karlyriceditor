@@ -30,6 +30,7 @@ static const int LYRICS_SHOW_AFTER = 5000;
 
 LyricsRenderer::LyricsRenderer()
 {
+	m_prefetch = 0;
 }
 
 void LyricsRenderer::setLyrics( const Lyrics& lyrics )
@@ -118,12 +119,17 @@ void LyricsRenderer::setLyrics( const Lyrics& lyrics )
 			if ( i == 0 || m_blockIndex[i].timestart - LYRICS_SHOW_BEFORE > m_blockIndex[i-1].timeend )
 				m_blockIndex[i].timestart = qMax( (qint64) 0, m_blockIndex[i].timestart - LYRICS_SHOW_BEFORE );
 			else
+			{
+				if ( m_prefetch > 0 && m_blockIndex[i].timestart - m_blockIndex[i-1].timeend < m_prefetch )
+					m_blockIndex[i-1].timeend = m_blockIndex[i].timestart - m_prefetch;
+
 				m_blockIndex[i].timestart = m_blockIndex[i-1].timeend + 1;
+			}
 
 			if ( i == m_blockIndex.size() - 1 || m_blockIndex[i].timeend + LYRICS_SHOW_AFTER < m_blockIndex[i+1].timestart )
 				m_blockIndex[i].timeend += LYRICS_SHOW_AFTER;
-			else
-				m_blockIndex[i].timeend = m_blockIndex[i+1].timestart - 1;
+//			else
+//				m_blockIndex[i].timeend = m_blockIndex[i+1].timestart - 1;
 		}
 
 		// Dump block index
@@ -294,4 +300,9 @@ void LyricsRenderer::setColors( const QString& active, const QString& inactive )
 void LyricsRenderer::setTitlePage( const QString& titlepage )
 {
 	m_titlePage = titlepage;
+}
+
+void LyricsRenderer::setPrefetch( int prefetch )
+{
+	m_prefetch = prefetch;
 }

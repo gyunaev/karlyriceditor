@@ -27,18 +27,26 @@ TestWindow::TestWindow( QWidget *parent )
 		m_pixsize( 2*CDG_FULL_WIDTH, 2*CDG_FULL_HEIGHT )
 {
 	setupUi( this );
-}
 
-void TestWindow::setLyrics( const Lyrics& lyrics )
-{
 	// Background color
 	QPalette pal = palette();
 	pal.setColor( QPalette::Window, pSettings->m_previewBackground );
 	setPalette( pal );
 
+	label->setText("");
+}
+
+void TestWindow::setLyrics( const Lyrics& lyrics )
+{
 	// Font
 	QFont font( pSettings->m_previewFontFamily, pSettings->m_previewFontSize );
 	setFont( font );
+
+	// Same for the text label
+	QPalette pal = label->palette();
+	pal.setColor( QPalette::Window, pSettings->m_previewBackground );
+	label->setPalette( pal );
+	label->setFont( font );
 
 	m_lyricrenderer.setLyrics( lyrics );
 	m_lyricrenderer.setColors( pSettings->m_previewTextActive.name(), pSettings->m_previewTextInactive.name() );

@@ -258,7 +258,7 @@ void CDGGenerator::applyTileChanges( const QImage& orig,const QImage& newimg )
 			checkTile( offset_x, offset_y, orig, newimg );
 }
 
-void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
+void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QString& title )
 {
 	LyricsRenderer renderer;
 	QString	lastLyrics;
@@ -280,8 +280,12 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	label.resize( CDG_FULL_WIDTH, CDG_FULL_HEIGHT );
 
 	// Init lyrics renderer
+	renderer.setPrefetch( 1000 );
 	renderer.setLyrics( lyrics );
 	renderer.setColors( colorActive.name(), colorInactive.name() );
+
+	if ( !title.isEmpty() )
+		renderer.setTitlePage( title );
 
 	// Pop up progress dialog
 	QProgressDialog dlg ("Rendering CD+G lyrics",
@@ -299,7 +303,8 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	{
 		// There should be 300 packets in 1000ms of music
 		// So each packet adds 1000 / 300 ms
-		qint64 timing = m_stream.size() * 1000 / 300;
+		// Speed up time a little to compensate CD+G reader delay
+		qint64 timing = m_stream.size() * 1000 / 300 + 250;
 
 		// Should we show the next step?
 		if ( timing / dialog_step > dlg.value() )

@@ -40,7 +40,7 @@ class CDGGenerator
 					  const QFont& font );
 
 		// Generate the CD+G lyrics
-		void	generate( const Lyrics& lyrics, qint64 total_length );
+		void	generate( const Lyrics& lyrics, qint64 total_length, const QString& title = QString::null );
 
 		// Returns the CD+G stream
 		QByteArray	stream();
