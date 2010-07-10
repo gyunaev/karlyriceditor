@@ -50,6 +50,7 @@ void CDGGenerator::init( const QColor& bgcolor, const QColor& titlecolor,
 	// Disable anti-aliasing for fonts
 	m_renderFont = font;
 	m_renderFont.setStyleStrategy(QFont::NoAntialias);
+	m_renderFont.setWeight( QFont::Bold );
 
 	m_stream.clear();
 

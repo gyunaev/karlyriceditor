@@ -51,6 +51,8 @@ void TestWindow::setLyrics( const Lyrics& lyrics )
 	m_lyricrenderer.setLyrics( lyrics );
 	m_lyricrenderer.setColors( pSettings->m_previewTextActive.name(), pSettings->m_previewTextInactive.name() );
 	m_renderingLyrics = true;
+
+	label->setText("");
 }
 
 void TestWindow::setTitleData( const QString& titledata )
@@ -63,6 +65,8 @@ void TestWindow::setCDGdata( const QByteArray& cdgdata )
 	m_cdgrenderer.setCDGdata( cdgdata );
 	m_renderingLyrics = false;
 	resize( m_pixsize );
+
+	label->setText("");
 }
 
 void TestWindow::tick( qint64 tickmark )

@@ -27,6 +27,7 @@ void CDGRenderer::setCDGdata( const QByteArray& cdgdata )
 {
 	m_packet = 0;
 
+	m_cdgimage.fill( 0 );
 	m_stream.clear();
 	m_stream.reserve( cdgdata.size() / sizeof( SubCode ) );
 

@@ -279,7 +279,7 @@ void MainWindow::act_fileOpenProject()
 
 	QString fileName = QFileDialog::getOpenFileName( this,
 			tr("Open a project file"),
-			".",
+			QString::null,
 			tr("Project files (*.kleproj)") );
 
 	if ( fileName.isEmpty() )
@@ -320,9 +320,9 @@ bool MainWindow::act_fileSaveProject()
 
 bool MainWindow::act_fileSaveProjectAs()
 {
-	QString fileName = QFileDialog::getSaveFileName(this,
+	QString fileName = QFileDialog::getSaveFileName( this,
 			tr("Save as a project file"),
-			".",
+			QString::null,
 			tr("Project files (*.kleproj)") );
 
 	if ( fileName.isEmpty() )
@@ -443,7 +443,7 @@ void MainWindow::act_projectOpenLyricFile()
 {
 	QString fileName = QFileDialog::getOpenFileName( this,
 			tr("Open a lyric file"),
-			".",
+			QString::null,
 			tr("LRC files (*.lrc);;UltraStar files (*.txt)") );
 
 	if ( fileName.isEmpty() )
@@ -494,8 +494,8 @@ void MainWindow::act_projectExportLyricFile()
 			break;
 	}
 
-	QString outfile = QFileDialog::getSaveFileName( 0, tr("Export lyrics to a file"), ".", filter, &outfilter );
-	QString lyrics;
+	QString outfile = QFileDialog::getSaveFileName( 0, tr("Export lyrics to a file"), QString::null, filter, &outfilter );
+	QByteArray lyrics;
 
 	if ( outfile.isEmpty() )
 		return;
@@ -523,7 +523,7 @@ void MainWindow::act_projectExportLyricFile()
 		return;
 	}
 
-	file.write( lyrics.toUtf8() );
+	file.write( lyrics );
 }
 
 void MainWindow::act_projectSettings()

@@ -1020,7 +1020,8 @@ QByteArray Project::exportLyricsAsCDG()
 				 font );
 
 	// Generate the title
-	QString title = QString("<qt><center><font color='white'><b>%1<br><br>%2</b><br><br>Created by Karaoke Lyric Editor %3.%4<br>%5</font></center></qt>")
+	QString title = QString("<qt><center><font color='white'>%1<br><br>%2<br><br></font>"
+							"<font color='white' size='50%'>Created by Karaoke Lyric Editor %3.%4<br>%5</font></center></qt>")
 					.arg( tag( Project::Tag_Artist ) )
 					.arg( tag( Project::Tag_Title ) )
 					.arg( APP_VERSION_MAJOR )
