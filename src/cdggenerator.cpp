@@ -260,18 +260,24 @@ void CDGGenerator::applyTileChanges( const QImage& orig,const QImage& newimg )
 
 void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 {
-	QTextDocument document;
 	LyricsRenderer renderer;
 	QString	lastLyrics;
+
+	// Prepare images
 	QImage image( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_RGB32 );
 	QImage lastImage( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_RGB32 );
 
-	// Prepare images
 	image.fill( colorBackground.rgb() );
 	lastImage.fill( colorBackground.rgb() );
 
-	// Prepare the document
-	document.setDefaultFont( m_renderFont );
+	// We're using QLabel for rendering as it is easier
+	QLabel label;
+	label.setAlignment( Qt::AlignCenter );
+	QPalette pal = label.palette();
+	pal.setColor( QPalette::Window, colorBackground );
+	label.setPalette( pal );
+	label.setFont( m_renderFont );
+	label.resize( CDG_FULL_WIDTH, CDG_FULL_HEIGHT );
 
 	// Init lyrics renderer
 	renderer.setLyrics( lyrics );
@@ -316,23 +322,8 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 			continue;
 		}
 
-		// Render the text into image
+		// Set up painter with disabled anti-aliasing to handle color detection
 		image.fill( colorBackground.rgb() );
-
-		document.setHtml( lyrics );
-
-		// Query for the used size
-		unsigned int width = document.idealWidth();
-		unsigned int height = document.size().height();
-
-		if ( width > CDG_FULL_WIDTH && height > CDG_FULL_HEIGHT )
-			qWarning("Does not fit by both height and width");
-		else if ( height > CDG_FULL_HEIGHT )
-			qWarning("Does not fit by height");
-		else if ( height > CDG_FULL_WIDTH )
-			qWarning("Does not fit by width");
-
-		// Draw
 		QPainter painter( &image );
 		painter.setRenderHints( QPainter::Antialiasing
 							 | QPainter::TextAntialiasing
@@ -340,7 +331,10 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 							 | QPainter::HighQualityAntialiasing
 							 | QPainter::NonCosmeticDefaultPen, false );
 
-		document.drawContents( &painter );
+		// Render into text label and grab the content
+		label.setText( lyrics );
+		label.update();
+		label.render( &painter );
 
 		// Is change significant enough to warrant full redraw?
 		if ( stripHTML( lyrics ) != stripHTML( lastLyrics ) )

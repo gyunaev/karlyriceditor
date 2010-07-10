@@ -195,7 +195,7 @@ void LyricsRenderer::redrawBlocks( qint64 tickmark )
 	int index = m_blockIndex[blockid].index;
 
 	// Create a multiline string from current block.
-	QString text = "<qt><center>";
+	QString text = "<qt>";
 
 	for ( ; index < m_lyricIndex.size() && m_lyricIndex[index].blockindex == blockid; index++ )
 	{
@@ -214,7 +214,7 @@ void LyricsRenderer::redrawBlocks( qint64 tickmark )
 		}
 	}
 
-	text += "</center></qt>";
+	text += "</qt>";
 	m_text = text;
 }
 

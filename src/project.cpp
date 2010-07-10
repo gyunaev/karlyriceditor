@@ -971,7 +971,7 @@ QByteArray Project::exportLyricsAsCDG()
 {
 	CDGGenerator cdggen;
 
-	QFont font( pSettings->m_previewFontFamily, 16 );
+	QFont font( pSettings->m_previewFontFamily, 12 );
 
 	cdggen.init( pSettings->m_previewBackground,
 				 QColor(Qt::white),
