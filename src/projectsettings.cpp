@@ -78,36 +78,54 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 	}
 
 	// Init advanced params
-	if ( m_project->type() != Project::LyricType_UStar )
+	switch ( m_project->type() )
 	{
-		// Hide Ultrastar-specific fields
-		labelUSbpmgap->hide();
-		labelMusicFile->hide();
-		leUSmp3->hide();
+		case Project::LyricType_LRC1:
+		case Project::LyricType_LRC2:
+			// Hide Ultrastar-specific fields
+			labelUSbpmgap->hide();
+			labelMusicFile->hide();
+			leUSmp3->hide();
 
-		// Hide ultrastar group
-		groupUStar->hide();
+			// Hide ultrastar and CD+G group
+			groupUStar->hide();
+			groupCDG->hide();
 
-		// Add LRC params
-		leLRCalbum->setText( m_project->tag( Project::Tag_Album ) );
-		leLRCapp->setText( m_project->tag( Project::Tag_Application ) );
-		leLRCappver->setText( m_project->tag( Project::Tag_Appversion ) );
-		leLRCcreated->setText( m_project->tag( Project::Tag_CreatedBy ) );
-		leLRCoffset->setText( m_project->tag( Project::Tag_Offset) );
-	}
-	else
-	{
-		// Hide LRC group
-		groupLRC->hide();
+			// Add LRC params
+			leLRCalbum->setText( m_project->tag( Project::Tag_Album ) );
+			leLRCapp->setText( m_project->tag( Project::Tag_Application ) );
+			leLRCappver->setText( m_project->tag( Project::Tag_Appversion ) );
+			leLRCcreated->setText( m_project->tag( Project::Tag_CreatedBy ) );
+			leLRCoffset->setText( m_project->tag( Project::Tag_Offset) );
+			break;
 
-		// Add UltraStar params
-		leUSbackground->setText( m_project->tag( Project::Tag_Background ) );
-		leUScover->setText( m_project->tag( Project::Tag_Cover ) );
-		leUSedition->setText( m_project->tag( Project::Tag_Edition) );
-		leUSgenre->setText( m_project->tag( Project::Tag_Genre ) );
-		leUSlang->setText( m_project->tag( Project::Tag_Language ) );
-		leUSvideo->setText( m_project->tag( Project::Tag_Video ) );
-		leUSvideogap->setText( m_project->tag( Project::Tag_VideoGap ) );
+		case Project::LyricType_UStar:
+			// Hide LRC and CD+G groups
+			groupLRC->hide();
+			groupCDG->hide();
+
+			// Add UltraStar params
+			leUSbackground->setText( m_project->tag( Project::Tag_Background ) );
+			leUScover->setText( m_project->tag( Project::Tag_Cover ) );
+			leUSedition->setText( m_project->tag( Project::Tag_Edition) );
+			leUSgenre->setText( m_project->tag( Project::Tag_Genre ) );
+			leUSlang->setText( m_project->tag( Project::Tag_Language ) );
+			leUSvideo->setText( m_project->tag( Project::Tag_Video ) );
+			leUSvideogap->setText( m_project->tag( Project::Tag_VideoGap ) );
+			break;
+
+		case Project::LyricType_CDG:
+			// Hide LRC and UStar groups
+			groupLRC->hide();
+			groupUStar->hide();
+
+			btnCDGColorActive->setColor( m_project->tag( Project::Tag_CDG_activecolor ) );
+			btnCDGColorBg->setColor( m_project->tag( Project::Tag_CDG_bgcolor ) );
+			btnCDGColorInactive->setColor( m_project->tag( Project::Tag_CDG_inactivecolor ) );
+			btnCDGColorInfo->setColor( m_project->tag( Project::Tag_CDG_infocolor ) );
+			fontCDG->setCurrentFont( QFont( m_project->tag( Project::Tag_CDG_font ) ) );
+			fontCDGSize->setValue( m_project->tag( Project::Tag_CDG_fontsize).toInt() );
+			break;
 	}
 
 	// Scale down the dialog as part of it is hidden
@@ -128,7 +146,7 @@ void ProjectSettings::browseMusicFile()
 void ProjectSettings::changeProjectType()
 {
 	// Init advanced params
-	if ( !rbLRC3->isChecked() )
+	if ( rbLRC1->isChecked() || rbLRC2->isChecked() )
 	{
 		groupLRC->show();
 
@@ -139,11 +157,13 @@ void ProjectSettings::changeProjectType()
 
 		// Hide ultrastar group
 		groupUStar->hide();
+		groupCDG->hide();
 	}
-	else
+	else if ( rbLRC3->isChecked() )
 	{
 		// Hide LRC group
 		groupLRC->hide();
+		groupCDG->hide();
 
 		// Hide Ultrastar-specific fields
 		labelUSbpmgap->show();
@@ -152,6 +172,19 @@ void ProjectSettings::changeProjectType()
 
 		// Hide ultrastar group
 		groupUStar->show();
+	}
+	else if ( rbLRC4->isChecked() )
+	{
+		// Hide LRC group
+		groupLRC->hide();
+		groupUStar->hide();
+
+		// Hide Ultrastar-specific fields
+		labelUSbpmgap->hide();
+		labelMusicFile->hide();
+		leUSmp3->hide();
+
+		groupCDG->show();
 	}
 }
 
@@ -238,6 +271,13 @@ void ProjectSettings::accept()
 		m_project->setTag( Project::Tag_Video, leUSvideo->text() );
 		m_project->setTag( Project::Tag_VideoGap, leUSvideogap->text() );
 	}
+
+	m_project->setTag( Project::Tag_CDG_activecolor, btnCDGColorActive->color().name() );
+	m_project->setTag( Project::Tag_CDG_bgcolor, btnCDGColorBg->color().name() );
+	m_project->setTag( Project::Tag_CDG_inactivecolor, btnCDGColorInactive->color().name() );
+	m_project->setTag( Project::Tag_CDG_infocolor, btnCDGColorInfo->color().name() );
+	m_project->setTag( Project::Tag_CDG_font, fontCDG->currentFont().family() );
+	m_project->setTag( Project::Tag_CDG_fontsize, QString::number( fontCDGSize->value() ) );
 
 	QDialog::accept();
 }

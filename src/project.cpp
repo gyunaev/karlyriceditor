@@ -57,6 +57,13 @@ enum
 	PD_TAG_VIDEO,			// UltraStar tag
 	PD_TAG_VIDEOGAP,		// UltraStar tag
 	PD_TAG_EDITION,			// UltraStar tag
+
+	PD_TAG_CDG_BCOLOR,		// CD+G tag - background color
+	PD_TAG_CDG_ICOLOR,		// CD+G tag - info (title/credits) color
+	PD_TAG_CDG_ACOLOR,		// CD+G tag - active (not sung yet) color
+	PD_TAG_CDG_NCOLOR,		// CD+G tag - inactive (sung) color
+	PD_TAG_CDG_FONT,		// CD+G tag - font family
+	PD_TAG_CDG_FONTSIZE,	// CD+G tag - font size
 };
 
 
@@ -84,6 +91,15 @@ void Project::clear()
 	m_projectData[ PD_TAG_OFFSET ] = QString::number( pSettings->m_phononSoundDelay );
 	m_projectData[ PD_TAG_APPLICATION ] = "Karaoke Lyric Editor";
 	m_projectData[ PD_TAG_APPVERSION ] = QString("%1.%2").arg( APP_VERSION_MAJOR ).arg( APP_VERSION_MINOR );
+
+	// Init CD+G data
+	m_projectData[ PD_TAG_CDG_BCOLOR ] = "black";
+	m_projectData[ PD_TAG_CDG_ICOLOR ] = "white";
+	m_projectData[ PD_TAG_CDG_ACOLOR ] = "green";
+	m_projectData[ PD_TAG_CDG_NCOLOR ] = "red";
+	m_projectData[ PD_TAG_CDG_FONT ] = "arial";
+	m_projectData[ PD_TAG_CDG_FONTSIZE ] = "12";
+
 	m_totalSongLength = 0;
 }
 
@@ -221,6 +237,30 @@ int	Project::tagToId( Tag tag  )
 
 		case Tag_Edition:
 			tagid = PD_TAG_EDITION;
+			break;
+
+		case Tag_CDG_bgcolor:
+			tagid = PD_TAG_CDG_BCOLOR;
+			break;
+
+		case Tag_CDG_infocolor:
+			tagid = PD_TAG_CDG_ICOLOR;
+			break;
+
+		case Tag_CDG_activecolor:
+			tagid = PD_TAG_CDG_ACOLOR;
+			break;
+
+		case Tag_CDG_inactivecolor:
+			tagid = PD_TAG_CDG_NCOLOR;
+			break;
+
+		case Tag_CDG_font:
+			tagid = PD_TAG_CDG_FONT;
+			break;
+
+		case Tag_CDG_fontsize:
+			tagid = PD_TAG_CDG_FONTSIZE;
 			break;
 	}
 
@@ -971,12 +1011,12 @@ QByteArray Project::exportLyricsAsCDG()
 {
 	CDGGenerator cdggen;
 
-	QFont font( pSettings->m_previewFontFamily, 12 );
+	QFont font( tag( Project::Tag_CDG_font ), tag( Project::Tag_CDG_fontsize ).toInt() );
 
-	cdggen.init( pSettings->m_previewBackground,
-				 QColor(Qt::white),
-				 pSettings->m_previewTextActive,
-				 pSettings->m_previewTextInactive,
+	cdggen.init( tag( Project::Tag_CDG_bgcolor ),
+				 tag( Project::Tag_CDG_infocolor ),
+				 tag( Project::Tag_CDG_activecolor ),
+				 tag( Project::Tag_CDG_inactivecolor ),
 				 font );
 
 	cdggen.generate( m_editor->exportLyrics(), m_totalSongLength );

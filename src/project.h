@@ -54,6 +54,12 @@ class Project
 			Tag_Offset,
 			Tag_Application,
 			Tag_Appversion,
+			Tag_CDG_bgcolor,
+			Tag_CDG_infocolor,
+			Tag_CDG_activecolor,
+			Tag_CDG_inactivecolor,
+			Tag_CDG_font,
+			Tag_CDG_fontsize,
 		};
 
 		Project( Editor * editor );
