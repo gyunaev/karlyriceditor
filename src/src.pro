@@ -70,3 +70,7 @@ FORMS += mainwindow.ui \
     dialog_edittimemark.ui \
     dialog_selectencoding.ui \
 	gentlemessagebox.ui
+
+win32-g++-*: {
+	LIBS += -lwsock32
+}

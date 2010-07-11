@@ -1,0 +1,153 @@
+; NSIS script file
+
+;--------------------------------
+;Include Modern UI
+
+	!include "MUI.nsh"
+
+;--------------------------------
+;General
+
+	; The icon for the installer.
+	; MUI_ICON icon_file
+
+	; The icon for the uninstaller.
+	; MUI_UNICON icon_file
+
+	Name "Karaoke Lyric Editor"
+	OutFile "InstallKarLyricEditor.exe"
+	InstallDir "$PROGRAMFILES\Ulduzsoft\KarLyricEditor"
+	InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Ulduzsoft\KarLyricEditor" ""
+	SetCompressor lzma
+
+;--------------------------------
+;Variables
+	
+	Var MUI_TEMP
+	Var STARTMENU_FOLDER
+  
+;--------------------------------
+;Interface Settings
+
+	!define MUI_ABORTWARNING
+
+
+;--------------------------------
+;Pages
+	
+	!insertmacro MUI_PAGE_WELCOME
+	!insertmacro MUI_PAGE_LICENSE "license.txt"
+	!insertmacro MUI_PAGE_DIRECTORY
+
+	;Start Menu Folder Page Configuration
+	!define MUI_STARTMENUPAGE_REGISTRY_ROOT HKEY_LOCAL_MACHINE 
+	!define MUI_STARTMENUPAGE_REGISTRY_KEY "SOFTWARE\Ulduzsoft\KarLyricEditor"
+	!define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
+	!insertmacro MUI_PAGE_STARTMENU Application $STARTMENU_FOLDER
+	
+	!insertmacro MUI_PAGE_INSTFILES
+	!insertmacro MUI_PAGE_FINISH
+
+	; Uninstaller pages
+	!insertmacro MUI_UNPAGE_WELCOME
+	!insertmacro MUI_UNPAGE_CONFIRM
+	!insertmacro MUI_UNPAGE_INSTFILES
+	!insertmacro MUI_UNPAGE_FINISH
+
+;--------------------------------
+;Languages
+ 
+	!insertmacro MUI_LANGUAGE "English"
+
+
+;--------------------------------
+;Installer Sections
+
+	Section "General" General
+		SetOutPath "$INSTDIR"
+		
+		; Our files
+		CreateDirectory "$INSTDIR\imageformats"
+		CreateDirectory "$INSTDIR\codecs"
+		CreateDirectory "$INSTDIR\iconengines"
+		CreateDirectory "$INSTDIR\mediaservices"
+		CreateDirectory "$INSTDIR\phonon_backend"
+		
+		File /oname=$INSTDIR\imageformats\qgif4.dll qgif4.dll
+		File /oname=$INSTDIR\imageformats\qico4.dll qico4.dll
+		File /oname=$INSTDIR\imageformats\qjpeg4.dll qjpeg4.dll
+		File /oname=$INSTDIR\imageformats\qsvg4.dll qsvg4.dll
+		File /oname=$INSTDIR\imageformats\qtiff4.dll qtiff4.dll
+		File /oname=$INSTDIR\iconengines\qsvgicon4.dll qsvgicon4.dll
+		File /oname=$INSTDIR\codecs\qcncodecs4.dll qcncodecs4.dll
+		File /oname=$INSTDIR\codecs\qjpcodecs4.dll qjpcodecs4.dll
+		File /oname=$INSTDIR\codecs\qkrcodecs4.dll qkrcodecs4.dll
+		File /oname=$INSTDIR\codecs\qtwcodecs4.dll qtwcodecs4.dll
+		File /oname=$INSTDIR\mediaservices\qdsengine4.dll qdsengine4.dll
+		File /oname=$INSTDIR\phonon_backend\phonon_ds94.dll phonon_ds94.dll
+		
+		File karlyriceditor.exe
+		File QtGui4.dll  
+		File QtCore4.dll
+		File phonon4.dll
+		File karlyriceditor.exe.manifest
+
+		;Store installation folder
+		WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Ulduzsoft\KarLyricEditor" "" "$INSTDIR"
+		
+		;Create uninstaller
+		WriteUninstaller "$INSTDIR\uninst.exe"
+		
+		!insertmacro MUI_STARTMENU_WRITE_BEGIN Application
+		;Create shortcuts
+		CreateDirectory "$SMPROGRAMS\$STARTMENU_FOLDER"
+		CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\KarLyricEditor.lnk" "$INSTDIR\karlyriceditor.exe"
+		CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Uninstall.lnk" "$INSTDIR\uninst.exe"
+		!insertmacro MUI_STARTMENU_WRITE_END
+
+	SectionEnd
+
+;--------------------------------
+;Uninstaller Section
+
+	Section "Uninstall"
+
+		; Our files
+		Delete "$INSTDIR\imageformats\qgif4.dll"
+		Delete "$INSTDIR\imageformats\qico4.dll"
+		Delete "$INSTDIR\imageformats\qjpeg4.dll"
+		Delete "$INSTDIR\imageformats\qmng4.dll"
+		Delete "$INSTDIR\imageformats\qsvg4.dll"
+		Delete "$INSTDIR\imageformats\qtiff4.dll"
+		Delete "$INSTDIR\iconengines\qsvgicon4.dll"
+		Delete "$INSTDIR\codecs\qcncodecs4.dll"
+		Delete "$INSTDIR\codecs\qjpcodecs4.dll"
+		Delete "$INSTDIR\codecs\qkrcodecs4.dll"
+		Delete "$INSTDIR\codecs\qtwcodecs4.dll"
+		Delete "$INSTDIR\mediaservices\qdsengine4.dll"
+		Delete "$INSTDIR\phonon_backend\phonon_ds94.dll"
+		
+		Delete "$INSTDIR\karlyriceditor.exe"
+		Delete "$INSTDIR\QtGui4.dll"
+		Delete "$INSTDIR\QtCore4.dll"
+		Delete "$INSTDIR\phonon4.dll"
+		Delete "$INSTDIR\karlyriceditor.exe.manifest"
+		
+		Delete "$INSTDIR\uninst.exe"
+
+		RMDir "$INSTDIR\imageformats"
+		RMDir "$INSTDIR\iconengines"
+		RMDir "$INSTDIR\codecs"
+		RMDir "$INSTDIR\mediaservices"
+		RMDir "$INSTDIR\phonon_backend"
+		RMDir "$INSTDIR"
+
+		!insertmacro MUI_STARTMENU_GETFOLDER Application $MUI_TEMP
+		Delete "$SMPROGRAMS\$MUI_TEMP\Uninstall.lnk"
+		Delete "$SMPROGRAMS\$MUI_TEMP\KarLyricEditor.lnk"
+		Delete "$SMPROGRAMS\$MUI_TEMP"
+  
+		DeleteRegKey /ifempty HKEY_LOCAL_MACHINE "SOFTWARE\Ulduzsoft\KarLyricEditor"
+		DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\KarLyricEditor"
+	
+	SectionEnd

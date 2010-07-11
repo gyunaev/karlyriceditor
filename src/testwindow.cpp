@@ -53,11 +53,13 @@ void TestWindow::setLyrics( const Lyrics& lyrics )
 	m_renderingLyrics = true;
 
 	label->setText("");
+	update();
 }
 
 void TestWindow::setTitleData( const QString& titledata )
 {
 	m_lyricrenderer.setTitlePage( titledata );
+	tick(0);
 }
 
 void TestWindow::setCDGdata( const QByteArray& cdgdata )
@@ -67,6 +69,7 @@ void TestWindow::setCDGdata( const QByteArray& cdgdata )
 	resize( m_pixsize );
 
 	label->setText("");
+	update();
 }
 
 void TestWindow::tick( qint64 tickmark )
