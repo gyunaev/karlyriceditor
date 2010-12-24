@@ -225,7 +225,7 @@ bool PageLyrics::validatePage()
 			return false;
 		}
 
-		if ( !m_project->importLyrics( leFileName->text(), m_project->type() ) )
+		if ( !m_project->importLyrics( leFileName->text(), leFileName->text().endsWith( "txt" ) ? Project::LyricType_UStar : Project::LyricType_LRC2 ) )
 			return false;
 	}
 
