@@ -215,6 +215,8 @@ void ProjectSettings::accept()
 			m_project->setType( Project::LyricType_LRC2 );
 		else if ( rbLRC3->isChecked() )
 			m_project->setType( Project::LyricType_UStar );
+		else if ( rbLRC4->isChecked() )
+			m_project->setType( Project::LyricType_CDG );
 	}
 
 	// 2nd tab

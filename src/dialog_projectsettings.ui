@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>451</width>
+    <width>454</width>
     <height>735</height>
    </rect>
   </property>
@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabSettings">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tabGeneral">
       <attribute name="title">
@@ -414,7 +414,7 @@
              <item row="1" column="0">
               <widget class="QLabel" name="label_20">
                <property name="text">
-                <string>Inactive</string>
+                <string>Sung</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -434,7 +434,7 @@
              <item row="1" column="2">
               <widget class="QLabel" name="label_21">
                <property name="text">
-                <string>Active</string>
+                <string>Not sung yet</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

@@ -29,16 +29,6 @@
 
 // Color code indexes
 static int COLOR_IDX_BACKGROUND = 0;	// background
-static int COLOR_IDX_INFO = 1;			// information color
-static int COLOR_IDX_INACTIVE = 2;		// inactive lyrics
-static int COLOR_IDX_ACTIVE = 3;		// active lyrics
-
-// Colors used internally for drawing
-static QColor colorBackground( Qt::black );
-static QColor colorInfo( Qt::white );
-static QColor colorInactive( Qt::green );
-static QColor colorActive( Qt::red );
-
 
 CDGGenerator::CDGGenerator()
 {
@@ -52,11 +42,19 @@ void CDGGenerator::init( const QColor& bgcolor, const QColor& titlecolor,
 	m_renderFont.setStyleStrategy(QFont::NoAntialias);
 	m_renderFont.setWeight( QFont::Bold );
 
-	m_stream.clear();
+	// Initialize colors
+	m_colorBackground = bgcolor;
+	m_colorInfo = titlecolor;
+	m_colorInactive = inactcolor;
+	m_colorActive = actcolor;
+
+	m_colors.clear();
+	m_colors.push_back( m_colorBackground );
+	m_streamColorIndex = -1;
 
 	// Initialize the stream
+	m_stream.clear();
 	addEmpty();
-	addLoadColors( bgcolor, titlecolor, actcolor, inactcolor );
 
 	clearScreen();
 }
@@ -74,10 +72,64 @@ void CDGGenerator::addEmpty()
 	addSubcode( sc );
 }
 
+void CDGGenerator::fillColor( char * buffer, const QColor& color )
+{
+	// Green
+	char red = (color.red() / 17) & 0x0F;
+	char green = (color.green() / 17) & 0x0F;
+	char blue = (color.blue() / 17) & 0x0F;
+
+	// Red and green
+	buffer[0] = (red << 2) | (green >> 2);
+	buffer[1] = ((green & 0x03) << 5 ) | blue;
+}
+
 void CDGGenerator::clearScreen()
 {
 	SubCode sc;
 
+	// First copy the colors if we got them
+	if ( m_streamColorIndex != -1 && !m_colors.isEmpty() )
+	{
+		// Load first lower 8 colors
+		SubCode sc;
+
+		sc.command = CDG_COMMAND;
+		sc.instruction = CDG_INST_LOAD_COL_TBL_0_7;
+		memset( sc.data, 0, 16 );
+
+		for ( int i = 0; i < 7; i++ )
+		{
+			if ( i >= m_colors.size() )
+				break;
+
+			fillColor( sc.data + i * 2, m_colors[i] );
+		}
+
+		m_stream[ m_streamColorIndex ] = sc;
+
+		// Do we have more colors?
+		if ( m_colors.size() > 8 )
+		{
+			sc.instruction = CDG_INST_LOAD_COL_TBL_8_15;
+			memset( sc.data, 0, 16 );
+
+			for ( int i = 8; i < 16; i++ )
+			{
+				if ( i >= m_colors.size() )
+					break;
+
+				fillColor( sc.data + i * 2, m_colors[i] );
+			}
+
+			m_stream[ m_streamColorIndex + 1 ] = sc;
+		}
+
+		m_colors.clear();
+		m_colors.push_back( m_colorBackground );
+	}
+
+	// Now clear the screen
 	for ( int i = 0; i < 16; i++ )
 	{
 		sc.command = CDG_COMMAND;
@@ -97,8 +149,14 @@ void CDGGenerator::clearScreen()
 	preset->color = COLOR_IDX_BACKGROUND;
 
 	addSubcode( sc );
+
+	// Reserve space for two LoadColor commands
+	m_streamColorIndex = m_stream.size();
+	addEmpty();
+	addEmpty();
 }
 
+/*
 void CDGGenerator::fillColor( char * buffer, const QColor& color )
 {
 	// Green
@@ -128,7 +186,7 @@ void CDGGenerator::addLoadColors( const QColor& bgcolor, const QColor& titlecolo
 
 	addSubcode( sc );
 }
-
+*/
 QString	CDGGenerator::stripHTML( const QString& str )
 {
 	QRegExp rx( "<.*>" );
@@ -147,24 +205,19 @@ QByteArray CDGGenerator::stream()
 int CDGGenerator::getColor( QRgb color )
 {
 	// Mask alpha channel
-	int index = -1;
 	color |= 0xFF000000;
 
-	if ( color == colorBackground.rgb() )
-		index = COLOR_IDX_BACKGROUND;
-	else if ( color == colorInfo.rgb() )
-		index = COLOR_IDX_INFO;
-	else if ( color == colorActive.rgb() )
-		index = COLOR_IDX_ACTIVE;
-	else if ( color == colorInactive.rgb() )
-		index = COLOR_IDX_INACTIVE;
+	// Find in the array of colors
+	for ( int i = 0; i < m_colors.size(); i++ )
+		if ( m_colors[i] == QColor(color) )
+			return i;
 
-	if ( index == -1 )
-		qFatal("Unknown color %08X doesn't match any known color (%08X, %08X, %08X, %08X)",
-			color, colorBackground.rgb(), colorInfo.rgb(), colorActive.rgb(), colorInactive.rgb() );
+	if ( m_colors.size() == 16 )
+		qFatal("Color table is out of color entries");
 
-	//qDebug("Color %08X -> index %d", color, index );
-	return index;
+	qDebug("Adding color %08X", color );
+	m_colors.push_back( color );
+	return m_colors.size() - 1;
 }
 
 void CDGGenerator::checkTile( int offset_x, int offset_y, const QImage& orig,const QImage& newimg )
@@ -247,8 +300,8 @@ void CDGGenerator::applyTileChanges( const QImage& orig,const QImage& newimg )
 
 	qDebug("generating image %d", i );
 
-//	if ( ++i > 9 )
-//		i = 0;
+	if ( ++i > 9 )
+		i = 0;
 
 	orig.save( "orig-" + fname, "bmp" );
 	newimg.save( "new-" + fname, "bmp" );
@@ -268,22 +321,21 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QS
 	QImage image( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_RGB32 );
 	QImage lastImage( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_RGB32 );
 
-	image.fill( colorBackground.rgb() );
-	lastImage.fill( colorBackground.rgb() );
+	image.fill( m_colorBackground.rgb() );
+	lastImage.fill( m_colorBackground.rgb() );
 
 	// We're using QLabel for rendering as it is easier
 	QLabel label;
 	label.setAlignment( Qt::AlignCenter );
-	QPalette pal = label.palette();
-	pal.setColor( QPalette::Window, colorBackground );
-	label.setPalette( pal );
+	label.setStyleSheet("background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 black, stop: 1 black);");
+
 	label.setFont( m_renderFont );
 	label.resize( CDG_FULL_WIDTH, CDG_FULL_HEIGHT );
 
 	// Init lyrics renderer
 	renderer.setPrefetch( 1000 );
 	renderer.setLyrics( lyrics );
-	renderer.setColors( colorActive.name(), colorInactive.name() );
+	renderer.setColors( m_colorActive.name(), m_colorInactive.name() );
 
 	if ( !title.isEmpty() )
 		renderer.setTitlePage( title );
@@ -329,7 +381,7 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QS
 		}
 
 		// Set up painter with disabled anti-aliasing to handle color detection
-		image.fill( colorBackground.rgb() );
+		image.fill( m_colorBackground.rgb() );
 		QPainter painter( &image );
 		painter.setRenderHints( QPainter::Antialiasing
 							 | QPainter::TextAntialiasing
@@ -348,7 +400,7 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QS
 			clearScreen();
 
 			// Clear the old image too
-			lastImage.fill( colorBackground.rgb() );
+			lastImage.fill( m_colorBackground.rgb() );
 		}
 
 		applyTileChanges( lastImage, image );
