@@ -147,8 +147,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
 		return;
 	}
 
-	editor->cleanupAutoSave();
-
 	// Save current directory
 	QSettings().setValue( "general/currentdirectory", QDir::currentPath() );
 
@@ -348,8 +346,6 @@ bool MainWindow::saveProject( const QString& fileName )
 
 bool MainWindow::tryCloseCurrentProject()
 {
-	editor->cleanupAutoSave();
-
 	if ( m_project->isModified() )
 	{
 		int rc = QMessageBox::question( 0,
