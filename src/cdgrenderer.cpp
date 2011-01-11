@@ -47,7 +47,7 @@ void CDGRenderer::setCDGdata( const QByteArray& cdgdata )
 				case CDG_INST_TILE_BLOCK_XOR:
 					break;
 
-				// We do not support those commands, and in fact none of CD+G files I have do.
+				// We do not support those commands, as we do not generate them
 				//case CDG_INST_SCROLL_PRESET:
 				//case CDG_INST_SCROLL_COPY:
 				//case CDG_INST_DEF_TRANSP_COL:
@@ -68,9 +68,15 @@ QImage CDGRenderer::update( qint64 tickmark, bool * screen_changed )
 
 	unsigned int packets_due = tickmark * 300 / 1000;
 
-	if ( packets_due <= m_packet )
-		return m_cdgimage;
+	// Was the stream position reversed? In this case we have to "replay" the whole stream
+	// as the screen is a state machine, and "clear" may not be there.
+	if ( m_packet > packets_due - 1 )
+	{
+		qDebug( "CDGRenderer: packet number changed backward (%d played, %d asked", m_packet, packets_due );
+		m_packet = 0;
+	}
 
+	// Process all packets already due
 	for ( ; m_packet < packets_due; m_packet++ )
 	{
 		SubCode& sc = m_stream[m_packet];
