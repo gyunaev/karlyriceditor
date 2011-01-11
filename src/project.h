@@ -60,6 +60,7 @@ class Project
 			Tag_CDG_inactivecolor,
 			Tag_CDG_font,
 			Tag_CDG_fontsize,
+			Tag_CDG_titletime,
 		};
 
 		Project( Editor * editor );

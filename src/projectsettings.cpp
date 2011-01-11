@@ -125,6 +125,7 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 			btnCDGColorInfo->setColor( m_project->tag( Project::Tag_CDG_infocolor ) );
 			fontCDG->setCurrentFont( QFont( m_project->tag( Project::Tag_CDG_font ) ) );
 			fontCDGSize->setValue( m_project->tag( Project::Tag_CDG_fontsize).toInt() );
+			titleCDGmin->setValue( m_project->tag( Project::Tag_CDG_titletime).toInt() );
 
 			fontCDG->setFontFilters( QFontComboBox::ScalableFonts | QFontComboBox::MonospacedFonts | QFontComboBox::ProportionalFonts );
 			break;
@@ -282,6 +283,7 @@ void ProjectSettings::accept()
 	m_project->setTag( Project::Tag_CDG_infocolor, btnCDGColorInfo->color().name() );
 	m_project->setTag( Project::Tag_CDG_font, fontCDG->currentFont().family() );
 	m_project->setTag( Project::Tag_CDG_fontsize, QString::number( fontCDGSize->value() ) );
+	m_project->setTag( Project::Tag_CDG_titletime, QString::number( titleCDGmin->value() ) );
 
 	QDialog::accept();
 }

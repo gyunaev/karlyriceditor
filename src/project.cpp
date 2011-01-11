@@ -64,6 +64,7 @@ enum
 	PD_TAG_CDG_NCOLOR,		// CD+G tag - inactive (sung) color
 	PD_TAG_CDG_FONT,		// CD+G tag - font family
 	PD_TAG_CDG_FONTSIZE,	// CD+G tag - font size
+	PD_TAG_CDG_MINTITLE,	// CD+G tag - minimum title time
 };
 
 
@@ -99,6 +100,7 @@ void Project::clear()
 	m_projectData[ PD_TAG_CDG_NCOLOR ] = "red";
 	m_projectData[ PD_TAG_CDG_FONT ] = "arial";
 	m_projectData[ PD_TAG_CDG_FONTSIZE ] = "12";
+	m_projectData[ PD_TAG_CDG_MINTITLE ] = "5";
 
 	m_totalSongLength = 0;
 }
@@ -261,6 +263,10 @@ int	Project::tagToId( Tag tag  )
 
 		case Tag_CDG_fontsize:
 			tagid = PD_TAG_CDG_FONTSIZE;
+			break;
+
+		case Tag_CDG_titletime:
+			tagid = PD_TAG_CDG_MINTITLE;
 			break;
 	}
 
