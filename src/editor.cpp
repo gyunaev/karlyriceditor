@@ -30,6 +30,7 @@
 #include "project.h"
 #include "editor.h"
 #include "settings.h"
+#include "editorhighlighting.h"
 #include "cdggenerator.h"
 
 const char * Editor::PLACEHOLDER = "[--:--]";
@@ -50,7 +51,7 @@ Editor::Editor( QWidget * parent )
 	QFont font( pSettings->m_editorFontFamily, pSettings->m_editorFontSize );
 	setFont( font );
 
-	setMouseTracking( true );
+	EditorHighlighting * hl = new EditorHighlighting( this );
 }
 
 void Editor::setProject( Project* proj )

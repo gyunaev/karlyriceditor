@@ -26,7 +26,8 @@ HEADERS += mainwindow.h \
     cdgrenderer.h \
     lyricsrenderer.h \
     cdggenerator.h \
-    validator.h
+    validator.h \
+    editorhighlighting.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -47,7 +48,8 @@ SOURCES += mainwindow.cpp \
     checknewversion.cpp \
     cdgrenderer.cpp \
     lyricsrenderer.cpp \
-    cdggenerator.cpp
+    cdggenerator.cpp \
+    editorhighlighting.cpp
 RESOURCES += resources.qrc
 QT += phonon
 FORMS += mainwindow.ui \
