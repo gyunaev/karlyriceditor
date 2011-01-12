@@ -17,7 +17,6 @@
  **************************************************************************/
 
 #include "lyrics.h"
-#include "pianorollwidget.h"
 
 Lyrics::Lyrics()
 {
@@ -161,14 +160,7 @@ void Lyrics::clear()
 	m_lyrics.clear();
 }
 
-QString Lyrics::pitchToNote( int pitch, bool show_octave )
+QString Lyrics::pitchToNote( int pitch, bool )
 {
-	int octave;
-
-	QString note = PianoRollWidget::pitchToNote( pitch, &octave );
-
-	if ( show_octave )
-		return QString("%1, oct. %2") .arg( note ) .arg( pitch / 12 );
-	else
-		return note;
+	return QString::number( pitch );
 }

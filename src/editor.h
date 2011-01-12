@@ -29,6 +29,7 @@
 
 class Project;
 
+
 //
 // Architecturally only editor is responsible for formats, and know everything about
 // any specific lyrics format. This is done here and not in Project to provide syntax
@@ -40,6 +41,8 @@ class Editor : public QTextEdit
 	Q_OBJECT
 
 	public:
+		static const char * PLACEHOLDER;
+
 		Editor( QWidget * parent );
 
 		void	setProject( Project* proj );
@@ -47,6 +50,7 @@ class Editor : public QTextEdit
 		void	insertTimeTag( qint64 timing );
 		void	removeLastTimeTag();
 		void	removeAllTimeTags();
+		void	removeExtraWhitespace();
 
 		// Validate the lyrics
 		bool	validate();
@@ -65,12 +69,8 @@ class Editor : public QTextEdit
 
 	public slots:
 		void	textModified();
-		void	pianoRollClicked( unsigned int tone ); // from piano roll
 
 	protected:
-		void mouseReleaseEvent( QMouseEvent * event );
-		void mouseMoveEvent( QMouseEvent * event );
-		bool event ( QEvent * event ); // tooltips
 		bool canInsertFromMimeData ( const QMimeData * source ) const;
 		QMimeData * createMimeDataFromSelection () const;
 		void insertFromMimeData ( const QMimeData * source );

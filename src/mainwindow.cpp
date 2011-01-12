@@ -37,7 +37,6 @@
 #include "projectsettings.h"
 #include "recentfiles.h"
 #include "gentlemessagebox.h"
-#include "pianorollwidget.h"
 #include "ui_dialog_about.h"
 
 
@@ -63,11 +62,6 @@ MainWindow::MainWindow()
 	m_player = new PlayerWidget( this );
 	addDockWidget( Qt::BottomDockWidgetArea, m_player );
 	actionShow_Player_dock_wingow->setChecked( true );
-
-	m_pianoRoll = new PianoRollDock( this );
-	addDockWidget( Qt::TopDockWidgetArea, m_pianoRoll );
-	m_pianoRoll->hide();
-	actionShow_Piano_Roll_dock_window->setChecked( false );
 
 	// Create a lyric viewer window, hidden so far
 	m_viewer = new ViewWidget( this );
@@ -176,12 +170,10 @@ void MainWindow::connectActions()
 	connect( actionView_lyric_file, SIGNAL( triggered()), this, SLOT( act_projectViewLyricFile()) );
 	connect( actionTest_lyric_file, SIGNAL( triggered()), this, SLOT( act_projectTest()) );
 	connect( actionTest_CDG_lyrics, SIGNAL( triggered()), this, SLOT( act_projectTestCDG()) );
-	connect( actionShow_Piano_Roll_dock_window, SIGNAL(triggered(bool)), this, SLOT(act_settingsShowPianoRoll(bool)) );
 	connect( actionShow_Player_dock_wingow, SIGNAL(triggered(bool)), this, SLOT(act_settingsShowPlayer(bool)) );
 
 	// docks
 	connect( m_player,SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPlayer(bool)) );
-	connect( m_pianoRoll, SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPianoRoll(bool)) );
 
 	// Text editor
 	connect( actionUndo, SIGNAL( triggered()), editor, SLOT( undo()) );
@@ -368,7 +360,6 @@ bool MainWindow::tryCloseCurrentProject()
 
 	editor->setProject( 0 );
 	editor->clear();
-	m_pianoRoll->hide();
 	updateState();
 
 	return true;
@@ -384,10 +375,6 @@ void MainWindow::setCurrentProject( Project * proj )
 
 	// Set the music file into player; it will call updateState()
 	m_player->setMusicFile( m_project );
-
-	// Open a piano roll if this is UltraStar project
-	if ( proj->type() == Project::LyricType_UStar )
-		m_pianoRoll->show();
 }
 
 void MainWindow::act_editInsertTag()
@@ -581,7 +568,6 @@ void MainWindow::updateState()
 	actionView_lyric_file->setEnabled( project_ready && m_project->type() != Project::LyricType_CDG );
 
 	editor->setEnabled( project_ready );
-	m_pianoRoll->setEnabled( project_ready );
 
 	if ( project_ready )
 	{
@@ -626,38 +612,12 @@ void MainWindow::newVerAvailable( NewVersionMetaMap metadata )
 	QDesktopServices::openUrl ( QUrl(metadata["URL"]) );
 }
 
-void MainWindow::noteMouseOver( unsigned int pitch )
-{
-	int octave;
-	QString note = PianoRollWidget::pitchToNote( pitch, &octave );
-
-	statusBar()->showMessage( tr("Selected note: %1 at octave %2") .arg(note) .arg(octave), 2000 );
-}
-
-void MainWindow::noteClicked( unsigned int pitch )
-{
-	editor->pianoRollClicked( pitch );
-}
-
 void MainWindow::act_settingsShowPlayer( bool checked )
 {
 	if ( checked )
 		m_player->show();
 	else
 		m_player->hide();
-}
-
-void MainWindow::act_settingsShowPianoRoll( bool checked )
-{
-	if ( checked )
-		m_pianoRoll->show();
-	else
-		m_pianoRoll->hide();
-}
-
-void MainWindow::visibilityPianoRoll( bool visible )
-{
-	actionShow_Piano_Roll_dock_window->setChecked( visible );
 }
 
 void MainWindow::visibilityPlayer( bool visible )

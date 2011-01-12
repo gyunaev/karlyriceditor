@@ -37,7 +37,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>24</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -72,7 +72,6 @@
     <addaction name="actionGeneral"/>
     <addaction name="separator"/>
     <addaction name="actionShow_Player_dock_wingow"/>
-    <addaction name="actionShow_Piano_Roll_dock_window"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -443,28 +442,16 @@ Note that for formats which support blocks nothing will be shown until it's less
     <string>Show Player dock wingow</string>
    </property>
   </action>
-  <action name="actionShow_Piano_Roll_dock_window">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/images/piano.png</normaloff>:/images/piano.png</iconset>
-   </property>
-   <property name="text">
-    <string>Show Piano Roll dock window</string>
-   </property>
-  </action>
   <action name="actionTest_CDG_lyrics">
    <property name="icon">
     <iconset resource="resources.qrc">
      <normaloff>:/images/dryicons_computer.png</normaloff>:/images/dryicons_computer.png</iconset>
    </property>
-	<property name="text">
+   <property name="text">
     <string>Test lyrics as CD+G</string>
    </property>
    <property name="toolTip">
-		<string>Test the lyrics if you gonna export them as CD+G</string>
+    <string>Test the lyrics if you gonna export them as CD+G</string>
    </property>
    <property name="whatsThis">
     <string>This action shows the lyrics test window, which is a mini Karaoke player, but is limited in size as CD+G, so

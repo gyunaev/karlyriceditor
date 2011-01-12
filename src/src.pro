@@ -11,7 +11,6 @@ HEADERS += mainwindow.h \
     playerwidget.h \
     playerbutton.h \
     editor.h \
-    editortimemark.h \
     settings.h \
     viewwidget.h \
     testwindow.h \
@@ -21,10 +20,8 @@ HEADERS += mainwindow.h \
     recentfiles.h \
     colorbutton.h \
     dialog_selectencoding.h \
-    dialog_edittimemark.h \
     gentlemessagebox.h \
     checknewversion.h \
-    pianorollwidget.h \
     cdg.h \
     cdgrenderer.h \
     lyricsrenderer.h \
@@ -38,7 +35,6 @@ SOURCES += mainwindow.cpp \
     playerwidget.cpp \
     playerbutton.cpp \
     editor.cpp \
-    editortimemark.cpp \
     settings.cpp \
     viewwidget.cpp \
     testwindow.cpp \
@@ -47,10 +43,8 @@ SOURCES += mainwindow.cpp \
     recentfiles.cpp \
     colorbutton.cpp \
     dialog_selectencoding.cpp \
-    dialog_edittimemark.cpp \
     gentlemessagebox.cpp \
     checknewversion.cpp \
-    pianorollwidget.cpp \
     cdgrenderer.cpp \
     lyricsrenderer.cpp \
     cdggenerator.cpp
@@ -68,7 +62,6 @@ FORMS += mainwindow.ui \
     dialog_about.ui \
     dialog_projectsettings.ui \
     dialog_settings.ui \
-    dialog_edittimemark.ui \
     dialog_selectencoding.ui \
     gentlemessagebox.ui
 win32-g++-*::LIBS += -lwsock32

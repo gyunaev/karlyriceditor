@@ -29,12 +29,10 @@
 #include "mainwindow.h"
 #include "project.h"
 #include "editor.h"
-#include "editortimemark.h"
 #include "settings.h"
-#include "pianorollwidget.h"
-#include "dialog_edittimemark.h"
 #include "cdggenerator.h"
 
+const char * Editor::PLACEHOLDER = "[--:--]";
 
 Editor::Editor( QWidget * parent )
 	: QTextEdit( parent )
@@ -46,9 +44,6 @@ Editor::Editor( QWidget * parent )
 	connect( this, SIGNAL( redoAvailable(bool)), pMainWindow, SLOT( editor_redoAvail(bool)));
 
 	connect( this, SIGNAL(textChanged()), this, SLOT(textModified()) );
-
-	QObject *timeMark = new EditorTimeMark;
-	document()->documentLayout()->registerHandler( EditorTimeMark::TimeTextFormat, timeMark );
 
 	setAcceptRichText( false );
 
@@ -87,231 +82,12 @@ static inline qint64 infoToMark( QString data )
 	return rxtime.cap( 1 ).toInt() * 60000 + rxtime.cap( 2 ).toInt() * 1000 + rxtime.cap( 3 ).toInt() * 10;
 }
 
-/*
-static inline qint64 timeToMark( QString time )
-{
-	QRegExp reg( "^(\d+):(\d+)\.(\d+)$" );
-
-	if ( reg.m)
-	int min_part = time.indexOf( ':' );
-
-	if ( min_part < 0 )
-		return -1;
-
-	min_part
-
-	int min = mark / 60000;
-	int sec = (mark - min * 60000) / 1000;
-	int msec = mark - (min * 60000 + sec * 1000 );
-
-	return QString().sprintf( "%02d:%02d.%02d", min, sec, msec / 10 );
-}
-*/
-
-void Editor::insertTimeTag( qint64 timing )
-{
-	// If we're replacing existing time tag, remove it first
-	bool was_time_mark_deleted = false;
-
-	QTextCursor cur = textCursor();
-	cur.beginEditBlock();
-
-	if ( cur.charFormat().objectType() == EditorTimeMark::TimeTextFormat
-	&& timing > 0 // only when playing
-	&& cur.charFormat().property( EditorTimeMark::TimeProperty ).toLongLong() == 0 ) // only placeholders
-	{
-		cur.deletePreviousChar();
-		was_time_mark_deleted = true;
-	}
-
-	// Increase the current ID
-	m_timeId++;
-
-	QTextCharFormat timemark;
-	timemark.setObjectType( EditorTimeMark::TimeTextFormat );
-	timemark.setProperty( EditorTimeMark::TimeProperty, timing );
-	timemark.setProperty( EditorTimeMark::PitchProperty, (int) -1 );
-	timemark.setProperty( EditorTimeMark::IdProperty, m_timeId );
-
-	// Add the image
-	cur.insertText( QString(QChar::ObjectReplacementCharacter), timemark );
-	cur.endEditBlock();
-
-	// Move the cursor according to policy
-	if ( pSettings->m_editorDoubleTimeMark && was_time_mark_deleted )
-		return; // the cursor has been moved already
-
-	int curPos = cur.position();
-	bool separator_found = false, tagged_word_ended = false;
-	int word_start_offset = -1;
-
-	while ( 1 )
-	{
-		// Find the block
-		QTextBlock block = document()->findBlock( curPos );
-
-		// Cursor position in the block
-		int blockPos = curPos - block.position();
-		QChar ch;
-
-		// If we're out of range, this is the end of block.
-		if ( blockPos >= block.text().size() )
-		{
-			// Text end?
-			if ( !block.next().isValid() )
-				break;
-
-			// Tell the rest of the code this is end of line
-			ch = QChar::LineSeparator;
-		}
-		else
-			ch = block.text().at( blockPos );
-
-		// Get the current character at pos
-		//qDebug("char: %s (%d), pos %d, blockpos %d", qPrintable( QString(ch)), ch.unicode(), curPos, blockPos );
-
-		// If QChar::ObjectReplacementCharacter - it's a time mark
-		if ( ch == QChar::ObjectReplacementCharacter )
-		{
-			curPos++;
-			break;
-		}
-
-		// We check for separator_found here because if the first character is timing mark, we want
-		// it to be skipped too by a conditional check above
-		if ( separator_found )
-		{
-			if ( pSettings->m_editorSkipEmptyLines && isCRLF( ch ) )
-			{
-				curPos++;
-				continue;
-			}
-
-			break;
-		}
-
-		// New line is always a separator
-		if ( isCRLF( ch ) )
-		{
-			// If this is not the first character, stop on previous one
-			if ( cur.position() != curPos )
-			{
-				if ( pSettings->m_editorStopAtLineEnd )
-					break;
-			}
-
-			separator_found = true;
-		}
-
-		// Timing mark is always before a word, so if we find a space, this means the word is ended,
-		// and a new word is about to start. So if we have multiple tags per line enabled, check it.
-		if ( pSettings->m_editorStopNextWord )
-		{
-			if ( ch.isSpace() )
-			{
-				// If word_start_offset is not -1, this means this is the second word which is ended
-				if ( word_start_offset != -1 )
-				{
-					// Check the word length
-					if ( curPos - word_start_offset > pSettings->m_editorWordChars )
-					{
-						// Word size is more than needed, and there was no time mark.
-						// Roll the cursor back abd break
-						curPos = word_start_offset;
-						break;
-					}
-					else
-					{
-						// The word is too small. Reset the word_start_offset and continue
-						word_start_offset = -1;
-					}
-				}
-				else
-					tagged_word_ended = true;
-			}
-			else
-			{
-				if ( tagged_word_ended && word_start_offset == -1 )
-					word_start_offset = curPos;
-			}
-		}
-
-		curPos++;
-	}
-
-	cur.setPosition( curPos, QTextCursor::MoveAnchor );
-	setTextCursor( cur );
-	ensureCursorMiddle();
-}
-
-void Editor::removeLastTimeTag()
-{
-	if ( m_timeId == 0 )
-		return;
-
-	// Iterate over the whole text until we find the last time tag
-	for ( QTextBlock block = document()->firstBlock(); block.isValid(); block = block.next() )
-	{
-		for ( QTextBlock::iterator it = block.begin(); it != block.end(); ++it )
-		{
-			QTextCharFormat fmt = it.fragment().charFormat();
-
-			if ( fmt.objectType() == EditorTimeMark::TimeTextFormat )
-			{
-				unsigned int mark = fmt.property( EditorTimeMark::IdProperty ).toUInt();
-
-				if ( mark == m_timeId )
-				{
-					QTextCursor cur = textCursor();
-					cur.setPosition( it.fragment().position() );
-					cur.deleteChar();
-					setTextCursor( cur );
-					ensureCursorVisible();
-					m_timeId--;
-					break;
-				}
-			}
-		}
-	}
-}
-
 void Editor::textModified()
 {
 	if ( !m_project )
 		return;
 
 	m_project->setModified();
-}
-
-void Editor::removeAllTimeTags()
-{
-	QStack<int> positions;
-
-	// Iterate over the whole text and store the positions of time tags
-	// We cannot remove them here because it will break iterators!
-	for ( QTextBlock block = document()->firstBlock(); block.isValid(); block = block.next() )
-	{
-		for ( QTextBlock::iterator it = block.begin(); it != block.end(); ++it )
-		{
-			QTextCharFormat fmt = it.fragment().charFormat();
-
-			if ( fmt.objectType() == EditorTimeMark::TimeTextFormat )
-				positions.push( it.fragment().position() );
-		}
-	}
-
-	// Now iterate over stack, and store those backward
-	QTextCursor cur = textCursor();
-	cur.beginEditBlock();
-
-	while ( !positions.isEmpty() )
-	{
-		cur.setPosition( positions.pop() );
-		cur.deleteChar();
-	}
-
-	cur.endEditBlock();
-	m_timeId = 0;
 }
 
 QString	Editor::exportToString()
@@ -618,7 +394,7 @@ cont_paragraph:
 					// Verify that the tag is valid
 					QString time = line.mid( time_tag_start, col - time_tag_start );
 
-					if ( time == "--:--" )
+					if ( time == PLACEHOLDER )
 					{
 						errors.push_back(
 								ValidatorError(
@@ -651,17 +427,17 @@ cont_paragraph:
 												time_tag_start,
 												tr("Time goes backward, previous time value is greater than current value.") ) );
 							}
-						}
 
-						last_time = timing;
-					}
-					else
-					{
-						errors.push_back(
-								ValidatorError(
-										linenumber,
-										time_tag_start,
-										tr("Invalid time tag. Time tag must be in format [mm:ss.ms] where mm is minutes, ss is seconds and ms is milliseconds * 10") ) );
+							last_time = timing;
+						}
+						else
+						{
+							errors.push_back(
+									ValidatorError(
+											linenumber,
+											time_tag_start,
+											tr("Invalid time tag. Time tag must be in format [mm:ss.ms] where mm is minutes, ss is seconds and ms is milliseconds * 10") ) );
+						}
 					}
 
 					in_time_tag = false;
@@ -713,117 +489,6 @@ cont_paragraph:
 	}
 }
 
-QTextCursor Editor::timeMark( const QPoint& point )
-{
-	QAbstractTextDocumentLayout * layout = document()->documentLayout();
-	int pos;
-
-	// from QTextEditPrivate::mapToContents
-	QPoint mapped = QPoint( point.x() + horizontalScrollBar()->value(), point.y() + verticalScrollBar()->value() );
-
-	if ( layout && (pos = layout->hitTest( mapped, Qt::ExactHit )) != -1 )
-	{
-		QTextCursor cur = textCursor();
-		cur.setPosition( pos + 1 );
-
-		if ( cur.charFormat().objectType() == EditorTimeMark::TimeTextFormat )
-			return cur;
-	}
-
-	return QTextCursor();
-}
-
-qint64 Editor::timeMarkValue( const QPoint& point )
-{
-	QTextCursor cur = timeMark( point );
-
-	if ( !cur.isNull() )
-		return cur.charFormat().property( EditorTimeMark::TimeProperty ).toLongLong();
-	else
-		return -1;
-}
-
-void Editor::mouseMoveEvent( QMouseEvent * event )
-{
-	if ( timeMarkValue( event->pos() ) != -1 )
-		viewport()->setCursor( Qt::PointingHandCursor );
-	else
-		viewport()->setCursor( Qt::IBeamCursor );
-}
-
-bool Editor::event ( QEvent * event )
-{
-	if ( event->type() == QEvent::ToolTip )
-	{
-		QHelpEvent *helpEvent = static_cast<QHelpEvent *>(event);
-		QTextCursor cur = timeMark( helpEvent->pos() );
-
-		if ( !cur.isNull() )
-		{
-			qint64 mark = cur.charFormat().property( EditorTimeMark::TimeProperty ).toLongLong();
-			QString text;
-
-			if ( mark != 0 )
-			{
-				text = tr("Timing mark: %1ms") .arg(mark);
-				int pitch = cur.charFormat().property( EditorTimeMark::PitchProperty ).toInt();
-
-				if ( pitch != -1 )
-				{
-					int octave;
-					QString note = PianoRollWidget::pitchToNote( pitch, &octave );
-
-					text += "\n";
-					text += tr("Pitch value: %1, Note %2 at octave %3") .arg(pitch) .arg(note) .arg(octave);
-				}
-			}
-			else
-				text = tr("Placeholder");
-
-			QToolTip::showText( helpEvent->globalPos(), text );
-			return true;
-		}
-	}
-
-	return QTextEdit::event( event );
-}
-
-void Editor::mouseReleaseEvent ( QMouseEvent * event )
-{
-	if ( event->button() == Qt::LeftButton )
-	{
-		QTextCursor cur = timeMark( event->pos() );
-
-		if ( !cur.isNull() )
-		{
-			qint64 mark = cur.charFormat().property( EditorTimeMark::TimeProperty ).toLongLong();
-			int pitch = cur.charFormat().property( EditorTimeMark::PitchProperty ).toInt();
-
-			DialogEditTimeMark dlg( m_project->type() == Project::LyricType_UStar, this );
-			dlg.move( event->globalPos() );
-			dlg.setTimemark( mark );
-			dlg.setPitch( pitch );
-
-			if ( dlg.exec() == QDialog::Accepted )
-			{
-				QTextCharFormat timemark;
-				timemark.setObjectType( EditorTimeMark::TimeTextFormat );
-				timemark.setProperty( EditorTimeMark::TimeProperty, dlg.timemark() );
-				timemark.setProperty( EditorTimeMark::PitchProperty, dlg.pitch() );
-				timemark.setProperty( EditorTimeMark::IdProperty, cur.charFormat().property( EditorTimeMark::IdProperty ).toInt() );
-
-				cur.beginEditBlock();
-				cur.deletePreviousChar();
-				cur.insertText( QString(QChar::ObjectReplacementCharacter), timemark );
-				cur.endEditBlock();
-			}
-		}
-	}
-
-	QTextEdit::mouseReleaseEvent ( event );
-}
-
-
 void Editor::ensureCursorMiddle()
 {
 	// Adjust for non-common cases and horizontally
@@ -839,62 +504,6 @@ void Editor::ensureCursorMiddle()
 		vbar->setValue( qMax( 0, curBottom - halfHeight ) );
 }
 
-void Editor::pianoRollClicked( unsigned int tone )
-{
-	QTextCursor cur = textCursor();
-
-	if ( cur.charFormat().objectType() != EditorTimeMark::TimeTextFormat )
-	{
-		pMainWindow->statusBar()->showMessage( tr("You need to position the cursor after existing timing mark") );
-		return;
-	}
-
-	QTextCharFormat timemark;
-	timemark.setObjectType( EditorTimeMark::TimeTextFormat );
-	timemark.setProperty( EditorTimeMark::TimeProperty, cur.charFormat().property( EditorTimeMark::TimeProperty ) );
-	timemark.setProperty( EditorTimeMark::PitchProperty, tone );
-	timemark.setProperty( EditorTimeMark::IdProperty, cur.charFormat().property( EditorTimeMark::IdProperty ) );
-
-	// Add the image
-	cur.beginEditBlock();
-	cur.deletePreviousChar();
-	cur.insertText( QString(QChar::ObjectReplacementCharacter), timemark );
-	cur.endEditBlock();
-
-	// Move the cursor to the next timing mark
-	int curPos = cur.position();
-
-	while ( 1 )
-	{
-		// Find the block
-		QTextBlock block = document()->findBlock( curPos );
-
-		// Cursor position in the block
-		int blockPos = curPos - block.position();
-
-		// If we're out of range, this is the end of block.
-		if ( blockPos >= block.text().size() )
-		{
-			// Text end?
-			if ( !block.next().isValid() )
-				break;
-
-			continue;
-		}
-
-		if ( block.text().at( blockPos ) == QChar::ObjectReplacementCharacter )
-		{
-			curPos++;
-			break;
-		}
-
-		curPos++;
-	}
-
-	cur.setPosition( curPos, QTextCursor::MoveAnchor );
-	setTextCursor( cur );
-	ensureCursorMiddle();
-}
 
 bool Editor::canInsertFromMimeData ( const QMimeData * source ) const
 {
@@ -926,4 +535,191 @@ void Editor::insertFromMimeData ( const QMimeData * source )
 		textCursor().insertFragment( fragment );
 		ensureCursorVisible();
 	}
+}
+
+void Editor::removeAllTimeTags()
+{
+	// No need to do it in a more complex way than a simple regexp
+	QString text = toPlainText();
+
+	// Placeholders
+	text.remove( PLACEHOLDER );
+	text.remove( QRegExp( "\\[\\d+:\\d+\\.\\d+\\]" ) );
+
+	setPlainText( text );
+}
+
+void Editor::removeExtraWhitespace()
+{
+	// No need to do it in a more complex way than a simple regexp
+	QStringList lyrics = toPlainText().split( '\n' );
+
+	foreach ( QString lyric, lyrics )
+	{
+		lyric = lyric.trimmed();
+	}
+
+	setPlainText( lyrics.join( "\n") );
+}
+
+static bool isTimingMark( const QString& text, int * length = 0 )
+{
+	if ( text.startsWith( Editor::PLACEHOLDER ) )
+	{
+		if ( length )
+			*length = strlen( Editor::PLACEHOLDER );
+
+		return true;
+	}
+
+	QRegExp rx( "^\\[\\d+:\\d+\\.\\d+\\]" );
+
+	if ( text.indexOf( rx ) != -1 )
+	{
+		if ( length )
+			*length = rx.matchedLength();
+
+		return true;
+	}
+
+	return false;
+}
+
+
+void Editor::insertTimeTag( qint64 timing )
+{
+	// If we're replacing existing time tag, remove it first
+	bool was_time_mark_deleted = false;
+
+	QTextCursor cur = textCursor();
+	cur.beginEditBlock();
+
+	QString text = cur.block().text().mid( cur.position() - cur.block().position() );
+	int length;
+
+	if ( timing > 0 && isTimingMark( text, &length ) )// only when playing
+	{
+		if ( text.startsWith( Editor::PLACEHOLDER ) )
+			was_time_mark_deleted = true;
+
+		while ( length-- )
+			cur.deleteChar();
+
+		text = cur.block().text().mid( cur.position() - cur.block().position() );
+	}
+
+	// Add the time
+	if ( timing == 0 )
+		cur.insertText( PLACEHOLDER );
+	else
+		cur.insertText( "[" + markToTime( timing ) + "]" );
+
+	cur.endEditBlock();
+
+	// Move the cursor according to policy
+	if ( pSettings->m_editorDoubleTimeMark && was_time_mark_deleted )
+		return; // the cursor has been moved already
+
+	int curPos = cur.position();
+	bool separator_found = false, tagged_word_ended = false;
+	int word_start_offset = -1;
+
+	while ( 1 )
+	{
+		// Find the block
+		QTextBlock block = document()->findBlock( curPos );
+
+		// Cursor position in the block
+		int blockPos = curPos - block.position();
+		QChar ch;
+
+		// If we're out of range, this is the end of block.
+		if ( blockPos >= block.text().size() )
+		{
+			// Text end?
+			if ( !block.next().isValid() )
+				break;
+
+			// Tell the rest of the code this is end of line
+			ch = QChar::LineSeparator;
+		}
+		else
+			ch = block.text().at( blockPos );
+
+		//qDebug("char: %s (%d), pos %d, blockpos %d", qPrintable( QString(ch)), ch.unicode(), curPos, blockPos );
+
+		// Time mark?
+		if ( isTimingMark( block.text().mid( blockPos ) ) )
+			break;
+
+		// We check for separator_found here because if the first character is timing mark, we want
+		// it to be skipped too by a conditional check above
+		if ( separator_found )
+		{
+			if ( pSettings->m_editorSkipEmptyLines && isCRLF( ch ) )
+			{
+				curPos++;
+				continue;
+			}
+
+			break;
+		}
+
+		// New line is always a separator
+		if ( isCRLF( ch ) )
+		{
+			// If this is not the first character, stop on previous one
+			if ( cur.position() != curPos )
+			{
+				if ( pSettings->m_editorStopAtLineEnd )
+					break;
+			}
+
+			separator_found = true;
+		}
+
+		// Timing mark is always before a word, so if we find a space, this means the word is ended,
+		// and a new word is about to start. So if we have multiple tags per line enabled, check it.
+		if ( pSettings->m_editorStopNextWord )
+		{
+			if ( ch.isSpace() )
+			{
+				// If word_start_offset is not -1, this means this is the second word which is ended
+				if ( word_start_offset != -1 )
+				{
+					// Check the word length
+					if ( curPos - word_start_offset > pSettings->m_editorWordChars )
+					{
+						// Word size is more than needed, and there was no time mark.
+						// Roll the cursor back abd break
+						curPos = word_start_offset;
+						break;
+					}
+					else
+					{
+						// The word is too small. Reset the word_start_offset and continue
+						word_start_offset = -1;
+					}
+				}
+				else
+					tagged_word_ended = true;
+			}
+			else
+			{
+				if ( tagged_word_ended && word_start_offset == -1 )
+					word_start_offset = curPos;
+			}
+		}
+
+		curPos++;
+	}
+
+	cur.setPosition( curPos, QTextCursor::MoveAnchor );
+	setTextCursor( cur );
+	ensureCursorMiddle();
+}
+
+void Editor::removeLastTimeTag()
+{
+	undo();
 }

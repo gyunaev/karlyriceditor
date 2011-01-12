@@ -27,7 +27,6 @@
 class Project;
 class ViewWidget;
 class PlayerWidget;
-class PianoRollDock;
 class TestWindow;
 class RecentFiles;
 
@@ -67,7 +66,6 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 
 		void	act_settingsGeneral();
 		void	act_settingsShowPlayer( bool checked );
-		void	act_settingsShowPianoRoll( bool checked );
 
 		void	act_helpAbout();
 
@@ -77,12 +75,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	newVerAvailError( int errorcode );
 		void	newVerAvailable( NewVersionMetaMap metadata );
 
-		// Piano roll
-		void	noteMouseOver( unsigned int pitch );
-		void	noteClicked( unsigned int pitch );
-
 		// Dock widgets
-		void	visibilityPianoRoll( bool visible );
 		void	visibilityPlayer( bool visible );
 
 	protected:
@@ -100,7 +93,6 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		bool	tryCloseCurrentProject();
 
 		PlayerWidget		*	m_player;
-		PianoRollDock		*	m_pianoRoll;
 
 		Project				*	m_project;
 		ViewWidget			*	m_viewer;
