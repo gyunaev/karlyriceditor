@@ -670,16 +670,7 @@ void MainWindow::act_projectTest()
 	if ( !editor->validate() )
 		return;
 
-	// Generate the title
-	QString title = QString("<qt><center><font color='white'>%1<br><br>%2<br><br>Created by Karaoke Lyric Editor %3.%4<br>%5</font></center></qt>")
-					.arg( m_project->tag( Project::Tag_Artist ) )
-					.arg( m_project->tag( Project::Tag_Title ) )
-					.arg( APP_VERSION_MAJOR )
-					.arg( APP_VERSION_MINOR )
-					.arg( "http://www.karlyriceditor.com/" );
-
 	m_testWindow->setLyrics( editor->exportLyrics() );
-	m_testWindow->setTitleData( title );
 	m_testWindow->show();
 }
 

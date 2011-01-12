@@ -56,12 +56,6 @@ void TestWindow::setLyrics( const Lyrics& lyrics )
 	update();
 }
 
-void TestWindow::setTitleData( const QString& titledata )
-{
-	m_lyricrenderer.setTitlePage( titledata );
-	tick(0);
-}
-
 void TestWindow::setCDGdata( const QByteArray& cdgdata )
 {
 	m_cdgrenderer.setCDGdata( cdgdata );

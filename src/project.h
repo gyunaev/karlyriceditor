@@ -79,7 +79,7 @@ class Project
 
 		// Set the music tag fields
 		void	setTag( Tag tag, const QString& value );
-		QString tag( Tag tagid );
+		QString tag( Tag tagid ) const;
 
 		// Is project modified?
 		bool	isModified() const { return m_modified; }
@@ -112,7 +112,7 @@ class Project
 		QString	generateUStarheader();
 		void	update( int id, const QString& value );
 
-		int		tagToId( Tag tagid  );
+		int		tagToId( Tag tagid ) const;
 		bool	m_modified;
 		Editor* m_editor;
 		qint64	m_totalSongLength;

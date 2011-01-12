@@ -32,13 +32,11 @@ static const int LYRICS_SHOW_AFTER = 5000;
 LyricsRenderer::LyricsRenderer()
 {
 	m_prefetch = 0;
-	m_titleTimingCut = 0;
 }
 
 void LyricsRenderer::setLyrics( const Lyrics& lyrics, bool internaloutput )
 {
 	m_text.clear();
-	m_titlePage.clear();
 
 	m_colorActive = "white";
 	m_colorInactive = "green";
@@ -55,23 +53,13 @@ void LyricsRenderer::setLyrics( const Lyrics& lyrics, bool internaloutput )
 	{
 		m_tagLyricsStart = "";
 		m_tagLyricsEnd = "";
-		m_tagColorPattern = CDGGenerator::colorSeparator + QString("%1%2");
+		m_tagColorPattern = QChar( 0x2016 ) + QString("%1%2");
 		m_tagLineFeed = "\n";
 		m_escapeHTML = false;
 	}
 
 	if ( lyrics.isEmpty() )
 		qFatal("LyricRenderer called with empty lyrics");
-
-	// Get the time the first lyrics is shown
-	qint64 timing = lyrics.block( 0 ).at(0).at(0).timing;
-
-	// Depending on how much time we have before having showing the lyrics, we show the title
-	// for 5 seconds or less (or not show at all if there is no time)
-	if ( m_titleTimingCut == 0 )
-	{
-		m_titleTimingCut = qMin( (int) timing, LYRICS_SHOW_BEFORE );
-	}
 
 	// Index the lyrics
 	m_lyricIndex.clear();
@@ -184,9 +172,6 @@ void LyricsRenderer::setLyrics( const Lyrics& lyrics, bool internaloutput )
 
 QString LyricsRenderer::update( qint64 tickmark )
 {
-	if ( !m_titlePage.isEmpty() && tickmark <= m_titleTimingCut )
-		return m_titlePage;
-
 	if ( pSettings->m_editorSupportBlocks )
 		redrawBlocks( tickmark );
 	else
@@ -319,12 +304,6 @@ void LyricsRenderer::setColors( const QString& active, const QString& inactive )
 {
 	m_colorActive = active;
 	m_colorInactive = inactive;
-}
-
-void LyricsRenderer::setTitlePage( const QString& titlepage, unsigned int timing )
-{
-	m_titlePage = titlepage;
-	m_titleTimingCut = timing;
 }
 
 void LyricsRenderer::setPrefetch( int prefetch )

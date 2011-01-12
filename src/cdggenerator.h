@@ -26,13 +26,12 @@
 
 #include "cdg.h"
 #include "lyrics.h"
+#include "project.h"
 
 
 class CDGGenerator
 {
 	public:
-		static const QChar colorSeparator;
-
 		CDGGenerator();
 
 		// Initializes the stream, fills up the color tables and clears screen
@@ -43,7 +42,7 @@ class CDGGenerator
 					  const QFont& font );
 
 		// Generate the CD+G lyrics
-		void	generate( const Lyrics& lyrics, qint64 total_length, const QString& title = QString::null, unsigned int titlelen = 0 );
+		void	generate( const Lyrics& lyrics, qint64 total_length, const Project * project );
 
 		// Returns the CD+G stream
 		QByteArray	stream();

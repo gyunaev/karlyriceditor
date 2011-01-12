@@ -25,8 +25,19 @@
 
 #include "lyricsrenderer.h"
 #include "cdggenerator.h"
+#include "version.h"
 
-const QChar CDGGenerator::colorSeparator = QChar( 0x2016 );
+
+static const QChar actionChar = QChar( 0x2016 );
+
+// Actions
+enum
+{
+	ACTION_COLOR_ACTIVE = 'A',
+	ACTION_COLOR_INACTIVE,
+	ACTION_FONT_SMALL,
+};
+
 
 // Color code indexes
 static int COLOR_IDX_BACKGROUND = 0;	// background
@@ -35,7 +46,7 @@ CDGGenerator::CDGGenerator()
 {
 }
 
-void CDGGenerator::init( const QColor& bgcolor, const QColor& titlecolor,
+void CDGGenerator::init( const QColor& bgcolor, const QColor& infocolor,
 						 const QColor& actcolor, const QColor& inactcolor, const QFont& font )
 {
 	// Disable anti-aliasing for fonts
@@ -45,7 +56,7 @@ void CDGGenerator::init( const QColor& bgcolor, const QColor& titlecolor,
 
 	// Initialize colors
 	m_colorBackground = bgcolor;
-	m_colorInfo = titlecolor;
+	m_colorInfo = infocolor;
 	m_colorInactive = inactcolor;
 	m_colorActive = actcolor;
 
@@ -194,7 +205,7 @@ void CDGGenerator::addLoadColors( const QColor& bgcolor, const QColor& titlecolo
 */
 static inline QString stripColors( const QString& str )
 {
-	QRegExp rx( QString("%1.").arg( CDGGenerator::colorSeparator) );
+	QRegExp rx( QString("%1.").arg( actionChar) );
 	rx.setMinimal( true );
 
 	QString stripped = str;
@@ -324,6 +335,7 @@ bool CDGGenerator::validateParagraph( const QString& paragraph, int * errorline 
 	return drawText( image, paragraph, errorline );
 }
 
+
 bool CDGGenerator::drawText( QImage& image, const QString& paragraph, int * errorline )
 {
 	// Some params
@@ -332,9 +344,6 @@ bool CDGGenerator::drawText( QImage& image, const QString& paragraph, int * erro
 	const int min_y = CDG_BORDER_HEIGHT;
 	const int max_y = CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT;
 	const int min_spacing = 0;
-
-	if ( !errorline )
-qDebug("Drawing %s", qPrintable(paragraph));
 
 	// Set up painter with disabled anti-aliasing to handle color detection
 	image.fill( m_colorBackground.rgb() );
@@ -377,7 +386,7 @@ qDebug("Drawing %s", qPrintable(paragraph));
 		// Calculate the line width first
 		for ( int ch = 0; ch < line.length(); ch++ )
 		{
-			if ( line[ch] == colorSeparator )
+			if ( line[ch] == actionChar )
 			{
 				ch++; // skip color
 				continue;
@@ -405,7 +414,7 @@ qDebug("Drawing %s", qPrintable(paragraph));
 		// Draw the line
 		for ( int ch = 0; ch < line.length(); ch++ )
 		{
-			if ( line[ch] == colorSeparator )
+			if ( line[ch] == actionChar )
 			{
 				ch++;
 
@@ -431,7 +440,7 @@ qDebug("Drawing %s", qPrintable(paragraph));
 	return true;
 }
 
-void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QString& title, unsigned int titlelen )
+void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const Project * project )
 {
 	LyricsRenderer renderer;
 	QString	lastLyrics;
@@ -448,8 +457,8 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QS
 	renderer.setLyrics( lyrics, true );
 	renderer.setColors( "A", "I" );
 
-	if ( !title.isEmpty() )
-		renderer.setTitlePage( colorSeparator + QString("T") + title, titlelen );
+//	if ( !title.isEmpty() )
+//		renderer.setTitlePage( actionChar + QString("T") + title, titlelen );
 
 	// Pop up progress dialog
 	QProgressDialog dlg ("Rendering CD+G lyrics",
@@ -486,7 +495,20 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QS
 
 //		qDebug("timing: %d packets, %dms (%d sec)", m_stream.size(), (int) timing, (int) (timing / 1000) );
 
-		QString lyricpaga = renderer.update( timing );
+		QString lyricpaga;
+
+		// Show title?
+		if ( timing < project->tag( Project::Tag_CDG_titletime ).toInt() * 1000 )
+		{
+			lyricpaga = QString("%1\n\n%2\n\nCreated by Karaoke Lyric Editor %3.%4\n%5\n")
+							.arg( project->tag( Project::Tag_Artist ) )
+							.arg( project->tag( Project::Tag_Title ) )
+							.arg( APP_VERSION_MAJOR )
+							.arg( APP_VERSION_MINOR )
+							.arg( "http://www.karlyriceditor.com/" );
+		}
+		else
+			lyricpaga = renderer.update( timing );
 
 		// Did lyrics change at all?
 		if ( lyricpaga == lastLyrics )

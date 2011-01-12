@@ -175,7 +175,7 @@ bool Project::save( const QString& filename )
 	return true;
 }
 
-int	Project::tagToId( Tag tag  )
+int	Project::tagToId( Tag tag  ) const
 {
 	int tagid = -1;
 
@@ -281,7 +281,7 @@ void Project::setTag( Tag tag, const QString& value )
 		update( tagid, value );
 }
 
-QString Project::tag( Tag itag )
+QString Project::tag( Tag itag ) const
 {
 	int tagid = tagToId( itag );
 
@@ -1025,14 +1025,6 @@ QByteArray Project::exportLyricsAsCDG()
 				 tag( Project::Tag_CDG_inactivecolor ),
 				 font );
 
-	// Generate the title
-	QString title = QString("%1\n\n%2\n\nCreated by Karaoke Lyric Editor %3.%4\n%5\n")
-					.arg( tag( Project::Tag_Artist ) )
-					.arg( tag( Project::Tag_Title ) )
-					.arg( APP_VERSION_MAJOR )
-					.arg( APP_VERSION_MINOR )
-					.arg( "http://www.karlyriceditor.com/" );
-
-	cdggen.generate( m_editor->exportLyrics(), m_totalSongLength, title, tag( Tag_CDG_titletime ).toInt() * 1000 );
+	cdggen.generate( m_editor->exportLyrics(), m_totalSongLength, this );
 	return cdggen.stream();
 }

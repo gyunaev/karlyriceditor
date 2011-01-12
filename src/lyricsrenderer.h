@@ -70,10 +70,6 @@ class LyricsRenderer
 		// Rendered text
 		QString				m_text;
 
-		// Title page (if set, is shown at the beginning of the song). HTML allowed.
-		QString				m_titlePage;
-		qint64				m_titleTimingCut;
-
 		// Colors
 		QString				m_colorActive;
 		QString				m_colorInactive;

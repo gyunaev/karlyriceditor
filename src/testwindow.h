@@ -37,7 +37,6 @@ class TestWindow : public QDialog, public Ui::TestWindow
 
 		// For lyrics
 		void	setLyrics( const Lyrics& lyrics );
-		void	setTitleData( const QString& titledata );
 
 		// For CD+G
 		void	setCDGdata( const QByteArray& cdgdata );
