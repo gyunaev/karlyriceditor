@@ -372,7 +372,7 @@ bool CDGGenerator::drawText( QImage& image, const QString& paragraph, QList<Vali
 							0,
 							0,
 							QObject::tr( "This paragraph contains too many lines, "
-								"and cannot fit into a CD+G screen using the font selected.") ) );
+								"and the result height of %1 cannot fit into a CD+G screen using the font selected.").arg( height) ) );
 		}
 		else
 		{
@@ -412,8 +412,8 @@ bool CDGGenerator::drawText( QImage& image, const QString& paragraph, QList<Vali
 						ValidatorError(
 								0,
 								0,
-								QObject::tr( "Line width exceeded. The current line cannot fit into a "
-									"CD+G screen using the font selected.") ) );
+								QObject::tr( "Line too long. The line width %1 cannot fit into a "
+									"CD+G screen using the font selected.").arg( width) ) );
 			}
 			else
 			{
@@ -474,9 +474,6 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	renderer.setPrefetch( 1000 );
 	renderer.setLyrics( lyrics, true );
 	renderer.setColors( "A", "I" );
-
-//	if ( !title.isEmpty() )
-//		renderer.setTitlePage( actionChar + QString("T") + title, titlelen );
 
 	// Pop up progress dialog
 	QProgressDialog dlg ("Rendering CD+G lyrics",

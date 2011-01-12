@@ -83,7 +83,7 @@ class Editor : public QTextEdit
 		// Ensure the cursor is in the middle of the screen if possible
 		void		ensureCursorMiddle();
 
-		void	cursorToLine( int line );
+		void	cursorToLine( int line, int column );
 
 		Project		 *	m_project;
 		unsigned int	m_timeId; // for remove tag

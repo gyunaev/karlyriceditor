@@ -459,11 +459,18 @@ void Editor::importLyrics( const Lyrics& lyrics )
 	setPlainText( strlyrics );
 }
 
-void Editor::cursorToLine( int line )
+void Editor::cursorToLine( int line, int column )
 {
 	QTextCursor cur = textCursor();
 	cur.movePosition( QTextCursor::Start, QTextCursor::MoveAnchor );
 	cur.movePosition( QTextCursor::Down, QTextCursor::MoveAnchor, line - 1 );
+
+	if ( column )
+	{
+		cur.movePosition( QTextCursor::Left, QTextCursor::MoveAnchor );
+		cur.movePosition( QTextCursor::Right, QTextCursor::MoveAnchor, column );
+	}
+
 	setTextCursor( cur );
 	ensureCursorVisible();
 }
@@ -481,7 +488,7 @@ bool Editor::validate()
 								  tr("Error at line %1: ").arg( errors.front().line )
 								  + errors.front().error );
 
-		cursorToLine( errors.front().line );
+		cursorToLine( errors.front().line, errors.front().column );
 		return false;
 	}
 
@@ -588,7 +595,7 @@ cont_paragraph:
 		}
 
 		// LRCv2, UStar and CD+G must also end with ]
-		if ( m_project->type() == !Project::LyricType_LRC1 && !line.trimmed().endsWith( ']' ) )
+		if ( m_project->type() != Project::LyricType_LRC1 && !line.trimmed().endsWith( ']' ) )
 		{
 			errors.push_back(
 					ValidatorError(
@@ -610,28 +617,40 @@ cont_paragraph:
 				{
 					// Verify that the tag is valid
 					QString time = line.mid( time_tag_start, col - time_tag_start );
-					QRegExp rxtime( "^(\\d+):(\\d+)\\.(\\d+)$" );
 
-					if ( time.indexOf( rxtime ) != -1 )
+					if ( time == "--:--" )
 					{
-						if ( rxtime.cap( 2 ).toInt() >= 60 )
-						{
-							errors.push_back(
-									ValidatorError(
-											linenumber,
-											time_tag_start,
-											tr("Invalid time, number of seconds cannot exceed 59.") ) );
-						}
+						errors.push_back(
+								ValidatorError(
+										linenumber,
+										time_tag_start,
+										tr("Placeholders should not be present in the production file.") ) );
+					}
+					else
+					{
+						QRegExp rxtime( "^(\\d+):(\\d+)\\.(\\d+)$" );
 
-						qint64 timing = infoToMark( time );
-
-						if ( timing < last_time )
+						if ( time.indexOf( rxtime ) != -1 )
 						{
-							errors.push_back(
-									ValidatorError(
-											linenumber,
-											time_tag_start,
-											tr("Time goes backward, previous time value is greater than current value.") ) );
+							if ( rxtime.cap( 2 ).toInt() >= 60 )
+							{
+								errors.push_back(
+										ValidatorError(
+												linenumber,
+												time_tag_start,
+												tr("Invalid time, number of seconds cannot exceed 59.") ) );
+							}
+
+							qint64 timing = infoToMark( time );
+
+							if ( timing < last_time )
+							{
+								errors.push_back(
+										ValidatorError(
+												linenumber,
+												time_tag_start,
+												tr("Time goes backward, previous time value is greater than current value.") ) );
+							}
 						}
 
 						last_time = timing;
@@ -676,7 +695,11 @@ cont_paragraph:
 								col,
 								tr("Invalid closing bracket usage outside the time block") ) );
 			}
+			else
+				paragraphtext += line[col];
 		}
+
+		paragraphtext += "\n";
 
 		// Verify opened time block
 		if ( in_time_tag )
