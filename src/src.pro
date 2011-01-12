@@ -28,7 +28,8 @@ HEADERS += mainwindow.h \
     cdg.h \
     cdgrenderer.h \
     lyricsrenderer.h \
-    cdggenerator.h
+    cdggenerator.h \
+    validator.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -69,8 +70,5 @@ FORMS += mainwindow.ui \
     dialog_settings.ui \
     dialog_edittimemark.ui \
     dialog_selectencoding.ui \
-	gentlemessagebox.ui
-
-win32-g++-*: {
-	LIBS += -lwsock32
-}
+    gentlemessagebox.ui
+win32-g++-*::LIBS += -lwsock32

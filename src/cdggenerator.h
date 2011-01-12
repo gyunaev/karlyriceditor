@@ -27,28 +27,25 @@
 #include "cdg.h"
 #include "lyrics.h"
 #include "project.h"
+#include "validator.h"
 
 
 class CDGGenerator
 {
 	public:
-		CDGGenerator();
+		CDGGenerator( const Project * project );
 
 		// Initializes the stream, fills up the color tables and clears screen
-		void	init( const QColor& bgcolor,
-					  const QColor& titlecolor,
-					  const QColor& actcolor,
-					  const QColor& inactcolor,
-					  const QFont& font );
+		void	init();
 
 		// Generate the CD+G lyrics
-		void	generate( const Lyrics& lyrics, qint64 total_length, const Project * project );
+		void	generate( const Lyrics& lyrics, qint64 total_length );
 
 		// Returns the CD+G stream
 		QByteArray	stream();
 
 		// Paragraph validator
-		bool validateParagraph( const QString& paragraph, int * errorline );
+		bool validateParagraph( const QString& paragraph, QList<ValidatorError>& errors );
 
 	private:
 		void	initColors();
@@ -63,7 +60,7 @@ class CDGGenerator
 		QString	stripHTML( const QString& str );
 		int		getColor( QRgb color );
 		void	checkTile( int offset_x, int offset_y, const QImage& orig,const QImage& newimg );
-		bool	drawText( QImage& image, const QString& paragraph, int * line = 0 );
+		bool	drawText( QImage& image, const QString& paragraph, QList<ValidatorError> * errors = 0 );
 
 	private:
 		QVector< SubCode >		m_stream;		// CD+G stream
@@ -76,6 +73,7 @@ class CDGGenerator
 		QVector< QColor >		m_colors;		// 16 colors used in CD+G
 		int						m_streamColorIndex; // Reserved space for colors
 		QFont					m_renderFont;
+		const Project*			m_project;
 };
 
 

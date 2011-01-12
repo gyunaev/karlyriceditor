@@ -38,11 +38,12 @@ enum
 	PD_SIGNATURE,		// BONIFACI
 	PD_VERSION,			// save file version; currently 1
 	PD_MUSICFILE,
-	PD_LYRICS,
+	PD_LYRICS_OLD,
 	PD_LYRICTYPE,
 	PD_TAG_TITLE,
 	PD_TAG_ARTIST,
 	PD_TAG_ALBUM,
+	PD_LYRICS_NEW,
 
 	PD_TAG_CREATEDBY = 40,	// LRC tag
 	PD_TAG_OFFSET,			// LRC tag
@@ -147,7 +148,11 @@ bool Project::load( const QString& filename )
 		return false;
 	}
 
-	m_editor->importFromString( m_projectData[ PD_LYRICS ] );
+	if ( !m_projectData[ PD_LYRICS_NEW ].isEmpty() )
+		m_editor->importFromString( m_projectData[ PD_LYRICS_NEW ] );
+	else
+		m_editor->importFromOldString( m_projectData[ PD_LYRICS_OLD ] );
+
 	m_modified = false;
 	return true;
 }
@@ -165,7 +170,7 @@ bool Project::save( const QString& filename )
 		return false;
 	}
 
-	m_projectData[ PD_LYRICS ] = m_editor->exportToString();
+	m_projectData[ PD_LYRICS_NEW ] = m_editor->exportToString();
 
 	QDataStream stream( &file );
 	stream.setVersion( QDataStream::Qt_4_5 );
@@ -1015,16 +1020,10 @@ void Project::setSongLength( qint64 length )
 
 QByteArray Project::exportLyricsAsCDG()
 {
-	CDGGenerator cdggen;
+	CDGGenerator cdggen( this );
 
-	QFont font( tag( Project::Tag_CDG_font ), tag( Project::Tag_CDG_fontsize ).toInt() );
+	cdggen.init();
+	cdggen.generate( m_editor->exportLyrics(), m_totalSongLength );
 
-	cdggen.init( tag( Project::Tag_CDG_bgcolor ),
-				 tag( Project::Tag_CDG_infocolor ),
-				 tag( Project::Tag_CDG_activecolor ),
-				 tag( Project::Tag_CDG_inactivecolor ),
-				 font );
-
-	cdggen.generate( m_editor->exportLyrics(), m_totalSongLength, this );
 	return cdggen.stream();
 }

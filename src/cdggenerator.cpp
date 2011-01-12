@@ -42,23 +42,23 @@ enum
 // Color code indexes
 static int COLOR_IDX_BACKGROUND = 0;	// background
 
-CDGGenerator::CDGGenerator()
+CDGGenerator::CDGGenerator( const Project * proj )
+	: m_project( proj )
 {
 }
 
-void CDGGenerator::init( const QColor& bgcolor, const QColor& infocolor,
-						 const QColor& actcolor, const QColor& inactcolor, const QFont& font )
+void CDGGenerator::init()
 {
 	// Disable anti-aliasing for fonts
-	m_renderFont = font;
+	m_renderFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() );
 	m_renderFont.setStyleStrategy( QFont::NoAntialias );
 	m_renderFont.setWeight( QFont::Bold );
 
-	// Initialize colors
-	m_colorBackground = bgcolor;
-	m_colorInfo = infocolor;
-	m_colorInactive = inactcolor;
-	m_colorActive = actcolor;
+	// Initialize colors m_project
+	m_colorBackground = m_project->tag( Project::Tag_CDG_bgcolor );
+	m_colorInfo = m_project->tag( Project::Tag_CDG_infocolor );
+	m_colorInactive = m_project->tag( Project::Tag_CDG_inactivecolor );
+	m_colorActive = m_project->tag( Project::Tag_CDG_activecolor );
 
 	initColors();
 
@@ -328,15 +328,15 @@ void CDGGenerator::applyTileChanges( const QImage& orig,const QImage& newimg )
 			checkTile( offset_x, offset_y, orig, newimg );
 }
 
-bool CDGGenerator::validateParagraph( const QString& paragraph, int * errorline )
+bool CDGGenerator::validateParagraph( const QString& paragraph, QList<ValidatorError>& errors )
 {
 	QImage image( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_RGB32 );
 
-	return drawText( image, paragraph, errorline );
+	return drawText( image, paragraph, &errors );
 }
 
 
-bool CDGGenerator::drawText( QImage& image, const QString& paragraph, int * errorline )
+bool CDGGenerator::drawText( QImage& image, const QString& paragraph, QList<ValidatorError> * errors )
 {
 	// Some params
 	const int min_x = CDG_BORDER_WIDTH;
@@ -365,12 +365,21 @@ bool CDGGenerator::drawText( QImage& image, const QString& paragraph, int * erro
 
 	if ( height > max_y - min_y )
 	{
-		if ( errorline )
-			*errorline = 0;
-
-		qWarning("Paragraph height %d (%d lines) exceeds the allowed width %d, font height %d",
-				 height + min_y, lines.size(), max_y, m.height() );
-		return false;
+		if ( errors )
+		{
+			errors->push_back(
+					ValidatorError(
+							0,
+							0,
+							QObject::tr( "This paragraph contains too many lines, "
+								"and cannot fit into a CD+G screen using the font selected.") ) );
+		}
+		else
+		{
+			qWarning("Paragraph height %d (%d lines) exceeds the allowed width %d, font height %d",
+							 height + min_y, lines.size(), max_y, m.height() );
+			return false;
+		}
 	}
 
 	// Calculate start and increment y
@@ -397,15 +406,24 @@ bool CDGGenerator::drawText( QImage& image, const QString& paragraph, int * erro
 
 		if ( width > max_x - min_x )
 		{
-			if ( errorline )
-				*errorline = i + 1;
-
-			qWarning("Line '%s' width %d exceeds the allowed width %d", qPrintable(stripColors(line)), width + min_x, max_x );
-			return false;
+			if ( errors )
+			{
+				errors->push_back(
+						ValidatorError(
+								0,
+								0,
+								QObject::tr( "Line width exceeded. The current line cannot fit into a "
+									"CD+G screen using the font selected.") ) );
+			}
+			else
+			{
+				qWarning("Line '%s' width %d exceeds the allowed width %d", qPrintable(stripColors(line)), width + min_x, max_x );
+				return false;
+			}
 		}
 
 		// If we're in a checking mode, continue
-		if ( errorline )
+		if ( errors )
 			continue;
 
 		// Now we know the width, calculate start
@@ -440,7 +458,7 @@ bool CDGGenerator::drawText( QImage& image, const QString& paragraph, int * erro
 	return true;
 }
 
-void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const Project * project )
+void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 {
 	LyricsRenderer renderer;
 	QString	lastLyrics;
@@ -498,11 +516,11 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const Pr
 		QString lyricpaga;
 
 		// Show title?
-		if ( timing < project->tag( Project::Tag_CDG_titletime ).toInt() * 1000 )
+		if ( timing < m_project->tag( Project::Tag_CDG_titletime ).toInt() * 1000 )
 		{
 			lyricpaga = QString("%1\n\n%2\n\nCreated by Karaoke Lyric Editor %3.%4\n%5\n")
-							.arg( project->tag( Project::Tag_Artist ) )
-							.arg( project->tag( Project::Tag_Title ) )
+							.arg( m_project->tag( Project::Tag_Artist ) )
+							.arg( m_project->tag( Project::Tag_Title ) )
 							.arg( APP_VERSION_MAJOR )
 							.arg( APP_VERSION_MINOR )
 							.arg( "http://www.karlyriceditor.com/" );

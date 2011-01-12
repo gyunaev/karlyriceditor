@@ -25,6 +25,7 @@
 #include <QTextObjectInterface>
 
 #include "lyrics.h"
+#include "validator.h"
 
 class Project;
 
@@ -33,6 +34,7 @@ class Project;
 // any specific lyrics format. This is done here and not in Project to provide syntax
 // highlighting.
 //
+
 class Editor : public QTextEdit
 {
 	Q_OBJECT
@@ -48,6 +50,7 @@ class Editor : public QTextEdit
 
 		// Validate the lyrics
 		bool	validate();
+		void	validate( QList<ValidatorError>& errors );
 
 		// Export/Import functions to process lyrics. This generally does not work
 		// for lyrics in "editing" phase, and requires the lyrics to be validated.
@@ -57,7 +60,8 @@ class Editor : public QTextEdit
 		// Export/Import functions to store/load lyrics from a project file or
 		// temporary storage. Not really useful for anything else.
 		QString	exportToString();
-		bool	importFromString( const QString& str );
+		bool	importFromString( const QString& lyricstr );
+		bool	importFromOldString( const QString& lyricstr );
 
 	public slots:
 		void	textModified();
@@ -83,8 +87,6 @@ class Editor : public QTextEdit
 
 		Project		 *	m_project;
 		unsigned int	m_timeId; // for remove tag
-		QTime			m_lastAutosave; // for automatically saving the lyrics
-
 };
 
 #endif // EDITOR_H

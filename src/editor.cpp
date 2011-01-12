@@ -61,13 +61,52 @@ Editor::Editor( QWidget * parent )
 void Editor::setProject( Project* proj )
 {
 	m_project = proj;
-	m_lastAutosave.start();
 }
 
 static inline bool isCRLF( QChar ch )
 {
 	return (ch == QChar::LineSeparator) || (ch == QChar::ParagraphSeparator ) || (ch == '\n' );
 }
+
+static inline QString markToTime( qint64 mark )
+{
+	int min = mark / 60000;
+	int sec = (mark - min * 60000) / 1000;
+	int msec = mark - (min * 60000 + sec * 1000 );
+
+	return QString().sprintf( "%02d:%02d.%02d", min, sec, msec / 10 );
+}
+
+static inline qint64 infoToMark( QString data )
+{
+	QRegExp rxtime( "^(\\d+):(\\d+)\\.(\\d+)$");
+
+	if ( data.indexOf( rxtime ) == -1 )
+		return -1;
+
+	return rxtime.cap( 1 ).toInt() * 60000 + rxtime.cap( 2 ).toInt() * 1000 + rxtime.cap( 3 ).toInt() * 10;
+}
+
+/*
+static inline qint64 timeToMark( QString time )
+{
+	QRegExp reg( "^(\d+):(\d+)\.(\d+)$" );
+
+	if ( reg.m)
+	int min_part = time.indexOf( ':' );
+
+	if ( min_part < 0 )
+		return -1;
+
+	min_part
+
+	int min = mark / 60000;
+	int sec = (mark - min * 60000) / 1000;
+	int msec = mark - (min * 60000 + sec * 1000 );
+
+	return QString().sprintf( "%02d:%02d.%02d", min, sec, msec / 10 );
+}
+*/
 
 void Editor::insertTimeTag( qint64 timing )
 {
@@ -277,61 +316,25 @@ void Editor::removeAllTimeTags()
 
 QString	Editor::exportToString()
 {
-	QString outstr;
-
-	for ( QTextBlock block = document()->firstBlock(); block.isValid(); block = block.next() )
-	{
-		for ( QTextBlock::iterator it = block.begin(); ; ++it )
-		{
-			// Add an empty line at the end of block unless last block
-			if ( it == block.end() )
-			{
-				if ( block.next().isValid() )
-					outstr += QChar::LineSeparator;
-
-				break;
-			}
-
-			QTextCharFormat fmt = it.fragment().charFormat();
-
-			if ( fmt.objectType() == EditorTimeMark::TimeTextFormat )
-			{
-				if ( fmt.property( EditorTimeMark::PitchProperty ).toInt() != -1 )
-				{
-					outstr += QString("<%1|%2>")
-						.arg( fmt.property( EditorTimeMark::TimeProperty ).toLongLong() )
-						.arg( fmt.property( EditorTimeMark::PitchProperty ).toInt() );
-				}
-				else
-					outstr += QString("<%1>").arg( fmt.property( EditorTimeMark::TimeProperty ).toLongLong() );
-			}
-			else
-			{
-				QString saved = it.fragment().text();
-
-				saved.replace( "&", "&amp;" );
-				saved.replace( "<", "&lt;" );
-				saved.replace( ">", "&gt;" );
-
-				outstr += saved;
-			}
-		}
-	}
-
-	return outstr;
+	return toPlainText();
 }
 
-bool Editor::importFromString( const QString& strlyrics )
+bool Editor::importFromString( const QString& lyricstr )
 {
-	QString lyricstr = strlyrics;
+	setPlainText( lyricstr );
+	return true;
+}
+
+bool Editor::importFromOldString( const QString& lyricstr )
+{
+	QString strlyrics;
+
 	clear();
 	setEnabled( true );
 
 	// A simple state machine
 	bool timing = false;
 	QString saved;
-
-	textCursor().beginEditBlock();
 
 	for ( int i = 0; ; ++i )
 	{
@@ -343,39 +346,27 @@ bool Editor::importFromString( const QString& strlyrics )
 			saved.replace( "&gt;", ">" );
 			saved.replace( "&amp;", "&" );
 
-			textCursor().insertText( saved );
+			strlyrics += saved;
 
 			if ( i == lyricstr.length() )
-			{
-				textCursor().endEditBlock();
-				return true;
-			}
+				break;
 
 			saved.clear();
 			timing = true;
 		}
 		else if ( lyricstr[i] == '>' )
 		{
-			QTextCharFormat timemark;
-			timemark.setObjectType( EditorTimeMark::TimeTextFormat );
-			qint64 timing = 0;
-			int pitch = -1;
+			QString time;
 
 			if ( saved.contains( '|' ) )
 			{
 				QStringList values = saved.split( '|' );
-				timing = values[0].toLongLong();
-				pitch = values[1].toInt();
+				time = "[" + markToTime( values[0].toLongLong() ) + "]";
 			}
 			else
-				timing = saved.toLongLong();
+				time = "[" + markToTime( saved.toLongLong() ) + "]";
 
-			timemark.setProperty( EditorTimeMark::TimeProperty, timing );
-			timemark.setProperty( EditorTimeMark::PitchProperty, pitch );
-			timemark.setProperty( EditorTimeMark::IdProperty, 0 );
-
-			textCursor().insertText( QString(QChar::ObjectReplacementCharacter), timemark );
-
+			strlyrics += time;
 			saved.clear();
 			timing = false;
 		}
@@ -383,7 +374,7 @@ bool Editor::importFromString( const QString& strlyrics )
 			saved.push_back( lyricstr[i] );
 	}
 
-	textCursor().endEditBlock();
+	setPlainText( strlyrics );
 	return true;
 }
 
@@ -394,46 +385,41 @@ Lyrics Editor::exportLyrics()
 	if ( !validate() )
 		return lyrics;
 
+	QString text = toPlainText();
+	QStringList lines = text.split( '\n' );
+
 	lyrics.beginLyrics();
 
-	for ( QTextBlock block = document()->firstBlock(); block.isValid(); block = block.next() )
+	foreach( QString line, lines )
 	{
-		for ( QTextBlock::iterator it = block.begin(); ; ++it )
+		if ( line.trimmed().isEmpty() )
 		{
-			if ( it == block.end() )
-			{
-				lyrics.curLyricAddEndOfLine();
-				break;
-			}
-
-			QTextCharFormat fmt = it.fragment().charFormat();
-
-			if ( fmt.objectType() == EditorTimeMark::TimeTextFormat )
-			{
-				// Store old entry if any
-				lyrics.curLyricAdd();
-
-				lyrics.curLyricSetTime( fmt.property( EditorTimeMark::TimeProperty ).toLongLong() );
-				lyrics.curLyricSetPitch( fmt.property( EditorTimeMark::PitchProperty ).toInt() );
-			}
-			else
-			{
-				// Remove line feeds from the original line and append it
-				QString text = it.fragment().text();
-				text.remove( QChar::LineSeparator );
-
-				lyrics.curLyricAppendText( text );
-
-				// Now get the line back, and count removed CRLFs
-				text = it.fragment().text();
-
-				while ( !text.isEmpty() && text.endsWith( QChar::LineSeparator ) )
-				{
-					text.chop( 1 );
-					lyrics.curLyricAddEndOfLine();
-				}
-			}
+			// end of paragraph
+			lyrics.curLyricAddEndOfLine();
+			continue;
 		}
+
+		QStringList parts = line.split( '[' );
+
+		// First part must be empty
+		if ( !parts[0].isEmpty() )
+			return Lyrics();
+
+		parts.removeAt( 0 );
+
+		foreach ( QString part, parts )
+		{
+			int timeoff = part.indexOf( ']' );
+
+			QString timing = part.left( timeoff );
+			QString text = part.mid( timeoff + 1 );
+
+			lyrics.curLyricSetTime( infoToMark( timing ) );
+			lyrics.curLyricAppendText( text );
+			lyrics.curLyricAdd();
+		}
+
+		lyrics.curLyricAddEndOfLine();
 	}
 
 	lyrics.endLyrics();
@@ -444,8 +430,9 @@ void Editor::importLyrics( const Lyrics& lyrics )
 {
 	// clear the editor
 	clear();
+	setEnabled( true );
 
-	textCursor().beginEditBlock();
+	QString strlyrics;
 
 	// Fill the editor
 	for ( int bl = 0; bl < lyrics.totalBlocks(); bl++ )
@@ -460,24 +447,16 @@ void Editor::importLyrics( const Lyrics& lyrics )
 			{
 				Lyrics::Syllable lentry = line[pos];
 
-				// Insert timing mark
-				QTextCharFormat timemark;
-				timemark.setObjectType( EditorTimeMark::TimeTextFormat );
-				timemark.setProperty( EditorTimeMark::TimeProperty, lentry.timing );
-				timemark.setProperty( EditorTimeMark::PitchProperty, lentry.pitch );
-				timemark.setProperty( EditorTimeMark::IdProperty, 0 );
-
-				textCursor().insertText( QString(QChar::ObjectReplacementCharacter), timemark );
-				textCursor().insertText( lentry.text );
+				strlyrics += "[" + markToTime( lentry.timing ) + "]" + lentry.timing;
 			}
 
-			textCursor().insertText( QString( QChar::LineSeparator ) );
+			strlyrics += "\n";
 		}
 
-		textCursor().insertText( QString( QChar::LineSeparator ) );
+		strlyrics += "\n";
 	}
 
-	textCursor().endEditBlock();
+	setPlainText( strlyrics );
 }
 
 void Editor::cursorToLine( int line )
@@ -489,177 +468,226 @@ void Editor::cursorToLine( int line )
 	ensureCursorVisible();
 }
 
-// validate:
+// validators
 bool Editor::validate()
 {
-	int linenumber = 1;
-	int linesinblock = 0;
-	qint64 last_time = 0;
-	bool time_required = true;
-	QString paragraphtext;
+	QList<ValidatorError> errors;
+	validate( errors );
 
-	CDGGenerator gen; // validator for CD+G
-	QFont font( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() );
-	gen.init( "1", "2", "3", "4", font );
-
-	for ( QTextBlock block = document()->firstBlock(); block.isValid(); block = block.next() )
+	if ( !errors.isEmpty() )
 	{
-		for ( QTextBlock::iterator it = block.begin(); ; ++it )
-		{
-			if ( it == block.end() )
-			{
-				linenumber++;
-				time_required = true;
-				break;
-			}
+		QMessageBox::critical( 0,
+							   tr("Validation error found"),
+								  tr("Error at line %1: ").arg( errors.front().line )
+								  + errors.front().error );
 
-			QTextCharFormat fmt = it.fragment().charFormat();
-
-			if ( fmt.objectType() == EditorTimeMark::TimeTextFormat )
-			{
-				qint64 mark = fmt.property( EditorTimeMark::TimeProperty ).toLongLong();
-
-				// 0 - placeholder
-				if ( mark == 0 )
-				{
-					QMessageBox::critical( 0,
-						 tr("Placeholder found"),
-						 tr("Placeholder found at line %1\n"
-							"Placeholders are not allowed in final lyrics"). arg(linenumber) );
-
-					cursorToLine( linenumber - 1 );
-					return false;
-				}
-
-				// Time going backward?
-				if ( mark < last_time )
-				{
-					QMessageBox::critical( 0,
-							 tr("Time goes backward"),
-							 tr("Some time marks at line %1 are going backward.\n"
-								"Time marks must increase toward the line end."). arg(linenumber) );
-
-					cursorToLine( linenumber - 1 );
-					return false;
-				}
-
-				last_time = mark;
-				time_required = false;
-			}
-			else
-			{
-				QString text = it.fragment().text();
-				paragraphtext += text;
-
-				if ( text.endsWith( QChar::LineSeparator ) )
-				{
-					int linefeeds = 0;
-
-					while ( !text.isEmpty() && text.endsWith( QChar::LineSeparator ) )
-					{
-						text.chop( 1 );
-						linefeeds++;
-
-						if ( !pSettings->m_editorSupportBlocks && linefeeds > 1 )
-						{
-							QMessageBox::critical( 0,
-								 tr("Empty line found"),
-								 tr("Empty line found at line %1\n"
-									"An empty line represents a block boundary, but blocks "
-									"are currently disabled in settings"). arg(linenumber) );
-
-							cursorToLine( linenumber - 1 );
-							return false;
-						}
-
-						linenumber++;
-					}
-
-					// linefeeds == 1 - simple enter
-					// linefeeds == 2 - block boundary
-					// linefeeds > 2 - more than one empty line, error
-					if ( linefeeds > 2 )
-					{
-						QMessageBox::critical( 0,
-							 tr("Double empty line found"),
-							 tr("Double empty line found at line %1\n"
-								"A single empty line represents a block boundary; "
-								"double lines are not supported."). arg(linenumber) );
-
-						cursorToLine( linenumber - 1 );
-						return false;
-					}
-					else if ( linefeeds == 1 )
-					{
-						linesinblock++;
-
-						if ( pSettings->m_editorSupportBlocks && linesinblock > pSettings->m_editorMaxBlock )
-						{
-							QMessageBox::critical( 0,
-								 tr("Block size exceeded"),
-								 tr("The block contains more than %1 lines at line %2. Most karaoke players cannot "
-									"show too large blocks because of limited screen space.\n\n"
-									"Please split the block by adding a block separator (an empty line).\n")
-									.arg(pSettings->m_editorMaxBlock) .arg(linenumber) );
-
-							cursorToLine( linenumber - 1 );
-							return false;
-						}
-					}
-					else if ( linefeeds == 2 )
-					{
-						if ( m_project->type() == Project::LyricType_CDG )
-						{
-							int errline = 0;
-
-							// Replace separators
-							paragraphtext.replace( QChar::LineSeparator, '\n' );
-
-							if ( !gen.validateParagraph( paragraphtext, &errline ) )
-							{
-								if ( !errline )
-								{
-									QMessageBox::critical( 0,
-										 tr("Block height exceeded"),
-										 tr("The current block cannot fit into a CD+G screen using the font selected.\n") );
-
-									cursorToLine( linenumber - 1 );
-								}
-								else
-								{
-									QMessageBox::critical( 0,
-										 tr("Line width exceeded"),
-										 tr("The current line cannot fit into a CD+G screen using the font selected.\n") );
-
-									cursorToLine( linenumber - 1 + errline );
-								}
-
-								return false;
-							}
-						}
-
-						linesinblock = 0;
-						paragraphtext = "";
-					}
-
-					time_required = true;
-					continue;
-				}
-
-				if ( time_required || text.indexOf( QChar::LineSeparator ) != -1 )
-				{
-					QMessageBox::critical( 0,
-								 tr("Missing time tag"),
-								 tr("Time tags is not present at first position at line %1"). arg(linenumber) );
-
-					cursorToLine( linenumber - 1 );
-					return false;
-				}
-			}
-		}
+		cursorToLine( errors.front().line );
+		return false;
 	}
 
 	return true;
+}
+
+void Editor::validate( QList<ValidatorError>& errors )
+{
+	int linesinblock = 0;
+	qint64 last_time = 0;
+	QString paragraphtext;
+
+	CDGGenerator gen ( m_project );
+	gen.init();
+
+	// Get the lyrics
+	QString text = toPlainText();
+	QStringList lines = text.split( '\n' );
+
+	for ( int linenumber = 1; linenumber <= lines.size(); linenumber++ )
+	{
+		const QString& line = lines[ linenumber - 1];
+
+		// Empty line is a paragraph separator. Handle it.
+		if ( line.trimmed().isEmpty() )
+		{
+			// Is it enabled?
+			if ( !pSettings->m_editorSupportBlocks )
+			{
+				errors.push_back(
+						ValidatorError(
+								linenumber,
+								0,
+								tr("Empty line found.\n"
+								   "An empty line represents a block boundary, but blocks "
+								   "are currently disabled in settings") ) );
+
+				// recoverable
+				goto cont_paragraph;
+			}
+
+			// Repeat?
+			if ( paragraphtext.isEmpty() )
+			{
+				// A new paragraph already started; duplicate empty line, not allowed
+				errors.push_back(
+						ValidatorError(
+								linenumber,
+								0,
+								tr("Double empty line found.\n"
+									"A single empty line represents a block boundary; "
+								"double lines are not supported.") ) );
+
+				// recoverable
+				goto cont_paragraph;
+			}
+
+			// Paragraph-specific checks
+			if ( m_project->type() == Project::LyricType_CDG )
+			{
+				QList<ValidatorError> cdgerrors;
+
+				gen.validateParagraph( paragraphtext, cdgerrors );
+
+				foreach ( ValidatorError err, cdgerrors )
+				{
+					// Adjust the line number
+					err.line += (linenumber - linesinblock);
+
+					errors.push_back( err );
+				}
+			}
+
+cont_paragraph:
+			linesinblock = 0;
+			paragraphtext = "";
+			continue;
+		}
+
+		// If we're here, this is not an empty line.
+		linesinblock++;
+
+		// Check if we're out of block line limit
+		if ( pSettings->m_editorSupportBlocks && linesinblock > pSettings->m_editorMaxBlock )
+		{
+			errors.push_back(
+					ValidatorError(
+							linenumber,
+							0,
+							tr("Block size exceeded. The block contains more than %1 lines.\n"
+								"Most karaoke players cannot show too large blocks because of "
+								"limited screen space.\n\nPlease split the block by adding a "
+								"block separator (an empty line).\n") .arg(pSettings->m_editorMaxBlock) ) );
+		}
+
+		// Should not have lyrics before the first [
+		if ( line[0] != '[' )
+		{
+			errors.push_back(
+					ValidatorError(
+							linenumber,
+							0,
+							tr("Missing opening time tag. Every line must start with a [mm:ss.ms] time tag") ) );
+		}
+
+		// LRCv2, UStar and CD+G must also end with ]
+		if ( m_project->type() == !Project::LyricType_LRC1 && !line.trimmed().endsWith( ']' ) )
+		{
+			errors.push_back(
+					ValidatorError(
+							linenumber,
+							0,
+							tr("Missing closing time tag. For this lyrics type every line must end with a [mm:ss.ms] time tag") ) );
+		}
+
+		// Go through the line, and verify all time tags
+		int time_tag_start = 0;
+		bool in_time_tag = false;
+
+		for ( int col = 0; col < line.size(); col++ )
+		{
+			if ( in_time_tag )
+			{
+				// Time tag ends?
+				if ( line[col] == ']' )
+				{
+					// Verify that the tag is valid
+					QString time = line.mid( time_tag_start, col - time_tag_start );
+					QRegExp rxtime( "^(\\d+):(\\d+)\\.(\\d+)$" );
+
+					if ( time.indexOf( rxtime ) != -1 )
+					{
+						if ( rxtime.cap( 2 ).toInt() >= 60 )
+						{
+							errors.push_back(
+									ValidatorError(
+											linenumber,
+											time_tag_start,
+											tr("Invalid time, number of seconds cannot exceed 59.") ) );
+						}
+
+						qint64 timing = infoToMark( time );
+
+						if ( timing < last_time )
+						{
+							errors.push_back(
+									ValidatorError(
+											linenumber,
+											time_tag_start,
+											tr("Time goes backward, previous time value is greater than current value.") ) );
+						}
+
+						last_time = timing;
+					}
+					else
+					{
+						errors.push_back(
+								ValidatorError(
+										linenumber,
+										time_tag_start,
+										tr("Invalid time tag. Time tag must be in format [mm:ss.ms] where mm is minutes, ss is seconds and ms is milliseconds * 10") ) );
+					}
+
+					in_time_tag = false;
+					continue;
+				}
+
+				// Only accept those characters
+				if ( !line[col].isDigit() && line[col] != ':' && line[col] != '.' )
+				{
+					errors.push_back(
+							ValidatorError(
+									linenumber,
+									col,
+									tr("Invalid character in the time tag. Time tag must be in format [mm:ss.ms] where mm is minutes, ss is seconds and ms is milliseconds * 10") ) );
+
+					in_time_tag = false;
+					break; // end with this line
+				}
+			}
+			else if ( line[col] == '[' )
+			{
+				in_time_tag = true;
+				time_tag_start = col + 1;
+				continue;
+			}
+			else if ( line[col] == ']' )
+			{
+				errors.push_back(
+						ValidatorError(
+								linenumber,
+								col,
+								tr("Invalid closing bracket usage outside the time block") ) );
+			}
+		}
+
+		// Verify opened time block
+		if ( in_time_tag )
+		{
+			errors.push_back(
+					ValidatorError(
+							linenumber,
+							line.size() - 1,
+							tr("Time tag is not closed properly") ) );
+		}
+	}
 }
 
 QTextCursor Editor::timeMark( const QPoint& point )
@@ -864,7 +892,10 @@ QMimeData * Editor::createMimeDataFromSelection () const
 void Editor::insertFromMimeData ( const QMimeData * source )
 {
 	QString text = source->text();
-	text.remove( QChar::ObjectReplacementCharacter );
+
+	text.replace( QChar::LineSeparator, "\n" );
+	text.replace( QChar::ParagraphSeparator, "\n" );
+	text.remove( "\r" );
 
 	if ( !text.isNull() )
 	{
