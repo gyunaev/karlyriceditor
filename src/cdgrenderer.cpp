@@ -73,6 +73,7 @@ QImage CDGRenderer::update( qint64 tickmark, bool * screen_changed )
 	if ( m_packet > packets_due - 1 )
 	{
 		qDebug( "CDGRenderer: packet number changed backward (%d played, %d asked", m_packet, packets_due );
+		m_cdgimage.fill( Qt::black );
 		m_packet = 0;
 	}
 

@@ -33,6 +33,7 @@
 #include "settings.h"
 #include "pianorollwidget.h"
 #include "dialog_edittimemark.h"
+#include "cdggenerator.h"
 
 
 Editor::Editor( QWidget * parent )
@@ -495,6 +496,11 @@ bool Editor::validate()
 	int linesinblock = 0;
 	qint64 last_time = 0;
 	bool time_required = true;
+	QString paragraphtext;
+
+	CDGGenerator gen; // validator for CD+G
+	QFont font( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() );
+	gen.init( "1", "2", "3", "4", font );
 
 	for ( QTextBlock block = document()->firstBlock(); block.isValid(); block = block.next() )
 	{
@@ -543,6 +549,7 @@ bool Editor::validate()
 			else
 			{
 				QString text = it.fragment().text();
+				paragraphtext += text;
 
 				if ( text.endsWith( QChar::LineSeparator ) )
 				{
@@ -601,7 +608,38 @@ bool Editor::validate()
 					}
 					else if ( linefeeds == 2 )
 					{
+						if ( m_project->type() == Project::LyricType_CDG )
+						{
+							int errline = 0;
+
+							// Replace separators
+							paragraphtext.replace( QChar::LineSeparator, '\n' );
+
+							if ( !gen.validateParagraph( paragraphtext, &errline ) )
+							{
+								if ( !errline )
+								{
+									QMessageBox::critical( 0,
+										 tr("Block height exceeded"),
+										 tr("The current block cannot fit into a CD+G screen using the font selected.\n") );
+
+									cursorToLine( linenumber - 1 );
+								}
+								else
+								{
+									QMessageBox::critical( 0,
+										 tr("Line width exceeded"),
+										 tr("The current line cannot fit into a CD+G screen using the font selected.\n") );
+
+									cursorToLine( linenumber - 1 + errline );
+								}
+
+								return false;
+							}
+						}
+
 						linesinblock = 0;
+						paragraphtext = "";
 					}
 
 					time_required = true;

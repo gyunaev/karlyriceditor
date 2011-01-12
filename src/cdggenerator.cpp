@@ -26,6 +26,7 @@
 #include "lyricsrenderer.h"
 #include "cdggenerator.h"
 
+const QChar CDGGenerator::colorSeparator = QChar( 0x2016 );
 
 // Color code indexes
 static int COLOR_IDX_BACKGROUND = 0;	// background
@@ -39,7 +40,7 @@ void CDGGenerator::init( const QColor& bgcolor, const QColor& titlecolor,
 {
 	// Disable anti-aliasing for fonts
 	m_renderFont = font;
-	m_renderFont.setStyleStrategy(QFont::NoAntialias);
+	m_renderFont.setStyleStrategy( QFont::NoAntialias );
 	m_renderFont.setWeight( QFont::Bold );
 
 	// Initialize colors
@@ -48,15 +49,20 @@ void CDGGenerator::init( const QColor& bgcolor, const QColor& titlecolor,
 	m_colorInactive = inactcolor;
 	m_colorActive = actcolor;
 
-	m_colors.clear();
-	m_colors.push_back( m_colorBackground );
-	m_streamColorIndex = -1;
+	initColors();
 
 	// Initialize the stream
 	m_stream.clear();
 	addEmpty();
 
 	clearScreen();
+}
+
+void CDGGenerator::initColors()
+{
+	m_colors.clear();
+	m_colors.push_back( m_colorBackground );
+	m_streamColorIndex = -1;
 }
 
 void CDGGenerator::addSubcode( const SubCode& sc )
@@ -88,8 +94,8 @@ void CDGGenerator::clearScreen()
 {
 	SubCode sc;
 
-	// First copy the colors if we got them
-	if ( m_streamColorIndex != -1 && !m_colors.isEmpty() )
+	// First copy the colors if we got them (there is always one background color)
+	if ( m_streamColorIndex != -1 && m_colors.size() > 1 )
 	{
 		// Load first lower 8 colors
 		SubCode sc;
@@ -125,8 +131,7 @@ void CDGGenerator::clearScreen()
 			m_stream[ m_streamColorIndex + 1 ] = sc;
 		}
 
-		m_colors.clear();
-		m_colors.push_back( m_colorBackground );
+		initColors();
 	}
 
 	// Now clear the screen
@@ -187,10 +192,10 @@ void CDGGenerator::addLoadColors( const QColor& bgcolor, const QColor& titlecolo
 	addSubcode( sc );
 }
 */
-QString	CDGGenerator::stripHTML( const QString& str )
+static inline QString stripColors( const QString& str )
 {
-	QRegExp rx( "<.*>" );
-	rx.setMinimal( true );;
+	QRegExp rx( QString("%1.").arg( CDGGenerator::colorSeparator) );
+	rx.setMinimal( true );
 
 	QString stripped = str;
 	stripped.remove( rx );
@@ -312,7 +317,121 @@ void CDGGenerator::applyTileChanges( const QImage& orig,const QImage& newimg )
 			checkTile( offset_x, offset_y, orig, newimg );
 }
 
-void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QString& title )
+bool CDGGenerator::validateParagraph( const QString& paragraph, int * errorline )
+{
+	QImage image( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_RGB32 );
+
+	return drawText( image, paragraph, errorline );
+}
+
+bool CDGGenerator::drawText( QImage& image, const QString& paragraph, int * errorline )
+{
+	// Some params
+	const int min_x = CDG_BORDER_WIDTH;
+	const int max_x = CDG_FULL_WIDTH - CDG_BORDER_WIDTH;
+	const int min_y = CDG_BORDER_HEIGHT;
+	const int max_y = CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT;
+	const int min_spacing = 0;
+
+	if ( !errorline )
+qDebug("Drawing %s", qPrintable(paragraph));
+
+	// Set up painter with disabled anti-aliasing to handle color detection
+	image.fill( m_colorBackground.rgb() );
+
+	QPainter painter( &image );
+	painter.setFont( m_renderFont );
+	painter.setPen( m_colorActive );
+/*	painter.setRenderHints( QPainter::Antialiasing
+						 | QPainter::TextAntialiasing
+						 | QPainter::SmoothPixmapTransform
+						 | QPainter::HighQualityAntialiasing
+						 | QPainter::NonCosmeticDefaultPen, false );
+*/
+	QStringList lines = paragraph.split( "\n" );
+
+	// Can we fit into the boundaries?
+	QFontMetrics m = painter.fontMetrics();
+	int height = m.height() * lines.size() + min_spacing * (lines.size() - 1);
+
+	if ( height > max_y - min_y )
+	{
+		if ( errorline )
+			*errorline = 0;
+
+		qWarning("Paragraph height %d (%d lines) exceeds the allowed width %d, font height %d",
+				 height + min_y, lines.size(), max_y, m.height() );
+		return false;
+	}
+
+	// Calculate start and increment y
+	int start_y = min_y + ( max_y - min_y - height) / 2 + m.height();
+	int step_y = m.height() + min_spacing;
+
+	// Draw it, line by line
+	for ( int i = 0; i < lines.size(); i++ )
+	{
+		QString& line = lines[i];
+		int width = 0;
+
+		// Calculate the line width first
+		for ( int ch = 0; ch < line.length(); ch++ )
+		{
+			if ( line[ch] == colorSeparator )
+			{
+				ch++; // skip color
+				continue;
+			}
+
+			width += m.width( line[ch] );
+		}
+
+		if ( width > max_x - min_x )
+		{
+			if ( errorline )
+				*errorline = i + 1;
+
+			qWarning("Line '%s' width %d exceeds the allowed width %d", qPrintable(stripColors(line)), width + min_x, max_x );
+			return false;
+		}
+
+		// If we're in a checking mode, continue
+		if ( errorline )
+			continue;
+
+		// Now we know the width, calculate start
+		int start_x = min_x + ( max_x - min_x - width) / 2;
+
+		// Draw the line
+		for ( int ch = 0; ch < line.length(); ch++ )
+		{
+			if ( line[ch] == colorSeparator )
+			{
+				ch++;
+
+				if ( line[ch] == 'A' )
+					painter.setPen( m_colorActive );
+				else if ( line[ch] == 'I' )
+					painter.setPen( m_colorInactive );
+				else if ( line[ch] == 'T' )
+					painter.setPen( m_colorInfo );
+				else
+					abort();
+
+				continue;
+			}
+
+			painter.drawText( start_x, start_y, (QString) line[ch] );
+			start_x += m.width( line[ch] );
+		}
+
+		start_y += step_y;
+	}
+
+	return true;
+}
+
+void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QString& title, unsigned int titlelen )
 {
 	LyricsRenderer renderer;
 	QString	lastLyrics;
@@ -324,21 +443,13 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QS
 	image.fill( m_colorBackground.rgb() );
 	lastImage.fill( m_colorBackground.rgb() );
 
-	// We're using QLabel for rendering as it is easier
-	QLabel label;
-	label.setAlignment( Qt::AlignCenter );
-	label.setStyleSheet("background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 black, stop: 1 black);");
-
-	label.setFont( m_renderFont );
-	label.resize( CDG_FULL_WIDTH, CDG_FULL_HEIGHT );
-
 	// Init lyrics renderer
 	renderer.setPrefetch( 1000 );
-	renderer.setLyrics( lyrics );
-	renderer.setColors( m_colorActive.name(), m_colorInactive.name() );
+	renderer.setLyrics( lyrics, true );
+	renderer.setColors( "A", "I" );
 
 	if ( !title.isEmpty() )
-		renderer.setTitlePage( title );
+		renderer.setTitlePage( colorSeparator + QString("T") + title, titlelen );
 
 	// Pop up progress dialog
 	QProgressDialog dlg ("Rendering CD+G lyrics",
@@ -350,6 +461,10 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QS
 	dlg.setValue( 0 );
 
 	qint64 dialog_step = total_length / 100;
+
+	// Preallocate the array
+	m_stream.clear();
+	m_stream.reserve( total_length * 300 / 1000 );
 
 	// Render
 	while ( 1 )
@@ -371,31 +486,20 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QS
 
 //		qDebug("timing: %d packets, %dms (%d sec)", m_stream.size(), (int) timing, (int) (timing / 1000) );
 
-		QString lyrics = renderer.update( timing );
+		QString lyricpaga = renderer.update( timing );
 
 		// Did lyrics change at all?
-		if ( lyrics == lastLyrics )
+		if ( lyricpaga == lastLyrics )
 		{
 			addEmpty();
 			continue;
 		}
 
-		// Set up painter with disabled anti-aliasing to handle color detection
-		image.fill( m_colorBackground.rgb() );
-		QPainter painter( &image );
-		painter.setRenderHints( QPainter::Antialiasing
-							 | QPainter::TextAntialiasing
-							 | QPainter::SmoothPixmapTransform
-							 | QPainter::HighQualityAntialiasing
-							 | QPainter::NonCosmeticDefaultPen, false );
-
-		// Render into text label and grab the content
-		label.setText( lyrics );
-		label.update();
-		label.render( &painter );
+		// Render the lyrics
+		drawText( image, lyricpaga );
 
 		// Is change significant enough to warrant full redraw?
-		if ( stripHTML( lyrics ) != stripHTML( lastLyrics ) )
+		if ( stripColors( lyricpaga ) != stripColors( lastLyrics ) )
 		{
 			clearScreen();
 
@@ -405,6 +509,6 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QS
 
 		applyTileChanges( lastImage, image );
 		lastImage = image;
-		lastLyrics = lyrics;
+		lastLyrics = lyricpaga;
 	}
 }

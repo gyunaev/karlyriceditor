@@ -1026,14 +1026,13 @@ QByteArray Project::exportLyricsAsCDG()
 				 font );
 
 	// Generate the title
-	QString title = QString("<qt><center><font color='white'>%1<br><br>%2<br><br></font>"
-							"<font color='white' size='50%'>Created by Karaoke Lyric Editor %3.%4<br>%5</font></center></qt>")
+	QString title = QString("%1\n\n%2\n\nCreated by Karaoke Lyric Editor %3.%4\n%5\n")
 					.arg( tag( Project::Tag_Artist ) )
 					.arg( tag( Project::Tag_Title ) )
 					.arg( APP_VERSION_MAJOR )
 					.arg( APP_VERSION_MINOR )
 					.arg( "http://www.karlyriceditor.com/" );
 
-	cdggen.generate( m_editor->exportLyrics(), m_totalSongLength, title );
+	cdggen.generate( m_editor->exportLyrics(), m_totalSongLength, title, tag( Tag_CDG_titletime ).toInt() * 1000 );
 	return cdggen.stream();
 }

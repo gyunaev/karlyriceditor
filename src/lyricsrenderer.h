@@ -26,9 +26,10 @@ class LyricsRenderer
 {
 	public:
 		LyricsRenderer();
-		void setLyrics( const Lyrics& lyrics );
+
+		void setLyrics( const Lyrics& lyrics, bool internaloutput = false );
 		void setColors( const QString& active, const QString& inactive  );
-		void setTitlePage( const QString& titlepage );
+		void setTitlePage( const QString& titlepage, unsigned int duration = 50 );
 
 		// Sets time necessary for the block to be drawn, even if the previous block would
 		// be hidden earlier
@@ -79,6 +80,13 @@ class LyricsRenderer
 
 		// Prefetch
 		int					m_prefetch;
+
+		// Output control
+		QString				m_tagLyricsStart;
+		QString				m_tagLyricsEnd;
+		QString				m_tagColorPattern;
+		QString				m_tagLineFeed;
+		bool				m_escapeHTML;
 };
 
 #endif // LYRICSRENDERER_H

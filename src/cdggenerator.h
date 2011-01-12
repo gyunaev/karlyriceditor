@@ -27,9 +27,12 @@
 #include "cdg.h"
 #include "lyrics.h"
 
+
 class CDGGenerator
 {
 	public:
+		static const QChar colorSeparator;
+
 		CDGGenerator();
 
 		// Initializes the stream, fills up the color tables and clears screen
@@ -40,12 +43,16 @@ class CDGGenerator
 					  const QFont& font );
 
 		// Generate the CD+G lyrics
-		void	generate( const Lyrics& lyrics, qint64 total_length, const QString& title = QString::null );
+		void	generate( const Lyrics& lyrics, qint64 total_length, const QString& title = QString::null, unsigned int titlelen = 0 );
 
 		// Returns the CD+G stream
 		QByteArray	stream();
 
+		// Paragraph validator
+		bool validateParagraph( const QString& paragraph, int * errorline );
+
 	private:
+		void	initColors();
 		void	addSubcode( const SubCode& sc );
 		void	addEmpty();
 		void	addLoadColors( const QColor& bgcolor, const QColor& titlecolor,
@@ -57,6 +64,7 @@ class CDGGenerator
 		QString	stripHTML( const QString& str );
 		int		getColor( QRgb color );
 		void	checkTile( int offset_x, int offset_y, const QImage& orig,const QImage& newimg );
+		bool	drawText( QImage& image, const QString& paragraph, int * line = 0 );
 
 	private:
 		QVector< SubCode >		m_stream;		// CD+G stream

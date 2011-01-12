@@ -19,6 +19,7 @@
 #include <QTextDocument>
 
 #include "lyricsrenderer.h"
+#include "cdggenerator.h"
 #include "settings.h"
 
 // How long (ms) to show the line/block before the song actually starts
@@ -31,14 +32,33 @@ static const int LYRICS_SHOW_AFTER = 5000;
 LyricsRenderer::LyricsRenderer()
 {
 	m_prefetch = 0;
+	m_titleTimingCut = 0;
 }
 
-void LyricsRenderer::setLyrics( const Lyrics& lyrics )
+void LyricsRenderer::setLyrics( const Lyrics& lyrics, bool internaloutput )
 {
 	m_text.clear();
 	m_titlePage.clear();
+
 	m_colorActive = "white";
 	m_colorInactive = "green";
+
+	if ( !internaloutput )
+	{
+		m_tagLyricsStart = "<qt>";
+		m_tagLyricsEnd = "</qt>";
+		m_tagColorPattern = "<font color=\"%1\">%2</font>";
+		m_tagLineFeed = "<br>";
+		m_escapeHTML = true;
+	}
+	else
+	{
+		m_tagLyricsStart = "";
+		m_tagLyricsEnd = "";
+		m_tagColorPattern = CDGGenerator::colorSeparator + QString("%1%2");
+		m_tagLineFeed = "\n";
+		m_escapeHTML = false;
+	}
 
 	if ( lyrics.isEmpty() )
 		qFatal("LyricRenderer called with empty lyrics");
@@ -48,10 +68,10 @@ void LyricsRenderer::setLyrics( const Lyrics& lyrics )
 
 	// Depending on how much time we have before having showing the lyrics, we show the title
 	// for 5 seconds or less (or not show at all if there is no time)
-	if ( timing > LYRICS_SHOW_BEFORE )
-		m_titleTimingCut = qMin( (int) (timing - LYRICS_SHOW_BEFORE), 5000 );
-	else
-		m_titleTimingCut = 0;
+	if ( m_titleTimingCut == 0 )
+	{
+		m_titleTimingCut = qMin( (int) timing, LYRICS_SHOW_BEFORE );
+	}
 
 	// Index the lyrics
 	m_lyricIndex.clear();
@@ -128,8 +148,6 @@ void LyricsRenderer::setLyrics( const Lyrics& lyrics )
 
 			if ( i == m_blockIndex.size() - 1 || m_blockIndex[i].timeend + LYRICS_SHOW_AFTER < m_blockIndex[i+1].timestart )
 				m_blockIndex[i].timeend += LYRICS_SHOW_AFTER;
-//			else
-//				m_blockIndex[i].timeend = m_blockIndex[i+1].timestart - 1;
 		}
 
 		// Dump block index
@@ -201,26 +219,31 @@ void LyricsRenderer::redrawBlocks( qint64 tickmark )
 	int index = m_blockIndex[blockid].index;
 
 	// Create a multiline string from current block.
-	QString text = "<qt>";
+	QString text = m_tagLyricsStart;
 
 	for ( ; index < m_lyricIndex.size() && m_lyricIndex[index].blockindex == blockid; index++ )
 	{
-		QString lyrictext = Qt::escape( m_lyricIndex[index].text );
-		lyrictext.replace( "\n", "<br>" );
+		QString lyrictext = m_lyricIndex[index].text;
+
+		if ( m_escapeHTML )
+		{
+			lyrictext = Qt::escape( m_lyricIndex[index].text );
+			lyrictext.replace( "\n", m_tagLineFeed );
+		}
 
 		if ( m_lyricIndex[index].timestart < tickmark )
 		{
 			// This entry hasn't been played yet
-			text += QString("<font color=\"%1\">%2</font>") .arg( m_colorInactive ) .arg( lyrictext );
+			text += m_tagColorPattern .arg( m_colorInactive ) .arg( lyrictext );
 		}
 		else if ( m_lyricIndex[index].timestart >= tickmark )
 		{
 			// This entry has been played
-			text += QString("<font color=\"%1\">%2</font>") .arg( m_colorActive ) .arg( lyrictext );
+			text += m_tagColorPattern .arg( m_colorActive ) .arg( lyrictext );
 		}
 	}
 
-	text += "</qt>";
+	text += m_tagLyricsEnd;
 	m_text = text;
 }
 
@@ -250,19 +273,20 @@ void LyricsRenderer::redrawLines( qint64 tickmark )
 	int limit = qMin( startline + LINES_TO_SHOW, m_lyricIndex.size() );
 
 	// Create a multiline string.
-	QString text = "<qt>";
+	QString text = m_tagLyricsStart;
 
 	for ( int i = startline; i < limit; i++ )
 	{
 		if ( i == activeline )
-			text += QString("<font color=\"%1\">%2</font>") .arg( m_colorActive ) .arg( m_lyricIndex[i].text );
+			text += m_tagColorPattern.arg( m_colorActive ) .arg( m_lyricIndex[i].text );
 		else
-			text += QString("<font color=\"%1\">%2</font>") .arg( m_colorInactive ) .arg( m_lyricIndex[i].text );
+			text += m_tagColorPattern.arg( m_colorInactive ) .arg( m_lyricIndex[i].text );
 
-		text += "<br>";
+		text += m_tagLineFeed;
 	}
 
-	text += "</qt>";
+	text += m_tagLyricsEnd;
+
 	m_text = text;
 }
 
@@ -297,9 +321,10 @@ void LyricsRenderer::setColors( const QString& active, const QString& inactive )
 	m_colorInactive = inactive;
 }
 
-void LyricsRenderer::setTitlePage( const QString& titlepage )
+void LyricsRenderer::setTitlePage( const QString& titlepage, unsigned int timing )
 {
 	m_titlePage = titlepage;
+	m_titleTimingCut = timing;
 }
 
 void LyricsRenderer::setPrefetch( int prefetch )
