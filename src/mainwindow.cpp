@@ -550,24 +550,24 @@ void MainWindow::updateState()
 
 	actionSave->setEnabled( project_available );
 	actionSave_as->setEnabled( project_available );
-	actionUndo->setEnabled( project_ready );
-	actionRedo->setEnabled( project_ready );
+	actionUndo->setEnabled( project_available );
+	actionRedo->setEnabled( project_available );
 	actionInsert_tag->setEnabled( project_ready );
 	actionRemove_tag->setEnabled( project_ready );
-	actionEdit_header_data->setEnabled( project_ready );
-	actionValidate_lyrics->setEnabled( project_ready );
+	actionEdit_header_data->setEnabled( project_available );
+	actionValidate_lyrics->setEnabled( project_available );
 	actionTest_lyric_file->setEnabled( project_ready );
 	actionTest_CDG_lyrics->setEnabled( project_ready );
-	actionRemove_all_tags->setEnabled( project_ready );
-	actionOpen_lyric_file->setEnabled( project_ready );
-	actionClear_text->setEnabled( project_ready );
-	actionExport_lyric_file->setEnabled( project_ready );
+	actionRemove_all_tags->setEnabled( project_available );
+	actionOpen_lyric_file->setEnabled( project_available );
+	actionClear_text->setEnabled( project_available );
+	actionExport_lyric_file->setEnabled( project_available );
 	actionEdit_header_data->setEnabled( project_available );
 	actionProject_settings->setEnabled( project_available );
 
 	actionView_lyric_file->setEnabled( project_ready && m_project->type() != Project::LyricType_CDG );
 
-	editor->setEnabled( project_ready );
+	editor->setEnabled( project_available );
 
 	if ( project_ready )
 	{
