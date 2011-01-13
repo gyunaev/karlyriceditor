@@ -260,7 +260,7 @@ void Lyrics::compile()
 	*/
 }
 
-bool Lyrics::blockForTime( qint64 timing, QString& block, int& position, qint64& nexttiming )
+bool Lyrics::blockForTime( qint64 timing, QString& block, int& position, qint64& nexttiming ) const
 {
 	for ( int bl = 0; bl < m_playBlocks.size(); bl++ )
 	{
@@ -291,7 +291,7 @@ bool Lyrics::blockForTime( qint64 timing, QString& block, int& position, qint64&
 	return false;
 }
 
-bool Lyrics::nextBlock( qint64 current, qint64& time, QString& text )
+bool Lyrics::nextBlock( qint64 current, qint64& time, QString& text ) const
 {
 	for ( int bl = 0; bl < m_playBlocks.size(); bl++ )
 	{

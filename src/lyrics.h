@@ -94,10 +94,10 @@ class Lyrics
 		static QString pitchToNote( int pitch, bool show_octave = true );
 
 		// For playing
-		bool	blockForTime( qint64 timing, QString& block, int& position, qint64& nexttiming );
+		bool	blockForTime( qint64 timing, QString& block, int& position, qint64& nexttiming ) const;
 
 		// Returns the next nearest block time
-		bool	nextBlock( qint64 current, qint64& time, QString& text );
+		bool	nextBlock( qint64 current, qint64& time, QString& text ) const;
 
 	private:
 		// Compile the lyrics

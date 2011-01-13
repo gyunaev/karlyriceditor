@@ -58,6 +58,7 @@ class CDGGenerator
 
 		void	fillColor( char * buffer, const QColor& color );
 		QString	stripHTML( const QString& str );
+		QString lyricForTime( const Lyrics& lyrics, qint64 tick );
 		int		getColor( QRgb color );
 		void	checkTile( int offset_x, int offset_y, const QImage& orig,const QImage& newimg );
 		bool	drawText( QImage& image, const QString& paragraph, QList<ValidatorError> * errors = 0 );
@@ -73,7 +74,9 @@ class CDGGenerator
 		QVector< QColor >		m_colors;		// 16 colors used in CD+G
 		int						m_streamColorIndex; // Reserved space for colors
 		QFont					m_renderFont;
+		QFont					m_smallFont;
 		const Project*			m_project;
+		time_t					m_lastPlayed;
 };
 
 

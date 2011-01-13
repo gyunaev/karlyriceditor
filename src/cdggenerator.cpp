@@ -23,20 +23,21 @@
 #include <QProgressDialog>
 #include <QTextDocument>
 
-#include "lyricsrenderer.h"
 #include "cdggenerator.h"
 #include "version.h"
 
-
+// Formatting characters
 static const QChar actionChar = QChar( 0x2016 );
+static const QChar actionColorTitle = 'T';
+static const QChar actionColorActive = 'A';
+static const QChar actionColorInactive = 'I';
+static const QChar actionSmallFont = 'S';
 
-// Actions
-enum
-{
-	ACTION_COLOR_ACTIVE = 'A',
-	ACTION_COLOR_INACTIVE,
-	ACTION_FONT_SMALL,
-};
+// Convenience strings
+static const QString actionSetColorTitle = QString(actionChar) + actionColorTitle;
+static const QString actionSetColorActive  = QString(actionChar) + actionColorActive;
+static const QString actionSetColorInactive  = QString(actionChar) + actionColorInactive;
+static const QString actionSetSmallFont = QString(actionChar) + actionSmallFont;
 
 
 // Color code indexes
@@ -53,6 +54,9 @@ void CDGGenerator::init()
 	m_renderFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() );
 	m_renderFont.setStyleStrategy( QFont::NoAntialias );
 	m_renderFont.setWeight( QFont::Bold );
+
+	m_smallFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() - 2 );
+	m_smallFont.setStyleStrategy( QFont::NoAntialias );
 
 	// Initialize colors m_project
 	m_colorBackground = m_project->tag( Project::Tag_CDG_bgcolor );
@@ -172,37 +176,6 @@ void CDGGenerator::clearScreen()
 	addEmpty();
 }
 
-/*
-void CDGGenerator::fillColor( char * buffer, const QColor& color )
-{
-	// Green
-	char red = (color.red() / 17) & 0x0F;
-	char green = (color.green() / 17) & 0x0F;
-	char blue = (color.blue() / 17) & 0x0F;
-
-	// Red and green
-	buffer[0] = (red << 2) | (green >> 2);
-	buffer[1] = ((green & 0x03) << 5 ) | blue;
-}
-
-void CDGGenerator::addLoadColors( const QColor& bgcolor, const QColor& titlecolor,
-								  const QColor& actcolor, const QColor& inactcolor )
-{
-	SubCode sc;
-
-	sc.command = CDG_COMMAND;
-	sc.instruction = CDG_INST_LOAD_COL_TBL_0_7;
-
-	// Fill the color data
-	memset( sc.data, 0, 16 );
-	fillColor( sc.data, bgcolor );
-	fillColor( sc.data + 2, titlecolor );
-	fillColor( sc.data + 4, inactcolor );
-	fillColor( sc.data + 6, actcolor );
-
-	addSubcode( sc );
-}
-*/
 static inline QString stripColors( const QString& str )
 {
 	QRegExp rx( QString("%1.").arg( actionChar) );
@@ -249,9 +222,6 @@ void CDGGenerator::checkTile( int offset_x, int offset_y, const QImage& orig,con
 
 		for ( int x = 0; x < 6; x++ )
 		{
-//			int origcolor = getColor( orig.pixel( offset_x + x, offset_y + y ) );
-//			int newcolor = getColor( newimg.pixel( offset_x + x, offset_y + y ) );
-
 			int origcolor = getColor( orig_line[ offset_x + x ] );
 			int newcolor = getColor( new_line[ offset_x + x ] );
 
@@ -349,14 +319,9 @@ bool CDGGenerator::drawText( QImage& image, const QString& paragraph, QList<Vali
 	image.fill( m_colorBackground.rgb() );
 
 	QPainter painter( &image );
-	painter.setFont( m_renderFont );
 	painter.setPen( m_colorActive );
-/*	painter.setRenderHints( QPainter::Antialiasing
-						 | QPainter::TextAntialiasing
-						 | QPainter::SmoothPixmapTransform
-						 | QPainter::HighQualityAntialiasing
-						 | QPainter::NonCosmeticDefaultPen, false );
-*/
+	painter.setFont( m_renderFont );
+
 	QStringList lines = paragraph.split( "\n" );
 
 	// Can we fit into the boundaries?
@@ -398,6 +363,13 @@ bool CDGGenerator::drawText( QImage& image, const QString& paragraph, QList<Vali
 			if ( line[ch] == actionChar )
 			{
 				ch++; // skip color
+
+				if ( line[ch] == actionSmallFont )
+				{
+					painter.setFont( m_smallFont );
+					m = painter.fontMetrics();
+				}
+
 				continue;
 			}
 
@@ -436,12 +408,14 @@ bool CDGGenerator::drawText( QImage& image, const QString& paragraph, QList<Vali
 			{
 				ch++;
 
-				if ( line[ch] == 'A' )
+				if ( line[ch] == actionColorActive )
 					painter.setPen( m_colorActive );
-				else if ( line[ch] == 'I' )
+				else if ( line[ch] == actionColorInactive )
 					painter.setPen( m_colorInactive );
-				else if ( line[ch] == 'T' )
+				else if ( line[ch] == actionColorTitle )
 					painter.setPen( m_colorInfo );
+				else if ( line[ch] == actionSmallFont )
+					painter.setFont( m_smallFont );
 				else
 					abort();
 
@@ -458,9 +432,37 @@ bool CDGGenerator::drawText( QImage& image, const QString& paragraph, QList<Vali
 	return true;
 }
 
+QString CDGGenerator::lyricForTime( const Lyrics& lyrics, qint64 tickmark )
+{
+	QString block;
+	int pos;
+	qint64 nexttime;
+
+	// If there is a block within next one second, show it.
+	if ( lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= 1000 )
+		return block;
+
+	if ( !lyrics.blockForTime( tickmark, block, pos, nexttime ) )
+	{
+		// Nothing active to show, so if there is a block within next five seconds, show it.
+		if ( lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= 5000 )
+		{
+			return block;
+		}
+
+		return QString();
+	}
+
+	QString inactive = block.left( pos );
+	QString active = block.mid( pos );
+
+	block = QString(actionChar) + "I" + inactive + actionChar + "A" + active;
+
+	return block;
+}
+
 void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 {
-	LyricsRenderer renderer;
 	QString	lastLyrics;
 
 	// Prepare images
@@ -469,11 +471,6 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 
 	image.fill( m_colorBackground.rgb() );
 	lastImage.fill( m_colorBackground.rgb() );
-
-	// Init lyrics renderer
-	renderer.setPrefetch( 1000 );
-	renderer.setLyrics( lyrics, true );
-	renderer.setColors( "A", "I" );
 
 	// Pop up progress dialog
 	QProgressDialog dlg ("Rendering CD+G lyrics",
@@ -515,18 +512,29 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 		// Show title?
 		if ( timing < m_project->tag( Project::Tag_CDG_titletime ).toInt() * 1000 )
 		{
-			lyricpaga = QString("%1\n\n%2\n\nCreated by Karaoke Lyric Editor %3.%4\n%5\n")
+			lyricpaga = QString("%1%2\n\n%3\n\n%4Created by Karaoke Lyric Editor %5.%6\n%7http://www.karlyriceditor.com/\n")
+							.arg( actionSetColorTitle )
 							.arg( m_project->tag( Project::Tag_Artist ) )
 							.arg( m_project->tag( Project::Tag_Title ) )
+							.arg( actionSetSmallFont )
 							.arg( APP_VERSION_MAJOR )
 							.arg( APP_VERSION_MINOR )
-							.arg( "http://www.karlyriceditor.com/" );
+							.arg( actionSetColorActive );
 		}
 		else
-			lyricpaga = renderer.update( timing );
+		{
+			lyricpaga = lyricForTime( lyrics, timing );
+		}
 
 		// Did lyrics change at all?
 		if ( lyricpaga == lastLyrics )
+		{
+			addEmpty();
+			continue;
+		}
+
+		// If lyrics cleared up but we just finished showing something, keep it for 5 more seconds
+		if ( lyricpaga.isEmpty() && time(0) - m_lastPlayed < 5 )
 		{
 			addEmpty();
 			continue;
