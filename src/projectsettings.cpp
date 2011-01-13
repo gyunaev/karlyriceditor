@@ -69,6 +69,16 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 	leTitle->setText( m_project->tag( Project::Tag_Title ) );
 	leArtist->setText( m_project->tag( Project::Tag_Artist ) );
 
+	// CD+G tab
+	btnCDGColorActive->setColor( m_project->tag( Project::Tag_CDG_activecolor ) );
+	btnCDGColorBg->setColor( m_project->tag( Project::Tag_CDG_bgcolor ) );
+	btnCDGColorInactive->setColor( m_project->tag( Project::Tag_CDG_inactivecolor ) );
+	btnCDGColorInfo->setColor( m_project->tag( Project::Tag_CDG_infocolor ) );
+	fontCDG->setCurrentFont( QFont( m_project->tag( Project::Tag_CDG_font ) ) );
+	fontCDGSize->setValue( m_project->tag( Project::Tag_CDG_fontsize).toInt() );
+	titleCDGmin->setValue( m_project->tag( Project::Tag_CDG_titletime).toInt() );
+	fontCDG->setFontFilters( QFontComboBox::ScalableFonts | QFontComboBox::MonospacedFonts | QFontComboBox::ProportionalFonts );
+
 	if ( m_project->type() == Project::LyricType_UStar )
 	{
 		if ( m_project->tag( Project::Tag_MP3File ).isEmpty() )
@@ -89,7 +99,6 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 
 			// Hide ultrastar and CD+G group
 			groupUStar->hide();
-			groupCDG->hide();
 
 			// Add LRC params
 			leLRCalbum->setText( m_project->tag( Project::Tag_Album ) );
@@ -102,7 +111,6 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 		case Project::LyricType_UStar:
 			// Hide LRC and CD+G groups
 			groupLRC->hide();
-			groupCDG->hide();
 
 			// Add UltraStar params
 			leUSbackground->setText( m_project->tag( Project::Tag_Background ) );
@@ -119,15 +127,6 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 			groupLRC->hide();
 			groupUStar->hide();
 
-			btnCDGColorActive->setColor( m_project->tag( Project::Tag_CDG_activecolor ) );
-			btnCDGColorBg->setColor( m_project->tag( Project::Tag_CDG_bgcolor ) );
-			btnCDGColorInactive->setColor( m_project->tag( Project::Tag_CDG_inactivecolor ) );
-			btnCDGColorInfo->setColor( m_project->tag( Project::Tag_CDG_infocolor ) );
-			fontCDG->setCurrentFont( QFont( m_project->tag( Project::Tag_CDG_font ) ) );
-			fontCDGSize->setValue( m_project->tag( Project::Tag_CDG_fontsize).toInt() );
-			titleCDGmin->setValue( m_project->tag( Project::Tag_CDG_titletime).toInt() );
-
-			fontCDG->setFontFilters( QFontComboBox::ScalableFonts | QFontComboBox::MonospacedFonts | QFontComboBox::ProportionalFonts );
 			break;
 	}
 
@@ -160,13 +159,11 @@ void ProjectSettings::changeProjectType()
 
 		// Hide ultrastar group
 		groupUStar->hide();
-		groupCDG->hide();
 	}
 	else if ( rbLRC3->isChecked() )
 	{
 		// Hide LRC group
 		groupLRC->hide();
-		groupCDG->hide();
 
 		// Hide Ultrastar-specific fields
 		labelUSbpmgap->show();
@@ -186,8 +183,6 @@ void ProjectSettings::changeProjectType()
 		labelUSbpmgap->hide();
 		labelMusicFile->hide();
 		leUSmp3->hide();
-
-		groupCDG->show();
 	}
 }
 
