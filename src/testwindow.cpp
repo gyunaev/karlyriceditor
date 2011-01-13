@@ -33,7 +33,18 @@ TestWindow::TestWindow( QWidget *parent )
 	pal.setColor( QPalette::Window, pSettings->m_previewBackground );
 	setPalette( pal );
 
+	clear();
+}
+
+void TestWindow::showEvent( QShowEvent * )
+{
+	clear();
+}
+
+void TestWindow::clear()
+{
 	label->setText("");
+	m_lastUpdate = -1;
 }
 
 void TestWindow::setLyrics( const Lyrics& lyrics )
@@ -48,11 +59,10 @@ void TestWindow::setLyrics( const Lyrics& lyrics )
 	label->setPalette( pal );
 	label->setFont( font );
 
-	m_lyricrenderer.setLyrics( lyrics );
-	m_lyricrenderer.setColors( pSettings->m_previewTextActive.name(), pSettings->m_previewTextInactive.name() );
+	m_lyrics = lyrics;
 	m_renderingLyrics = true;
 
-	label->setText("");
+	clear();
 	update();
 }
 
@@ -66,6 +76,44 @@ void TestWindow::setCDGdata( const QByteArray& cdgdata )
 	update();
 }
 
+QString TestWindow::getLyrics( qint64 tickmark )
+{
+	QString block;
+	int pos;
+	qint64 nexttime;
+
+	if ( !m_lyrics.blockForTime( tickmark, block, pos, nexttime ) )
+	{
+		// Nothing active to show, so we show the following:
+		// - If there is a block within next five seconds, show it.
+		// - Otherwise show a blank screen
+		if ( m_lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= 5000 )
+		{
+			block = Qt::escape( block );
+			block.replace( "\n", "<br>" );
+
+			return QString("<qt><font color=\"%1\">%2</font></qt>")
+							.arg( pSettings->m_previewTextActive.name() ) .arg(block);
+		}
+
+		return QString();
+	}
+
+	QString inactive = Qt::escape( block.left( pos ) );
+	QString active = Qt::escape( block.mid( pos ) );
+
+	inactive.replace( "\n", "<br>" );
+	active.replace( "\n", "<br>" );
+
+	block = QString("<qt><font color=\"%1\">%2</font><font color=\"%3\">%4</font></qt>")
+				.arg( pSettings->m_previewTextInactive.name() )
+				.arg( inactive )
+				.arg( pSettings->m_previewTextActive.name() )
+				.arg( active );
+
+	return block;
+}
+
 void TestWindow::tick( qint64 tickmark )
 {
 	if ( isHidden() )
@@ -73,12 +121,19 @@ void TestWindow::tick( qint64 tickmark )
 
 	if ( m_renderingLyrics )
 	{
-		QString text = m_lyricrenderer.update( tickmark );
+		QString block = getLyrics( tickmark );
 
-		if ( text == label->text() )
+		// If there is nothing to show but the last block was updated less than five seconds ago, keep it.
+		if ( block.isEmpty() && time(0) - m_lastUpdate < 5 )
 			return;
 
-		label->setText( text );
+		if ( block == label->text() )
+			return;
+
+		//qDebug("block at %d: %s", (int) tickmark, qPrintable(block) );
+
+		m_lastUpdate = time(0);
+		label->setText( block );
 	}
 	else
 	{

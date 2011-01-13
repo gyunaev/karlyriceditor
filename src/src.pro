@@ -47,7 +47,6 @@ SOURCES += mainwindow.cpp \
     gentlemessagebox.cpp \
     checknewversion.cpp \
     cdgrenderer.cpp \
-    lyricsrenderer.cpp \
     cdggenerator.cpp \
     editorhighlighting.cpp
 RESOURCES += resources.qrc

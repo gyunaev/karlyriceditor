@@ -51,7 +51,7 @@ Editor::Editor( QWidget * parent )
 	QFont font( pSettings->m_editorFontFamily, pSettings->m_editorFontSize );
 	setFont( font );
 
-	EditorHighlighting * hl = new EditorHighlighting( this );
+	(void) new EditorHighlighting( this );
 }
 
 void Editor::setProject( Project* proj )
@@ -555,9 +555,9 @@ void Editor::removeExtraWhitespace()
 	// No need to do it in a more complex way than a simple regexp
 	QStringList lyrics = toPlainText().split( '\n' );
 
-	foreach ( QString lyric, lyrics )
+	for ( int i = 0; i < lyrics.size(); i++ )
 	{
-		lyric = lyric.trimmed();
+		lyrics[i] = lyrics[i].trimmed();
 	}
 
 	setPlainText( lyrics.join( "\n") );

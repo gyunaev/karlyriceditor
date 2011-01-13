@@ -64,6 +64,7 @@
     <addaction name="actionRemove_all_tags"/>
     <addaction name="separator"/>
     <addaction name="actionClear_text"/>
+    <addaction name="actionTrimspaces"/>
    </widget>
    <widget class="QMenu" name="menuSettings">
     <property name="title">
@@ -456,6 +457,18 @@ Note that for formats which support blocks nothing will be shown until it's less
    <property name="whatsThis">
     <string>This action shows the lyrics test window, which is a mini Karaoke player, but is limited in size as CD+G, so
     it can be used to test the lyrics to see how they would be played on a real CD+G player.</string>
+   </property>
+  </action>
+  <action name="actionTrimspaces">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/images/clear.png</normaloff>:/images/clear.png</iconset>
+   </property>
+   <property name="text">
+    <string>Trim whitespace</string>
+   </property>
+   <property name="toolTip">
+    <string>Removes lead and tail spaces from every line</string>
    </property>
   </action>
  </widget>

@@ -44,10 +44,17 @@ class TestWindow : public QDialog, public Ui::TestWindow
 	public slots:
 		void	tick( qint64 tickmark );
 
+	protected:
+		// overriden
+		void	showEvent ( QShowEvent * event );
+		void	clear();
+		QString getLyrics( qint64 tickmark );
+
 	private:
 		// For rendering text-based lyrics
 		bool			m_renderingLyrics;		// false if CD+G
-		LyricsRenderer	m_lyricrenderer;		// To render lyrics
+		Lyrics			m_lyrics;
+		time_t			m_lastUpdate;	// to track block ends
 
 		// For rendering CD+G lyrics
 		CDGRenderer		m_cdgrenderer;			// To render cd+g

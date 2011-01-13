@@ -81,7 +81,7 @@ void EditorHighlighting::highlightBlock ( const QString & line )
 			}
 
 			// Only accept those characters
-			if ( !line[col].isDigit() && line[col] != ':' && line[col] != '.' )
+			if ( !line[col].isDigit() && line[col] != ':' && line[col] != '.' && line[col] != '-' )
 			{
 				setFormat( col, 1, m_hlInvalidTiming );
 				errors_in_time_tag = true;

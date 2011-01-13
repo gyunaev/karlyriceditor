@@ -161,6 +161,7 @@ void MainWindow::connectActions()
 	connect( actionOpen_lyric_file, SIGNAL( triggered()), this, SLOT(act_projectOpenLyricFile()) );
 	connect( actionQuit, SIGNAL( triggered()), qApp, SLOT( quit()) );
 	connect( actionClear_text, SIGNAL( triggered()), this, SLOT( act_editClearText()) );
+	connect( actionTrimspaces, SIGNAL( triggered()), this, SLOT( act_editTrimspaces()) );
 	connect( actionGeneral, SIGNAL( triggered()), this, SLOT(act_settingsGeneral()) );
 	connect( actionAbout, SIGNAL( triggered()), this, SLOT(act_helpAbout()) );
 	connect( actionProject_settings, SIGNAL( triggered()), this, SLOT(act_projectSettings()) );
@@ -396,6 +397,11 @@ void MainWindow::act_editClearText()
 		editor->clear();
 }
 
+void MainWindow::act_editTrimspaces()
+{
+	editor->removeExtraWhitespace();
+}
+
 void MainWindow::act_editRemoveAllTags()
 {
 	editor->removeAllTimeTags();
@@ -561,6 +567,7 @@ void MainWindow::updateState()
 	actionRemove_all_tags->setEnabled( project_available );
 	actionOpen_lyric_file->setEnabled( project_available );
 	actionClear_text->setEnabled( project_available );
+	actionTrimspaces->setEnabled( project_available );
 	actionExport_lyric_file->setEnabled( project_available );
 	actionEdit_header_data->setEnabled( project_available );
 	actionProject_settings->setEnabled( project_available );
