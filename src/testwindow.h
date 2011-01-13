@@ -24,7 +24,6 @@
 
 #include "ui_testwindow.h"
 #include "lyrics.h"
-#include "lyricsrenderer.h"
 #include "cdgrenderer.h"
 
 
