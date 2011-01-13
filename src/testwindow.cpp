@@ -76,7 +76,7 @@ void TestWindow::setCDGdata( const QByteArray& cdgdata )
 	update();
 }
 
-QString TestWindow::getLyrics( qint64 tickmark )
+QString TestWindow::getLyricsLines( qint64 tickmark )
 {
 	QString block;
 	int pos;
@@ -84,9 +84,64 @@ QString TestWindow::getLyrics( qint64 tickmark )
 
 	if ( !m_lyrics.blockForTime( tickmark, block, pos, nexttime ) )
 	{
-		// Nothing active to show, so we show the following:
-		// - If there is a block within next five seconds, show it.
-		// - Otherwise show a blank screen
+		// Nothing active to show, so if there is a block within next five seconds, show it.
+		if ( m_lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= 5000 )
+		{
+			// Trim everything after the first four lines
+			int lastcrlf = -1;
+
+			for ( int i = 0; i < 4; i++ )
+				lastcrlf = block.indexOf( '\n', lastcrlf + 1 );
+
+			block = Qt::escape( block.left( lastcrlf ) );
+			block.replace( "\n", "<br>" );
+
+			return QString("<qt><font color=\"%1\">%2</font></qt>")
+							.arg( pSettings->m_previewTextActive.name() ) .arg(block);
+		}
+
+		return QString();
+	}
+
+	QString inactive = Qt::escape( block.left( pos ) );
+	QString active = Qt::escape( block.mid( pos ) );
+
+	// Trim inactive to the line beginning
+	int crlf = inactive.lastIndexOf( '\n' );
+
+	if ( crlf != -1 )
+		inactive = inactive.mid( crlf );
+
+	// Let active have three more lines
+	crlf = 0;
+
+	for ( int i = 0; i < 4; i++ )
+		crlf = active.indexOf( '\n', crlf + 1 );
+
+	active= active.left( crlf );
+
+	inactive.replace( "\n", "<br>" );
+	active.replace( "\n", "<br>" );
+
+	block = QString("<qt><font color=\"%1\">%2</font><font color=\"%3\">%4</font></qt>")
+				.arg( pSettings->m_previewTextInactive.name() )
+				.arg( inactive )
+				.arg( pSettings->m_previewTextActive.name() )
+				.arg( active );
+
+	return block;
+
+}
+
+QString TestWindow::getLyricsBlock( qint64 tickmark )
+{
+	QString block;
+	int pos;
+	qint64 nexttime;
+
+	if ( !m_lyrics.blockForTime( tickmark, block, pos, nexttime ) )
+	{
+		// Nothing active to show, so if there is a block within next five seconds, show it.
 		if ( m_lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= 5000 )
 		{
 			block = Qt::escape( block );
@@ -121,7 +176,7 @@ void TestWindow::tick( qint64 tickmark )
 
 	if ( m_renderingLyrics )
 	{
-		QString block = getLyrics( tickmark );
+		QString block = m_lyrics.totalBlocks() > 1 ? getLyricsBlock( tickmark ) : getLyricsLines( tickmark );
 
 		// If there is nothing to show but the last block was updated less than five seconds ago, keep it.
 		if ( block.isEmpty() && time(0) - m_lastUpdate < 5 )

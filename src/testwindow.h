@@ -48,7 +48,8 @@ class TestWindow : public QDialog, public Ui::TestWindow
 		// overriden
 		void	showEvent ( QShowEvent * event );
 		void	clear();
-		QString getLyrics( qint64 tickmark );
+		QString getLyricsBlock( qint64 tickmark );
+		QString getLyricsLines( qint64 tickmark );
 
 	private:
 		// For rendering text-based lyrics

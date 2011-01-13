@@ -171,8 +171,6 @@ void Lyrics::compile()
 {
 	m_playBlocks.clear();
 
-	qDebug("blocks %d", totalBlocks() );
-
 	// Block mode - fill the m_lyricIndex array
 	for ( int bl = 0; bl < totalBlocks(); bl++ )
 	{

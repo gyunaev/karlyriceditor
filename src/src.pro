@@ -48,7 +48,8 @@ SOURCES += mainwindow.cpp \
     checknewversion.cpp \
     cdgrenderer.cpp \
     cdggenerator.cpp \
-    editorhighlighting.cpp
+    editorhighlighting.cpp \
+	lyricsrenderer.cpp
 RESOURCES += resources.qrc
 QT += phonon
 FORMS += mainwindow.ui \
