@@ -224,7 +224,7 @@ void Editor::importLyrics( const Lyrics& lyrics )
 			{
 				Lyrics::Syllable lentry = line[pos];
 
-				strlyrics += "[" + markToTime( lentry.timing ) + "]" + lentry.timing;
+				strlyrics += "[" + markToTime( lentry.timing ) + "]" + lentry.text;
 			}
 
 			strlyrics += "\n";
