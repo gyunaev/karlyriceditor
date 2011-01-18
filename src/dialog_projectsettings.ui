@@ -502,6 +502,13 @@
             </layout>
            </widget>
           </item>
+          <item>
+           <widget class="QCheckBox" name="cbCDGPreamble">
+            <property name="text">
+             <string>Draw squares showing where singing starts</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>

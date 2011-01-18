@@ -77,6 +77,10 @@ class CDGGenerator
 		QFont					m_smallFont;
 		const Project*			m_project;
 		time_t					m_lastPlayed;
+		int						m_preamble;
+		int						m_lastDrawnPreamble;
+		qint64					m_lastSungTime;
+		bool					m_drawPreamble;
 };
 
 

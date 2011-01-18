@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
+#include <time.h>
+
 #include <QMap>
 #include <QList>
 #include <QApplication>
@@ -46,6 +48,10 @@ static int COLOR_IDX_BACKGROUND = 0;	// background
 CDGGenerator::CDGGenerator( const Project * proj )
 	: m_project( proj )
 {
+	m_lastSungTime = 0;
+	m_preamble = 0;
+	m_drawPreamble = false;
+	m_lastDrawnPreamble = 0;
 }
 
 void CDGGenerator::init()
@@ -204,7 +210,7 @@ int CDGGenerator::getColor( QRgb color )
 	if ( m_colors.size() == 16 )
 		qFatal("Color table is out of color entries");
 
-	qDebug("Adding color %08X", color );
+//	qDebug("Adding color %08X", color );
 	m_colors.push_back( color );
 	return m_colors.size() - 1;
 }
@@ -302,6 +308,7 @@ bool CDGGenerator::validateParagraph( const QString& paragraph, QList<ValidatorE
 {
 	QImage image( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_RGB32 );
 
+	m_drawPreamble = false;
 	return drawText( image, paragraph, &errors );
 }
 
@@ -369,8 +376,8 @@ bool CDGGenerator::drawText( QImage& image, const QString& paragraph, QList<Vali
 					painter.setFont( m_smallFont );
 					m = painter.fontMetrics();
 				}
-
-				continue;
+				else if ( line[ch] != actionChar )
+					continue; // allow @@ as unescape
 			}
 
 			width += m.width( line[ch] );
@@ -429,6 +436,32 @@ bool CDGGenerator::drawText( QImage& image, const QString& paragraph, QList<Vali
 		start_y += step_y;
 	}
 
+	if ( m_drawPreamble )
+	{
+		// We use ten squares for preamble
+		int preambles = 10;
+		int preamble_spacing = 3;
+		int preamble_height  = 4;
+		int preamble_width = ((CDG_FULL_WIDTH - 2 * CDG_BORDER_WIDTH) - preamble_spacing * preambles ) / preambles;
+
+		painter.setPen( m_colorInfo );
+		painter.setBrush( m_colorInfo );
+
+		// Draw a square for each 500ms; we do not draw anything for the last one, and speed up it 0.15sec
+		for ( int i = 0; i < preambles; i++ )
+		{
+			if ( i * 500 > (m_preamble - 650) )
+				continue;
+
+			painter.drawRect( CDG_BORDER_WIDTH + i * (preamble_spacing + preamble_width),
+							  CDG_BORDER_HEIGHT,
+							  preamble_width,
+							  preamble_height );
+		}
+
+		m_lastDrawnPreamble = m_preamble;
+	}
+
 	return true;
 }
 
@@ -440,23 +473,69 @@ QString CDGGenerator::lyricForTime( const Lyrics& lyrics, qint64 tickmark )
 
 	// If there is a block within next one second, show it.
 	if ( lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= 1000 )
+	{
+		m_preamble = qMax( 0, (int) (nexttime - tickmark) );
+
+		if ( block.startsWith( "@@" ) )
+		{
+			block.remove( "@@" );
+			block = QString(actionChar) + "T" + block;
+		}
+
 		return block;
+	}
 
 	if ( !lyrics.blockForTime( tickmark, block, pos, nexttime ) )
 	{
 		// Nothing active to show, so if there is a block within next five seconds, show it.
 		if ( lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= 5000 )
 		{
+			m_preamble = qMax( 0, (int) (nexttime - tickmark) );
+
+			if ( tickmark - m_lastSungTime > 5000 && !block.contains( "@@" ) )
+			{
+				if ( m_project->tag( Project::Tag_CDG_preamble).toInt() )
+					m_drawPreamble = true;
+			}
+
+			if ( block.startsWith( "@@" ) )
+			{
+				block.remove( "@@" );
+				block = QString(actionChar) + "T" + block;
+			}
+
 			return block;
 		}
 
+		m_drawPreamble = false;
 		return QString();
 	}
 
-	QString inactive = block.left( pos );
-	QString active = block.mid( pos );
+	m_drawPreamble = false;
+	int endidx;
 
-	block = QString(actionChar) + "I" + inactive + actionChar + "A" + active;
+	if ( block.startsWith("@@") && (endidx = block.indexOf( "@@", 2 )) != -1 )
+	{
+		// The whole part between @@...@@ is considered title, and not affected by pos.
+		QString title = block.mid( 2, endidx - 2 );
+
+		if ( pos < endidx + 2 )
+			pos = endidx + 2;
+
+		// At least part of the block is outside the title tag
+		QString inactive = block.mid( endidx + 2, pos - (endidx + 2) );
+		QString active = block.mid( pos );
+
+		block = QString(actionChar) + "T" + title + QString(actionChar) + "I" + inactive + actionChar + "A" + active;
+	}
+	else
+	{
+		QString inactive = block.left( pos );
+		QString active = block.mid( pos );
+
+		block = QString(actionChar) + "I" + inactive + actionChar + "A" + active;
+		m_lastSungTime = tickmark;
+	}
 
 	return block;
 }
@@ -464,6 +543,11 @@ QString CDGGenerator::lyricForTime( const Lyrics& lyrics, qint64 tickmark )
 void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 {
 	QString	lastLyrics;
+
+	m_lastSungTime = 0;
+	m_preamble = 0;
+	m_drawPreamble = false;
+	m_lastDrawnPreamble = 0;
 
 	// Prepare images
 	QImage image( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_RGB32 );
@@ -526,18 +610,22 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 			lyricpaga = lyricForTime( lyrics, timing );
 		}
 
-		// Did lyrics change at all?
-		if ( lyricpaga == lastLyrics )
+		// If we draw preamble, this all doesn't matter
+		if ( !m_drawPreamble || abs( m_lastDrawnPreamble - m_preamble ) < 250 )
 		{
-			addEmpty();
-			continue;
-		}
+			// Did lyrics change at all?
+			if ( lyricpaga == lastLyrics )
+			{
+				addEmpty();
+				continue;
+			}
 
-		// If lyrics cleared up but we just finished showing something, keep it for 5 more seconds
-		if ( lyricpaga.isEmpty() && time(0) - m_lastPlayed < 5 )
-		{
-			addEmpty();
-			continue;
+			// If lyrics cleared up but we just finished showing something, keep it for 5 more seconds
+			if ( lyricpaga.isEmpty() && time(0) - m_lastPlayed < 5 )
+			{
+				addEmpty();
+				continue;
+			}
 		}
 
 		// Render the lyrics

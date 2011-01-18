@@ -78,6 +78,7 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 	fontCDGSize->setValue( m_project->tag( Project::Tag_CDG_fontsize).toInt() );
 	titleCDGmin->setValue( m_project->tag( Project::Tag_CDG_titletime).toInt() );
 	fontCDG->setFontFilters( QFontComboBox::ScalableFonts | QFontComboBox::MonospacedFonts | QFontComboBox::ProportionalFonts );
+	cbCDGPreamble->setChecked( m_project->tag( Project::Tag_CDG_preamble).toInt() );
 
 	if ( m_project->type() == Project::LyricType_UStar )
 	{
@@ -279,6 +280,7 @@ void ProjectSettings::accept()
 	m_project->setTag( Project::Tag_CDG_font, fontCDG->currentFont().family() );
 	m_project->setTag( Project::Tag_CDG_fontsize, QString::number( fontCDGSize->value() ) );
 	m_project->setTag( Project::Tag_CDG_titletime, QString::number( titleCDGmin->value() ) );
+	m_project->setTag( Project::Tag_CDG_preamble, cbCDGPreamble->isChecked() ? "1" : "0" );
 
 	QDialog::accept();
 }

@@ -61,6 +61,7 @@ class Project
 			Tag_CDG_font,
 			Tag_CDG_fontsize,
 			Tag_CDG_titletime,
+			Tag_CDG_preamble,
 		};
 
 		Project( Editor * editor );
