@@ -163,6 +163,7 @@ void MainWindow::connectActions()
 	connect( actionClear_text, SIGNAL( triggered()), this, SLOT( act_editClearText()) );
 	connect( actionTrimspaces, SIGNAL( triggered()), this, SLOT( act_editTrimspaces()) );
 	connect( actionGeneral, SIGNAL( triggered()), this, SLOT(act_settingsGeneral()) );
+	connect( actionSplit_current_line, SIGNAL( triggered()), this, SLOT(act_editSplitLine()) );
 	connect( actionAbout, SIGNAL( triggered()), this, SLOT(act_helpAbout()) );
 	connect( actionProject_settings, SIGNAL( triggered()), this, SLOT(act_projectSettings()) );
 	connect( actionExport_lyric_file, SIGNAL( triggered()), this, SLOT(act_projectExportLyricFile()) );
@@ -383,6 +384,11 @@ void MainWindow::act_editInsertTag()
 	editor->insertTimeTag( m_player->currentTime() );
 }
 
+void MainWindow::act_editSplitLine()
+{
+	editor->splitLine();
+}
+
 void MainWindow::act_editRemoveTag()
 {
 	editor->removeLastTimeTag();
@@ -504,7 +510,7 @@ void MainWindow::act_projectExportLyricFile()
 	}
 
 	QFile file( outfile );
-	if ( !file.open( QIODevice::WriteOnly ) )
+	if ( !file.open( QIODevice::WriteOnly | QIODevice::Truncate ) )
 	{
 		QMessageBox::critical( 0,
 							   tr("Cannot write lyric file"),

@@ -73,7 +73,7 @@ static inline QString markToTime( qint64 mark )
 	return QString().sprintf( "%02d:%02d.%02d", min, sec, msec / 10 );
 }
 
-static inline qint64 infoToMark( QString data )
+static inline qint64 timeToMark( QString data )
 {
 	QRegExp rxtime( "^(\\d+):(\\d+)\\.(\\d+)$");
 
@@ -191,7 +191,7 @@ Lyrics Editor::exportLyrics()
 			QString timing = part.left( timeoff );
 			QString text = part.mid( timeoff + 1 );
 
-			lyrics.curLyricSetTime( infoToMark( timing ) );
+			lyrics.curLyricSetTime( timeToMark( timing ) );
 			lyrics.curLyricAppendText( text );
 			lyrics.curLyricAdd();
 		}
@@ -418,7 +418,7 @@ cont_paragraph:
 												tr("Invalid time, number of seconds cannot exceed 59.") ) );
 							}
 
-							qint64 timing = infoToMark( time );
+							qint64 timing = timeToMark( time );
 
 							if ( timing < last_time )
 							{
@@ -723,4 +723,105 @@ void Editor::insertTimeTag( qint64 timing )
 void Editor::removeLastTimeTag()
 {
 	undo();
+}
+
+QTextCursor Editor::cursorAtPoint( const QPoint& point )
+{
+	QAbstractTextDocumentLayout * layout = document()->documentLayout();
+	int pos;
+
+	// Adjust for non-common cases and horizontally
+	ensureCursorVisible();
+
+	// from QTextEditPrivate::mapToContents
+	QPoint mapped = QPoint( point.x() + horizontalScrollBar()->value(), point.y() + verticalScrollBar()->value() );
+
+	if ( layout && (pos = layout->hitTest( mapped, Qt::ExactHit )) != -1 )
+	{
+		QTextCursor cur = textCursor();
+		cur.setPosition( pos + 1 );
+
+		return cur;
+	}
+
+	return QTextCursor();
+}
+
+qint64 Editor::timeForPosition( QTextCursor cur )
+{
+	QString line = cur.block().text();
+	int pos = cur.position() - cur.block().position();
+
+	QString left = line.left( pos );
+	QString right = line.mid( pos );
+	QRegExp markrx ( "\\[(\\d+:\\d+\\.\\d+)\\]" );
+
+	// Search left
+	int offset = left.lastIndexOf( markrx );
+
+	if ( offset == -1 )
+		return -1;
+
+	qint64 leftmark = timeToMark( markrx.cap( 1 ) );
+	left = left.mid( offset + markrx.matchedLength() );
+	left.remove( markrx );
+
+	// Search right
+	offset = right.indexOf( markrx );
+
+	if ( offset == -1 )
+		return -1;
+
+	qint64 rightmark = timeToMark( markrx.cap( 1 ) );
+	right = right.left( offset );
+	right.remove( markrx );
+
+	// We have time rightmark-leftmark for (left+right) characters
+	int timediff = (int) (rightmark - leftmark);
+
+	if ( timediff <= 0 )
+		return -1;
+
+	qint64 timing = leftmark + left.length() * timediff / (left.length() + right.length() );
+	return timing;
+}
+
+void Editor::splitLine()
+{
+	QTextCursor cur = textCursor();
+
+	qint64 timing = timeForPosition( cur );
+
+	if ( timing == -1 )
+		return;
+
+	cur.beginEditBlock();
+	cur.insertText( "[" + markToTime( timing ) + "]" );
+	cur.insertText( "\n" );
+	cur.insertText( "[" + markToTime( timing + 10 ) + "]" );
+	cur.endEditBlock();
+}
+
+bool Editor::event ( QEvent * event )
+{
+	if ( event->type() == QEvent::ToolTip )
+	{
+		QHelpEvent *helpEvent = static_cast<QHelpEvent *>(event);
+		QTextCursor cur = cursorAtPoint( helpEvent->pos() );
+
+		if ( !cur.isNull() )
+		{
+			qint64 mark = timeForPosition( cur );
+
+			if ( mark != -1 )
+			{
+				QString text = tr("Timing at this point: %1") .arg( markToTime(mark) );
+
+				QToolTip::showText( helpEvent->globalPos(), text );
+				return true;
+			}
+		}
+	}
+
+	return QTextEdit::event( event );
 }

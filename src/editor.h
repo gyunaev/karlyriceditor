@@ -69,16 +69,17 @@ class Editor : public QTextEdit
 
 	public slots:
 		void	textModified();
+		void	splitLine();
 
 	protected:
 		bool canInsertFromMimeData ( const QMimeData * source ) const;
 		QMimeData * createMimeDataFromSelection () const;
 		void insertFromMimeData ( const QMimeData * source );
+		bool event ( QEvent * event );
 
 	private:
-		// Returns time mark textchar under cursor. Returns -1 if not on time mark
-		qint64		timeMarkValue( const QPoint& point );
-		QTextCursor timeMark( const QPoint& point );
+		QTextCursor cursorAtPoint( const QPoint& point );
+		qint64		timeForPosition( QTextCursor cur );
 
 		// Ensure the cursor is in the middle of the screen if possible
 		void		ensureCursorMiddle();

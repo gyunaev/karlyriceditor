@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/" >
+    <qresource prefix="/">
         <file>images/dryicons_play.png</file>
         <file>images/dryicons_pause.png</file>
         <file>images/dryicons_forward.png</file>
@@ -38,5 +38,6 @@
         <file>images/casio.jpg</file>
         <file>images/application_icon.png</file>
         <file>images/piano.png</file>
+        <file>images/page_swap.png</file>
     </qresource>
 </RCC>

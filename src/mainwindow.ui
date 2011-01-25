@@ -37,7 +37,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>25</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -60,6 +60,7 @@
     <addaction name="separator"/>
     <addaction name="actionInsert_tag"/>
     <addaction name="actionRemove_tag"/>
+    <addaction name="actionSplit_current_line"/>
     <addaction name="separator"/>
     <addaction name="actionRemove_all_tags"/>
     <addaction name="separator"/>
@@ -469,6 +470,18 @@ Note that for formats which support blocks nothing will be shown until it's less
    </property>
    <property name="toolTip">
     <string>Removes lead and tail spaces from every line</string>
+   </property>
+  </action>
+  <action name="actionSplit_current_line">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/images/page_swap.png</normaloff>:/images/page_swap.png</iconset>
+   </property>
+   <property name="text">
+    <string>Split current line</string>
+   </property>
+   <property name="shortcut">
+    <string>F10</string>
    </property>
   </action>
  </widget>
