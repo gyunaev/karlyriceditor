@@ -88,7 +88,7 @@ void CDGGenerator::initColors()
 
 void CDGGenerator::addSubcode( const SubCode& sc )
 {
-	m_stream.push_back( sc );
+	m_stream.append( sc );
 }
 
 void CDGGenerator::addEmpty()
@@ -587,7 +587,7 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 		}
 
 		if ( timing > total_length )
-			return;
+			break;
 
 //		qDebug("timing: %d packets, %dms (%d sec)", m_stream.size(), (int) timing, (int) (timing / 1000) );
 
@@ -643,5 +643,14 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 		applyTileChanges( lastImage, image );
 		lastImage = image;
 		lastLyrics = lyricpaga;
+	}
+
+	// Clean up the parity bits in the CD+G stream
+	char *p = (char*) &m_stream[0];
+
+	for ( unsigned int i = 0; i < m_stream.size() * sizeof(SubCode); i++, p++ )
+	{
+		if ( *p & 0xC0 )
+			*p &= 0x3F;
 	}
 }
