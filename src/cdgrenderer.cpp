@@ -19,15 +19,21 @@
 #include "cdgrenderer.h"
 
 CDGRenderer::CDGRenderer()
-	: m_cdgimage( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_Indexed8 )
+	: LyricsRenderer()
 {
+	m_image = QImage( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_Indexed8 );
+}
+
+void CDGRenderer::setImageSize( int, int )
+{
+	// do nothing
 }
 
 void CDGRenderer::setCDGdata( const QByteArray& cdgdata )
 {
 	m_packet = 0;
 
-	m_cdgimage.fill( 0 );
+	m_image.fill( 0 );
 	m_stream.clear();
 	m_stream.reserve( cdgdata.size() / sizeof( SubCode ) );
 
@@ -61,10 +67,9 @@ void CDGRenderer::setCDGdata( const QByteArray& cdgdata )
 	}
 }
 
-QImage CDGRenderer::update( qint64 tickmark, bool * screen_changed )
+int CDGRenderer::update( qint64 tickmark )
 {
-	if ( screen_changed )
-		*screen_changed = false;
+	int status = UPDATE_NOCHANGE;
 
 	unsigned int packets_due = tickmark * 300 / 1000;
 
@@ -73,7 +78,7 @@ QImage CDGRenderer::update( qint64 tickmark, bool * screen_changed )
 	if ( m_packet > packets_due - 1 )
 	{
 		qDebug( "CDGRenderer: packet number changed backward (%d played, %d asked", m_packet, packets_due );
-		m_cdgimage.fill( Qt::black );
+		m_image.fill( Qt::black );
 		m_packet = 0;
 	}
 
@@ -89,18 +94,12 @@ QImage CDGRenderer::update( qint64 tickmark, bool * screen_changed )
 		{
 			case CDG_INST_MEMORY_PRESET:
 				cmdMemoryPreset( sc.data );
-
-				if ( screen_changed )
-					*screen_changed = true;
-
+				status = UPDATE_FULL;
 				break;
 
 			case CDG_INST_BORDER_PRESET:
 				cmdBorderPreset( sc.data );
-
-				if ( screen_changed )
-					*screen_changed = true;
-
+				status = UPDATE_FULL;
 				break;
 
 			case CDG_INST_LOAD_COL_TBL_0_7:
@@ -113,10 +112,7 @@ QImage CDGRenderer::update( qint64 tickmark, bool * screen_changed )
 
 			case CDG_INST_TILE_BLOCK_XOR:
 				cmdTileBlockXor( sc.data );
-
-				if ( screen_changed )
-					*screen_changed = true;
-
+				status = UPDATE_COLORCHANGE;
 				break;
 
 			default:
@@ -124,7 +120,7 @@ QImage CDGRenderer::update( qint64 tickmark, bool * screen_changed )
 		}
 	}
 
-	return m_cdgimage;
+	return status;
 }
 
 void CDGRenderer::cmdMemoryPreset( const char * data )
@@ -138,7 +134,7 @@ void CDGRenderer::cmdMemoryPreset( const char * data )
 
 	for ( unsigned int i = CDG_BORDER_WIDTH; i < CDG_FULL_WIDTH - CDG_BORDER_WIDTH; i++ )
 		for ( unsigned int  j = CDG_BORDER_HEIGHT; j < CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT; j++ )
-			m_cdgimage.setPixel( i, j, bgColor );
+			m_image.setPixel( i, j, bgColor );
 
 //	qDebug( "MemPreset: filling memory with color %d (%08X)", preset->color & 0x0F, bgColor );
 }
@@ -153,8 +149,8 @@ void CDGRenderer::cmdBorderPreset( const char * data )
 	{
 		for ( unsigned int j = 0; j < CDG_FULL_HEIGHT; j++ )
 		{
-			m_cdgimage.setPixel( i, j, borderColor );
-			m_cdgimage.setPixel( CDG_FULL_WIDTH - i - 1, j, borderColor );
+			m_image.setPixel( i, j, borderColor );
+			m_image.setPixel( CDG_FULL_WIDTH - i - 1, j, borderColor );
 		}
 	}
 
@@ -162,8 +158,8 @@ void CDGRenderer::cmdBorderPreset( const char * data )
 	{
 		for ( unsigned int j = 0; j < CDG_BORDER_HEIGHT; j++ )
 		{
-			m_cdgimage.setPixel( i, j, borderColor );
-			m_cdgimage.setPixel( i, CDG_FULL_HEIGHT - j - 1, borderColor );
+			m_image.setPixel( i, j, borderColor );
+			m_image.setPixel( i, CDG_FULL_HEIGHT - j - 1, borderColor );
 		}
 	}
 
@@ -187,7 +183,7 @@ void CDGRenderer::cmdLoadColorTable( const char * data, int index )
 		quint8 blue = ((colourEntry & 0x000F)) * 17;
 
 		quint32 color = qRgba( red, green, blue, 0xFF );
-		m_cdgimage.setColor( index+ i, color );
+		m_image.setColor( index+ i, color );
 
 //		qDebug( "LoadColors: color %d -> %02X %02X %02X (%08X)", index + i, red, green, blue, color );
 	}
@@ -222,12 +218,12 @@ void CDGRenderer::cmdTileBlockXor( const char * data )
 			QPoint p( offset_x + j, offset_y + i );
 
 			// Find the original color index
-			quint8 origindex = m_cdgimage.pixelIndex( p );
+			quint8 origindex = m_image.pixelIndex( p );
 
 			if ( bTemp & mask[j] )  //pixel xored with color1
-				m_cdgimage.setPixel( p, origindex ^ color_1 );
+				m_image.setPixel( p, origindex ^ color_1 );
 			else
-				m_cdgimage.setPixel( p, origindex ^ color_0 );
+				m_image.setPixel( p, origindex ^ color_0 );
 		}
 	}
 }

@@ -26,7 +26,10 @@ HEADERS += mainwindow.h \
     cdgrenderer.h \
     cdggenerator.h \
     validator.h \
-    editorhighlighting.h
+    editorhighlighting.h \
+    lyricsrenderer.h \
+    videosurface.h \
+    textrenderer.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -47,9 +50,13 @@ SOURCES += mainwindow.cpp \
     checknewversion.cpp \
     cdgrenderer.cpp \
     cdggenerator.cpp \
-    editorhighlighting.cpp
+    editorhighlighting.cpp \
+    lyricsrenderer.cpp \
+    videosurface.cpp \
+    textrenderer.cpp
 RESOURCES += resources.qrc
-QT += phonon
+QT += phonon \
+    multimedia
 FORMS += mainwindow.ui \
     wiznewproject_lyrictype.ui \
     wiznewproject_lyrics.ui \

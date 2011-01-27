@@ -21,15 +21,18 @@
 
 #include <QByteArray>
 #include <QImage>
+
+#include "lyricsrenderer.h"
 #include "cdg.h"
 
-class CDGRenderer
+class CDGRenderer : public LyricsRenderer
 {
 	public:
 		CDGRenderer();
 
 		void	setCDGdata( const QByteArray& cdgdata );
-		QImage	update( qint64 timing, bool * screen_changed = 0 );
+		void	setImageSize( int width, int height );
+		virtual int	update( qint64 timing );
 
 	private:
 		void	cmdMemoryPreset( const char * data );
@@ -39,7 +42,6 @@ class CDGRenderer
 
 		unsigned int		m_packet;		// packet offset which hasn't been processed yet
 		QVector< SubCode >	m_stream;		// CD+G stream
-		QImage				m_cdgimage;		// rendered image
 };
 
 #endif // CDGRENDERER_H

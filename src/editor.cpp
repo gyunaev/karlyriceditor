@@ -31,7 +31,9 @@
 #include "editor.h"
 #include "settings.h"
 #include "editorhighlighting.h"
-#include "cdggenerator.h"
+#include "textrenderer.h"
+#include "cdg.h"
+
 
 const char * Editor::PLACEHOLDER = "[--:--]";
 
@@ -278,8 +280,9 @@ void Editor::validate( QList<ValidatorError>& errors )
 	qint64 last_time = 0;
 	QString paragraphtext;
 
-	CDGGenerator gen ( m_project );
-	gen.init();
+	// For CD+G validation
+	TextRenderer renderer( 100, 100 );
+	QFont renderFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() );
 
 	// Get the lyrics
 	QString text = toPlainText();
@@ -326,16 +329,16 @@ void Editor::validate( QList<ValidatorError>& errors )
 			// Paragraph-specific checks
 			if ( m_project->type() == Project::LyricType_CDG )
 			{
-				QList<ValidatorError> cdgerrors;
+				// Check if we exceed the screen height for CD+G
+				QRect r = renderer.boundingRect( paragraphtext, renderFont );
 
-				gen.validateParagraph( paragraphtext, cdgerrors );
-
-				foreach ( ValidatorError err, cdgerrors )
+				if ( r.height() > (int) (CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT) )
 				{
-					// Adjust the line number
-					err.line += (linenumber - linesinblock);
-
-					errors.push_back( err );
+					errors.push_back(
+							ValidatorError(
+									linenumber - 1,
+									0,
+									tr("Paragraph height exceed. This paragraph cannot fit into CD+G screen using the selected font" ) ) );
 				}
 			}
 
@@ -347,6 +350,21 @@ cont_paragraph:
 
 		// If we're here, this is not an empty line.
 		linesinblock++;
+
+		// Check if we exceed the screen width for CD+G
+		if ( m_project->type() == Project::LyricType_CDG )
+		{
+			QRect r = renderer.boundingRect( line, renderFont );
+
+			if ( r.width() > (int) (CDG_FULL_WIDTH - CDG_BORDER_WIDTH) )
+			{
+				errors.push_back(
+						ValidatorError(
+								linenumber,
+								0,
+								tr("Line width exceed. This line cannot fit into CD+G screen using the selected font" ) ) );
+			}
+		}
 
 		// Check if we're out of block line limit
 		if ( pSettings->m_editorSupportBlocks && linesinblock > pSettings->m_editorMaxBlock )

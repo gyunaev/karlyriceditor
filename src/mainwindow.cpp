@@ -643,7 +643,9 @@ void MainWindow::act_projectTest()
 	if ( !editor->validate() )
 		return;
 
-	m_testWindow->setLyrics( editor->exportLyrics() );
+	m_testWindow->setLyrics( editor->exportLyrics(),
+							 m_project->tag( Project::Tag_Artist ),
+							 m_project->tag( Project::Tag_Title ) );
 	m_testWindow->show();
 }
 

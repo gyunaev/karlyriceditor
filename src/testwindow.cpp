@@ -18,14 +18,15 @@
 
 #include <time.h>
 #include <QTextDocument>
+#include <QResizeEvent>
 
 #include "testwindow.h"
 #include "settings.h"
+#include "textrenderer.h"
+#include "cdgrenderer.h"
 
 TestWindow::TestWindow( QWidget *parent )
-	: QDialog(parent),
-		Ui::TestWindow(),
-		m_pixsize( 2*CDG_FULL_WIDTH, 2*CDG_FULL_HEIGHT )
+	: QDialog(parent), Ui::TestWindow()
 {
 	setupUi( this );
 
@@ -33,6 +34,8 @@ TestWindow::TestWindow( QWidget *parent )
 	QPalette pal = palette();
 	pal.setColor( QPalette::Window, pSettings->m_previewBackground );
 	setPalette( pal );
+
+	m_renderer = 0;
 
 	clear();
 }
@@ -42,162 +45,74 @@ void TestWindow::showEvent( QShowEvent * )
 	clear();
 }
 
-void TestWindow::clear()
+void TestWindow::hideEvent( QShowEvent * )
 {
-	label->setText("");
-	m_lastUpdate = -1;
+	reset();
 }
 
-void TestWindow::setLyrics( const Lyrics& lyrics )
+void TestWindow::clear()
 {
-	// Font
-	QFont font( pSettings->m_previewFontFamily, pSettings->m_previewFontSize );
-	setFont( font );
+	label->setText( "" );
+}
 
-	// Same for the text label
-	QPalette pal = label->palette();
-	pal.setColor( QPalette::Window, pSettings->m_previewBackground );
-	label->setPalette( pal );
-	label->setFont( font );
-
-	m_lyrics = lyrics;
-	m_renderingLyrics = true;
+void TestWindow::reset()
+{
+	delete m_renderer;
+	m_renderer = 0;
 
 	clear();
-	update();
+}
+
+void TestWindow::setLyrics( const Lyrics& lyrics, const QString& artist, const QString& title )
+{
+	reset();
+
+	TextRenderer * re = new TextRenderer( 100, 100 );
+	re->setData( lyrics );
+	re->setPreambleData( 5, 5000, 10 );
+
+	if ( !artist.isEmpty() && !title.isEmpty() )
+		re->setTitlePageData( artist, title, 5000 );
+
+	m_renderer = re;
 }
 
 void TestWindow::setCDGdata( const QByteArray& cdgdata )
 {
-	m_cdgrenderer.setCDGdata( cdgdata );
-	m_renderingLyrics = false;
-	resize( m_pixsize );
+	reset();
 
-	label->setText("");
-	update();
-}
+	CDGRenderer * re = new CDGRenderer();
+	re->setCDGdata( cdgdata );
+	m_renderer = re;
 
-QString TestWindow::getLyricsLines( qint64 tickmark )
-{
-	QString block;
-	int pos;
-	qint64 nexttime;
-
-	if ( !m_lyrics.blockForTime( tickmark, block, pos, nexttime ) )
-	{
-		// Nothing active to show, so if there is a block within next five seconds, show it.
-		if ( m_lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= 5000 )
-		{
-			// Trim everything after the first four lines
-			int lastcrlf = -1;
-
-			for ( int i = 0; i < 4; i++ )
-				lastcrlf = block.indexOf( '\n', lastcrlf + 1 );
-
-			block = Qt::escape( block.left( lastcrlf ) );
-			block.replace( "\n", "<br>" );
-
-			return QString("<qt><font color=\"%1\">%2</font></qt>")
-							.arg( pSettings->m_previewTextActive.name() ) .arg(block);
-		}
-
-		return QString();
-	}
-
-	QString inactive = Qt::escape( block.left( pos ) );
-	QString active = Qt::escape( block.mid( pos ) );
-
-	// Trim inactive to the line beginning
-	int crlf = inactive.lastIndexOf( '\n' );
-
-	if ( crlf != -1 )
-		inactive = inactive.mid( crlf );
-
-	// Let active have three more lines
-	crlf = 0;
-
-	for ( int i = 0; i < 4; i++ )
-		crlf = active.indexOf( '\n', crlf + 1 );
-
-	active= active.left( crlf );
-
-	inactive.replace( "\n", "<br>" );
-	active.replace( "\n", "<br>" );
-
-	block = QString("<qt><font color=\"%1\">%2</font><font color=\"%3\">%4</font></qt>")
-				.arg( pSettings->m_previewTextInactive.name() )
-				.arg( inactive )
-				.arg( pSettings->m_previewTextActive.name() )
-				.arg( active );
-
-	return block;
-
-}
-
-QString TestWindow::getLyricsBlock( qint64 tickmark )
-{
-	QString block;
-	int pos;
-	qint64 nexttime;
-
-	if ( !m_lyrics.blockForTime( tickmark, block, pos, nexttime ) )
-	{
-		// Nothing active to show, so if there is a block within next five seconds, show it.
-		if ( m_lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= 5000 )
-		{
-			block = Qt::escape( block );
-			block.replace( "\n", "<br>" );
-
-			return QString("<qt><font color=\"%1\">%2</font></qt>")
-							.arg( pSettings->m_previewTextActive.name() ) .arg(block);
-		}
-
-		return QString();
-	}
-
-	QString inactive = Qt::escape( block.left( pos ) );
-	QString active = Qt::escape( block.mid( pos ) );
-
-	inactive.replace( "\n", "<br>" );
-	active.replace( "\n", "<br>" );
-
-	block = QString("<qt><font color=\"%1\">%2</font><font color=\"%3\">%4</font></qt>")
-				.arg( pSettings->m_previewTextInactive.name() )
-				.arg( inactive )
-				.arg( pSettings->m_previewTextActive.name() )
-				.arg( active );
-
-	return block;
+	const QImage& image = m_renderer->image();
+	setMinimumSize( image.size() );
+	setMaximumSize( image.size() );
+	resize( image.size() );
 }
 
 void TestWindow::tick( qint64 tickmark )
 {
-	if ( isHidden() )
+	if ( isHidden() || !m_renderer )
 		return;
 
-	if ( m_renderingLyrics )
+	int status = m_renderer->update( tickmark );
+
+	if ( status == LyricsRenderer::UPDATE_NOCHANGE )
+		return;
+
+	const QImage& image = m_renderer->image();
+
+	if ( status == LyricsRenderer::UPDATE_RESIZED )
 	{
-		QString block = m_lyrics.totalBlocks() > 1 ? getLyricsBlock( tickmark ) : getLyricsLines( tickmark );
-
-		// If there is nothing to show but the last block was updated less than five seconds ago, keep it.
-		if ( block.isEmpty() && time(0) - m_lastUpdate < 5 )
-			return;
-
-		if ( block == label->text() )
-			return;
-
-		//qDebug("block at %d: %s", (int) tickmark, qPrintable(block) );
-
-		m_lastUpdate = time(0);
-		label->setText( block );
+		if ( image.width() < width() || image.height() < height() )
+		{
+			setMinimumSize( image.size() );
+			setMaximumSize( image.size() );
+			resize( image.size() );
+		}
 	}
-	else
-	{
-		bool updated = false;
 
-		QImage image = m_cdgrenderer.update( tickmark, &updated );
-
-		if ( updated )
-			label->setPixmap( QPixmap::fromImage( image.scaled( m_pixsize ) ) );
-	}
+	//label->setPixmap( QPixmap::fromImage( image.scaled( label->size() ) ) );
+	label->setPixmap( QPixmap::fromImage( image ) );
 }

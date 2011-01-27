@@ -16,46 +16,30 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#ifndef TESTWINDOW_H
-#define TESTWINDOW_H
-
-#include <QDialog>
-#include <QString>
-
-#include "ui_testwindow.h"
-#include "lyrics.h"
-#include "cdgrenderer.h"
 #include "lyricsrenderer.h"
 
-
-class TestWindow : public QDialog, public Ui::TestWindow
+LyricsRenderer::LyricsRenderer()
 {
-    Q_OBJECT
+}
 
-	public:
-		TestWindow(QWidget *parent = 0);
+LyricsRenderer::~LyricsRenderer()
+{
+}
 
-		// For lyrics
-		void	setLyrics( const Lyrics& lyrics, const QString& artist, const QString& title );
+QImage LyricsRenderer::image() const
+{
+	return m_image;
+}
 
-		// For CD+G
-		void	setCDGdata( const QByteArray& cdgdata );
+void LyricsRenderer::saveImage()
+{
+	static unsigned int i = 0;
+	QString fname = QString("image-%1.bmp") .arg(i);
 
-	public slots:
-		void	tick( qint64 tickmark );
+	qDebug("generating image %d", i );
 
-	protected:
-		// overriden
-		void	showEvent ( QShowEvent * event );
-		void	hideEvent( QShowEvent * event );
+//	if ( ++i > 9 )
+//		i = 0;
 
-	private:
-		void	clear();
-		void	reset();
-
-	private:
-		LyricsRenderer	* m_renderer;
-};
-
-
-#endif // TESTWINDOW_H
+	m_image.save( "orig-" + fname, "bmp" );
+}

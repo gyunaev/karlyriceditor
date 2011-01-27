@@ -15,61 +15,29 @@
  *  You should have received a copy of the GNU General Public License     *
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
-
+/*
 #include <time.h>
 
 #include <QMap>
 #include <QList>
-#include <QApplication>
 #include <QPainter>
+  */
 #include <QProgressDialog>
-#include <QTextDocument>
+#include <QApplication>
 
 #include "cdggenerator.h"
-#include "version.h"
-
-// Formatting characters
-static const QChar actionChar = QChar( 0x2016 );
-static const QChar actionColorTitle = 'T';
-static const QChar actionColorActive = 'A';
-static const QChar actionColorInactive = 'I';
-static const QChar actionSmallFont = 'S';
-
-// Convenience strings
-static const QString actionSetColorTitle = QString(actionChar) + actionColorTitle;
-static const QString actionSetColorActive  = QString(actionChar) + actionColorActive;
-static const QString actionSetColorInactive  = QString(actionChar) + actionColorInactive;
-static const QString actionSetSmallFont = QString(actionChar) + actionSmallFont;
 
 
 // Color code indexes
 static int COLOR_IDX_BACKGROUND = 0;	// background
 
 CDGGenerator::CDGGenerator( const Project * proj )
-	: m_project( proj )
+	: m_renderer( CDG_FULL_WIDTH, CDG_FULL_HEIGHT ), m_project( proj )
 {
-	m_lastSungTime = 0;
-	m_preamble = 0;
-	m_drawPreamble = false;
-	m_lastDrawnPreamble = 0;
 }
 
 void CDGGenerator::init()
 {
-	// Disable anti-aliasing for fonts
-	m_renderFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() );
-	m_renderFont.setStyleStrategy( QFont::NoAntialias );
-	m_renderFont.setWeight( QFont::Bold );
-
-	m_smallFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() - 2 );
-	m_smallFont.setStyleStrategy( QFont::NoAntialias );
-
-	// Initialize colors m_project
-	m_colorBackground = m_project->tag( Project::Tag_CDG_bgcolor );
-	m_colorInfo = m_project->tag( Project::Tag_CDG_infocolor );
-	m_colorInactive = m_project->tag( Project::Tag_CDG_inactivecolor );
-	m_colorActive = m_project->tag( Project::Tag_CDG_activecolor );
-
 	initColors();
 
 	// Initialize the stream
@@ -180,16 +148,6 @@ void CDGGenerator::clearScreen()
 	m_streamColorIndex = m_stream.size();
 	addEmpty();
 	addEmpty();
-}
-
-static inline QString stripColors( const QString& str )
-{
-	QRegExp rx( QString("%1.").arg( actionChar) );
-	rx.setMinimal( true );
-
-	QString stripped = str;
-	stripped.remove( rx );
-	return stripped;
 }
 
 QByteArray CDGGenerator::stream()
@@ -304,256 +262,39 @@ void CDGGenerator::applyTileChanges( const QImage& orig,const QImage& newimg )
 			checkTile( offset_x, offset_y, orig, newimg );
 }
 
-bool CDGGenerator::validateParagraph( const QString& paragraph, QList<ValidatorError>& errors )
-{
-	QImage image( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_RGB32 );
-
-	m_drawPreamble = false;
-	return drawText( image, paragraph, &errors );
-}
-
-
-bool CDGGenerator::drawText( QImage& image, const QString& paragraph, QList<ValidatorError> * errors )
-{
-	// Some params
-	const int min_x = CDG_BORDER_WIDTH;
-	const int max_x = CDG_FULL_WIDTH - CDG_BORDER_WIDTH;
-	const int min_y = CDG_BORDER_HEIGHT;
-	const int max_y = CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT;
-	const int min_spacing = 0;
-
-	// Set up painter with disabled anti-aliasing to handle color detection
-	image.fill( m_colorBackground.rgb() );
-
-	QPainter painter( &image );
-	painter.setPen( m_colorActive );
-	painter.setFont( m_renderFont );
-
-	QStringList lines = paragraph.split( "\n" );
-
-	// Can we fit into the boundaries?
-	QFontMetrics m = painter.fontMetrics();
-	int height = m.height() * lines.size() + min_spacing * (lines.size() - 1);
-
-	if ( height > max_y - min_y )
-	{
-		if ( errors )
-		{
-			errors->push_back(
-					ValidatorError(
-							0,
-							0,
-							QObject::tr( "This paragraph contains too many lines, "
-								"and the result height of %1 cannot fit into a CD+G screen using the font selected.").arg( height) ) );
-		}
-		else
-		{
-			qWarning("Paragraph height %d (%d lines) exceeds the allowed width %d, font height %d",
-							 height + min_y, lines.size(), max_y, m.height() );
-			return false;
-		}
-	}
-
-	// Calculate start and increment y
-	int start_y = min_y + ( max_y - min_y - height) / 2 + m.height();
-	int step_y = m.height() + min_spacing;
-
-	// Draw it, line by line
-	for ( int i = 0; i < lines.size(); i++ )
-	{
-		QString& line = lines[i];
-		int width = 0;
-
-		// Calculate the line width first
-		for ( int ch = 0; ch < line.length(); ch++ )
-		{
-			if ( line[ch] == actionChar )
-			{
-				ch++; // skip color
-
-				if ( line[ch] == actionSmallFont )
-				{
-					painter.setFont( m_smallFont );
-					m = painter.fontMetrics();
-				}
-				else if ( line[ch] != actionChar )
-					continue; // allow @@ as unescape
-			}
-
-			width += m.width( line[ch] );
-		}
-
-		if ( width > max_x - min_x )
-		{
-			if ( errors )
-			{
-				errors->push_back(
-						ValidatorError(
-								0,
-								0,
-								QObject::tr( "Line too long. The line width %1 cannot fit into a "
-									"CD+G screen using the font selected.").arg( width) ) );
-			}
-			else
-			{
-				qWarning("Line '%s' width %d exceeds the allowed width %d", qPrintable(stripColors(line)), width + min_x, max_x );
-				return false;
-			}
-		}
-
-		// If we're in a checking mode, continue
-		if ( errors )
-			continue;
-
-		// Now we know the width, calculate start
-		int start_x = min_x + ( max_x - min_x - width) / 2;
-
-		// Draw the line
-		for ( int ch = 0; ch < line.length(); ch++ )
-		{
-			if ( line[ch] == actionChar )
-			{
-				ch++;
-
-				if ( line[ch] == actionColorActive )
-					painter.setPen( m_colorActive );
-				else if ( line[ch] == actionColorInactive )
-					painter.setPen( m_colorInactive );
-				else if ( line[ch] == actionColorTitle )
-					painter.setPen( m_colorInfo );
-				else if ( line[ch] == actionSmallFont )
-					painter.setFont( m_smallFont );
-				else
-					abort();
-
-				continue;
-			}
-
-			painter.drawText( start_x, start_y, (QString) line[ch] );
-			start_x += m.width( line[ch] );
-		}
-
-		start_y += step_y;
-	}
-
-	if ( m_drawPreamble )
-	{
-		// We use ten squares for preamble
-		int preambles = 10;
-		int preamble_spacing = 3;
-		int preamble_height  = 4;
-		int preamble_width = ((CDG_FULL_WIDTH - 2 * CDG_BORDER_WIDTH) - preamble_spacing * preambles ) / preambles;
-
-		painter.setPen( m_colorInfo );
-		painter.setBrush( m_colorInfo );
-
-		// Draw a square for each 500ms; we do not draw anything for the last one, and speed up it 0.15sec
-		for ( int i = 0; i < preambles; i++ )
-		{
-			if ( i * 500 > (m_preamble - 650) )
-				continue;
-
-			painter.drawRect( CDG_BORDER_WIDTH + i * (preamble_spacing + preamble_width),
-							  CDG_BORDER_HEIGHT,
-							  preamble_width,
-							  preamble_height );
-		}
-
-		m_lastDrawnPreamble = m_preamble;
-	}
-
-	return true;
-}
-
-QString CDGGenerator::lyricForTime( const Lyrics& lyrics, qint64 tickmark )
-{
-	QString block;
-	int pos;
-	qint64 nexttime;
-
-	// If there is a block within next one second, show it.
-	if ( lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= 1000 )
-	{
-		m_preamble = qMax( 0, (int) (nexttime - tickmark) );
-
-		if ( block.startsWith( "@@" ) )
-		{
-			block.remove( "@@" );
-			block = QString(actionChar) + "T" + block;
-		}
-
-		return block;
-	}
-
-	if ( !lyrics.blockForTime( tickmark, block, pos, nexttime ) )
-	{
-		// Nothing active to show, so if there is a block within next five seconds, show it.
-		if ( lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= 5000 )
-		{
-			m_preamble = qMax( 0, (int) (nexttime - tickmark) );
-
-			if ( tickmark - m_lastSungTime > 5000 && !block.contains( "@@" ) )
-			{
-				if ( m_project->tag( Project::Tag_CDG_preamble).toInt() )
-					m_drawPreamble = true;
-			}
-
-			if ( block.startsWith( "@@" ) )
-			{
-				block.remove( "@@" );
-				block = QString(actionChar) + "T" + block;
-			}
-
-			return block;
-		}
-
-		m_drawPreamble = false;
-		return QString();
-	}
-
-	m_drawPreamble = false;
-	int endidx;
-
-	if ( block.startsWith("@@") && (endidx = block.indexOf( "@@", 2 )) != -1 )
-	{
-		// The whole part between @@...@@ is considered title, and not affected by pos.
-		QString title = block.mid( 2, endidx - 2 );
-
-		if ( pos < endidx + 2 )
-			pos = endidx + 2;
-
-		// At least part of the block is outside the title tag
-		QString inactive = block.mid( endidx + 2, pos - (endidx + 2) );
-		QString active = block.mid( pos );
-
-		block = QString(actionChar) + "T" + title + QString(actionChar) + "I" + inactive + actionChar + "A" + active;
-	}
-	else
-	{
-		QString inactive = block.left( pos );
-		QString active = block.mid( pos );
-
-		block = QString(actionChar) + "I" + inactive + actionChar + "A" + active;
-		m_lastSungTime = tickmark;
-	}
-
-	return block;
-}
-
 void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 {
-	QString	lastLyrics;
+	// Prepare the renderer
+	m_renderer.setData( lyrics );
 
-	m_lastSungTime = 0;
-	m_preamble = 0;
-	m_drawPreamble = false;
-	m_lastDrawnPreamble = 0;
+	// Initialize colors from m_project
+	m_colorBackground = m_project->tag( Project::Tag_CDG_bgcolor );
+	m_renderer.setColorBackground( m_colorBackground );
+	m_renderer.setColorTitle( m_project->tag( Project::Tag_CDG_infocolor ) );
+	m_renderer.setColorSang( m_project->tag( Project::Tag_CDG_inactivecolor ) );
+	m_renderer.setColorToSing( m_project->tag( Project::Tag_CDG_activecolor ) );
+
+	// Title
+	m_renderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
+								 m_project->tag( Project::Tag_Title ),
+								 5000 );
+
+	// Preamble
+	m_renderer.setPreambleData( 4, 5000, 8 );
+
+	// Disable anti-aliasing for fonts
+	QFont renderFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() );
+	renderFont.setStyleStrategy( QFont::NoAntialias );
+	renderFont.setWeight( QFont::Bold );
+
+	QFont smallFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() - 2 );
+	smallFont.setStyleStrategy( QFont::NoAntialias );
+
+	m_renderer.setRenderFont( renderFont );
+	m_renderer.setRenderSmallFont( smallFont );
 
 	// Prepare images
-	QImage image( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_RGB32 );
-	QImage lastImage( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_RGB32 );
-
-	image.fill( m_colorBackground.rgb() );
+	QImage lastImage = m_renderer.image();
 	lastImage.fill( m_colorBackground.rgb() );
 
 	// Pop up progress dialog
@@ -590,49 +331,16 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 			break;
 
 //		qDebug("timing: %d packets, %dms (%d sec)", m_stream.size(), (int) timing, (int) (timing / 1000) );
+		int status = m_renderer.update( timing );
 
-		QString lyricpaga;
-
-		// Show title?
-		if ( timing < m_project->tag( Project::Tag_CDG_titletime ).toInt() * 1000 )
+		if ( status == LyricsRenderer::UPDATE_NOCHANGE )
 		{
-			lyricpaga = QString("%1%2\n\n%3\n\n%4Created by Karaoke Lyric Editor %5.%6\n%7http://www.karlyriceditor.com/\n")
-							.arg( actionSetColorTitle )
-							.arg( m_project->tag( Project::Tag_Artist ) )
-							.arg( m_project->tag( Project::Tag_Title ) )
-							.arg( actionSetSmallFont )
-							.arg( APP_VERSION_MAJOR )
-							.arg( APP_VERSION_MINOR )
-							.arg( actionSetColorActive );
+			addEmpty();
+			continue;
 		}
-		else
-		{
-			lyricpaga = lyricForTime( lyrics, timing );
-		}
-
-		// If we draw preamble, this all doesn't matter
-		if ( !m_drawPreamble || abs( m_lastDrawnPreamble - m_preamble ) < 250 )
-		{
-			// Did lyrics change at all?
-			if ( lyricpaga == lastLyrics )
-			{
-				addEmpty();
-				continue;
-			}
-
-			// If lyrics cleared up but we just finished showing something, keep it for 5 more seconds
-			if ( lyricpaga.isEmpty() && time(0) - m_lastPlayed < 5 )
-			{
-				addEmpty();
-				continue;
-			}
-		}
-
-		// Render the lyrics
-		drawText( image, lyricpaga );
 
 		// Is change significant enough to warrant full redraw?
-		if ( stripColors( lyricpaga ) != stripColors( lastLyrics ) )
+		if ( status == LyricsRenderer::UPDATE_FULL )
 		{
 			clearScreen();
 
@@ -640,9 +348,10 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 			lastImage.fill( m_colorBackground.rgb() );
 		}
 
+		QImage image = m_renderer.image();
 		applyTileChanges( lastImage, image );
+
 		lastImage = image;
-		lastLyrics = lyricpaga;
 	}
 
 	// Clean up the parity bits in the CD+G stream

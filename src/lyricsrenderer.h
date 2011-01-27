@@ -16,46 +16,33 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#ifndef TESTWINDOW_H
-#define TESTWINDOW_H
+#ifndef LYRICSRENDERER_H
+#define LYRICSRENDERER_H
 
-#include <QDialog>
-#include <QString>
+#include <QImage>
 
-#include "ui_testwindow.h"
-#include "lyrics.h"
-#include "cdgrenderer.h"
-#include "lyricsrenderer.h"
-
-
-class TestWindow : public QDialog, public Ui::TestWindow
+class LyricsRenderer
 {
-    Q_OBJECT
-
 	public:
-		TestWindow(QWidget *parent = 0);
+		enum
+		{
+			UPDATE_NOCHANGE,	// image did not change at all
+			UPDATE_COLORCHANGE,	// only colors of some image characters changed
+			UPDATE_FULL,		// a whole image changed
+			UPDATE_RESIZED,		// not only the whole image changed, but also the image size changed
+		};
 
-		// For lyrics
-		void	setLyrics( const Lyrics& lyrics, const QString& artist, const QString& title );
+		LyricsRenderer();
+		virtual ~LyricsRenderer();
 
-		// For CD+G
-		void	setCDGdata( const QByteArray& cdgdata );
-
-	public slots:
-		void	tick( qint64 tickmark );
+		virtual int	update( qint64 timing ) = 0;
+		QImage	image() const;
 
 	protected:
-		// overriden
-		void	showEvent ( QShowEvent * event );
-		void	hideEvent( QShowEvent * event );
+		void	saveImage();
 
-	private:
-		void	clear();
-		void	reset();
-
-	private:
-		LyricsRenderer	* m_renderer;
+		// Rendered image
+		QImage	m_image;
 };
 
-
-#endif // TESTWINDOW_H
+#endif // LYRICSRENDERER_H
