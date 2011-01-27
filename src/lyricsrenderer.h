@@ -40,8 +40,6 @@ class LyricsRenderer
 		QImage	image() const;
 
 	protected:
-		void	saveImage();
-
 		// Rendered image
 		QImage	m_image;
 };

@@ -26,6 +26,9 @@ static const unsigned int CDG_FULL_HEIGHT = 216;
 static const unsigned int CDG_BORDER_WIDTH = 6;
 static const unsigned int CDG_BORDER_HEIGHT = 12;
 
+static const unsigned int CDG_DRAW_WIDTH  = CDG_FULL_WIDTH - 2*CDG_BORDER_WIDTH;
+static const unsigned int CDG_DRAW_HEIGHT = CDG_FULL_HEIGHT - 2*CDG_BORDER_HEIGHT;
+
 typedef struct
 {
   char command;

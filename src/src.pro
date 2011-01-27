@@ -67,7 +67,6 @@ FORMS += mainwindow.ui \
     wiznewproject_musicfile.ui \
     playerwidget.ui \
     viewwidget.ui \
-    testwindow.ui \
     dialog_about.ui \
     dialog_projectsettings.ui \
     dialog_settings.ui \

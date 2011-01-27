@@ -31,7 +31,6 @@ class CDGRenderer : public LyricsRenderer
 		CDGRenderer();
 
 		void	setCDGdata( const QByteArray& cdgdata );
-		void	setImageSize( int width, int height );
 		virtual int	update( qint64 timing );
 
 	private:
@@ -42,6 +41,7 @@ class CDGRenderer : public LyricsRenderer
 
 		unsigned int		m_packet;		// packet offset which hasn't been processed yet
 		QVector< SubCode >	m_stream;		// CD+G stream
+		QImage				m_cdgimage;		// CD+G screen image, index8
 };
 
 #endif // CDGRENDERER_H

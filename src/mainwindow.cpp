@@ -507,6 +507,9 @@ void MainWindow::act_projectExportLyricFile()
 		return;
 	}
 
+	if ( lyrics.isEmpty() )
+		return;
+
 	QFile file( outfile );
 	if ( !file.open( QIODevice::WriteOnly | QIODevice::Truncate ) )
 	{
@@ -687,15 +690,24 @@ void MainWindow::act_projectTestCDG()
 	QByteArray cdgdata = f.readAll();
 */
 
-/*	QByteArray cdgdata = m_project->exportLyricsAsCDG();
-	m_testWindow->setCDGdata( cdgdata );
+	QByteArray cdgdata = m_project->exportLyricsAsCDG();
 
-	QFile f( "out.cdg");
-
-	if ( !f.open( QIODevice::WriteOnly ) )
+	if ( cdgdata.isEmpty() )
 		return;
 
-	f.write( cdgdata );
+	if ( !m_testWindow )
+	{
+		m_testWindow = new TestWindow( this );
+		connect( m_testWindow, SIGNAL(closed()), this, SLOT( testWindowClosed() ) );
+	}
 
-	m_testWindow->show();*/
+	LyricsWidget * lw = new LyricsWidget( m_testWindow );
+	connect( m_player, SIGNAL(tick(qint64)), lw, SLOT(updateLyrics(qint64)) );
+	lw->setCDGdata( cdgdata );
+
+	m_testWindow->setLyricWidget( lw );
+	m_testWindow->show();
+
+	if ( m_player->currentTime() == 0 )
+		m_player->btn_playerPlayPause();
 }

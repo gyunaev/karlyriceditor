@@ -58,8 +58,6 @@ class CDGGenerator
 
 	private:
 		QVector< SubCode >		m_stream;		// CD+G stream
-		TextRenderer			m_renderer;
-
 		QColor					m_colorBackground;
 		QVector< QColor >		m_colors;		// 16 colors used in CD+G
 		int						m_streamColorIndex; // Reserved space for colors

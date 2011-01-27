@@ -30,16 +30,3 @@ QImage LyricsRenderer::image() const
 {
 	return m_image;
 }
-
-void LyricsRenderer::saveImage()
-{
-	static unsigned int i = 0;
-	QString fname = QString("image-%1.bmp") .arg(i);
-
-	qDebug("generating image %d", i );
-
-//	if ( ++i > 9 )
-//		i = 0;
-
-	m_image.save( "orig-" + fname, "bmp" );
-}

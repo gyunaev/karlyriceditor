@@ -15,13 +15,9 @@
  *  You should have received a copy of the GNU General Public License     *
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
-/*
-#include <time.h>
 
-#include <QMap>
-#include <QList>
 #include <QPainter>
-  */
+#include <QMessageBox>
 #include <QProgressDialog>
 #include <QApplication>
 
@@ -32,8 +28,7 @@
 static int COLOR_IDX_BACKGROUND = 0;	// background
 
 CDGGenerator::CDGGenerator( const Project * proj )
-	: m_renderer( CDG_FULL_WIDTH - 2*CDG_BORDER_WIDTH, CDG_FULL_HEIGHT - 2*CDG_BORDER_HEIGHT ),
-		m_project( proj )
+	: m_project( proj )
 {
 }
 
@@ -182,16 +177,22 @@ void CDGGenerator::checkTile( int offset_x, int offset_y, const QImage& orig,con
 	// Tiles are 6x12
 	for ( int y = 0; y < 12; y++ )
 	{
-		const QRgb * orig_line = (const QRgb *) orig.scanLine( y + offset_y );
-		const QRgb * new_line = (const QRgb *) newimg.scanLine( y + offset_y );
+		// Since the offsets assume borders, but our image does not contain them, we
+		// adjust in the calculations
+		int image_offset_y = y + offset_y - CDG_BORDER_HEIGHT;
+
+		const QRgb * orig_line = (const QRgb *) orig.scanLine( image_offset_y );
+		const QRgb * new_line = (const QRgb *) newimg.scanLine( image_offset_y );
 
 		for ( int x = 0; x < 6; x++ )
 		{
-			int origcolor = getColor( orig_line[ offset_x + x ] );
-			int newcolor = getColor( new_line[ offset_x + x ] );
+			int image_offset_x = offset_x + x - CDG_BORDER_WIDTH;
 
-			if ( origcolor == newcolor )
+			if ( orig_line[ image_offset_x ] == new_line[ image_offset_x ] )
 				continue;
+
+			int origcolor = getColor( orig_line[ image_offset_x ] );
+			int newcolor = getColor( new_line[ image_offset_x ] );
 
 			// Calculate the mask for the color change
 			int mask = origcolor ^ newcolor;
@@ -247,55 +248,56 @@ void CDGGenerator::applyTileChanges( const QImage& orig,const QImage& newimg )
 {
 /*
 	static unsigned int i = 0;
-	QString fname = QString("image-%1.bmp") .arg(i);
+	QString ofname = QString("/home/tim/1/%1-orig.bmp") .arg(i);
+	QString nfname = QString("/home/tim/1/%1-new.bmp") .arg(i);
 
 	qDebug("generating image %d", i );
 
-	if ( ++i > 9 )
+	if ( ++i > 90 )
 		i = 0;
 
-	orig.save( "orig-" + fname, "bmp" );
-	newimg.save( "new-" + fname, "bmp" );
+	orig.save( ofname, "bmp" );
+	newimg.save( nfname, "bmp" );
 */
-	// Tiles are 6x12
-	for ( unsigned int offset_y = 0; offset_y < CDG_FULL_HEIGHT; offset_y += 12 )
-		for ( unsigned int offset_x = 0; offset_x < CDG_FULL_WIDTH; offset_x += 6 )
+	// Tiles are 6x12, but we skip the border area 
+	for ( unsigned int offset_y = CDG_BORDER_HEIGHT; offset_y < CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT; offset_y += 12 )
+		for ( unsigned int offset_x = CDG_BORDER_WIDTH; offset_x < CDG_FULL_WIDTH - CDG_BORDER_WIDTH; offset_x += 6 )
 			checkTile( offset_x, offset_y, orig, newimg );
 }
 
 void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 {
 	// Prepare the renderer
-	m_renderer.setData( lyrics );
+	TextRenderer lyricrenderer( CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT );
+	lyricrenderer.setData( lyrics );
 
 	// Initialize colors from m_project
 	m_colorBackground = m_project->tag( Project::Tag_CDG_bgcolor );
-	m_renderer.setColorBackground( m_colorBackground );
-	m_renderer.setColorTitle( m_project->tag( Project::Tag_CDG_infocolor ) );
-	m_renderer.setColorSang( m_project->tag( Project::Tag_CDG_inactivecolor ) );
-	m_renderer.setColorToSing( m_project->tag( Project::Tag_CDG_activecolor ) );
+	lyricrenderer.setColorBackground( m_colorBackground );
+	lyricrenderer.setColorTitle( m_project->tag( Project::Tag_CDG_infocolor ) );
+	lyricrenderer.setColorSang( m_project->tag( Project::Tag_CDG_inactivecolor ) );
+	lyricrenderer.setColorToSing( m_project->tag( Project::Tag_CDG_activecolor ) );
 
 	// Title
-	m_renderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
+	lyricrenderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
 								 m_project->tag( Project::Tag_Title ),
 								 5000 );
 
 	// Preamble
-	m_renderer.setPreambleData( 4, 5000, 8 );
+	lyricrenderer.setPreambleData( 4, 5000, 8 );
 
 	// Disable anti-aliasing for fonts
 	QFont renderFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() );
 	renderFont.setStyleStrategy( QFont::NoAntialias );
 	renderFont.setWeight( QFont::Bold );
+	lyricrenderer.setRenderFont( renderFont );
 
 	QFont smallFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() - 2 );
 	smallFont.setStyleStrategy( QFont::NoAntialias );
-
-	m_renderer.setRenderFont( renderFont );
-	m_renderer.setRenderSmallFont( smallFont );
+	lyricrenderer.setRenderSmallFont( smallFont );
 
 	// Prepare images
-	QImage lastImage = m_renderer.image();
+	QImage lastImage( CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT, QImage::Format_ARGB32 );
 	lastImage.fill( m_colorBackground.rgb() );
 
 	// Pop up progress dialog
@@ -332,7 +334,13 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 			break;
 
 //		qDebug("timing: %d packets, %dms (%d sec)", m_stream.size(), (int) timing, (int) (timing / 1000) );
-		int status = m_renderer.update( timing );
+		int status = lyricrenderer.update( timing );
+
+		if ( status == LyricsRenderer::UPDATE_RESIZED )
+		{
+			QMessageBox::critical( 0, "Invalid lyrics", "Lyrics out of boundary" );
+			return ;
+		}
 
 		if ( status == LyricsRenderer::UPDATE_NOCHANGE )
 		{
@@ -349,10 +357,14 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 			lastImage.fill( m_colorBackground.rgb() );
 		}
 
-		QImage image = m_renderer.image();
-		applyTileChanges( lastImage, image );
+		int packets = m_stream.size();
+		const QImage& currImage = lyricrenderer.image();
+		applyTileChanges( lastImage, currImage );
+		lastImage = currImage;
 
-		lastImage = image;
+		// Make sure we added at least some tiles
+		if ( packets == m_stream.size() )
+			addEmpty();
 	}
 
 	// Clean up the parity bits in the CD+G stream

@@ -478,5 +478,6 @@ int TextRenderer::update( qint64 timing )
 	//saveImage();
 
 	m_lastLyricsText = lyricstext;
+	m_forceRedraw = false;
 	return result;
 }

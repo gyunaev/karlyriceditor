@@ -1026,6 +1026,16 @@ void Project::setSongLength( qint64 length )
 
 QByteArray Project::exportLyricsAsCDG()
 {
+	// We cheat to force the editor to test CD+G piece too
+	LyricType t = type();
+	setType( LyricType_CDG );
+
+	bool valid = m_editor->validate();
+	setType( t );
+
+	if ( !valid )
+		return QByteArray();
+
 	CDGGenerator cdggen( this );
 
 	cdggen.init();
