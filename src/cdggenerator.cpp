@@ -286,15 +286,8 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	// Preamble
 	lyricrenderer.setPreambleData( 4, 5000, 8 );
 
-	// Disable anti-aliasing for fonts
-	QFont renderFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() );
-	renderFont.setStyleStrategy( QFont::NoAntialias );
-	renderFont.setWeight( QFont::Bold );
-	lyricrenderer.setRenderFont( renderFont );
-
-	QFont smallFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() - 2 );
-	smallFont.setStyleStrategy( QFont::NoAntialias );
-	lyricrenderer.setRenderSmallFont( smallFont );
+	// CD+G fonts
+	lyricrenderer.setCDGfonts( m_project );
 
 	// Prepare images
 	QImage lastImage( CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT, QImage::Format_ARGB32 );
@@ -338,7 +331,8 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 
 		if ( status == LyricsRenderer::UPDATE_RESIZED )
 		{
-			QMessageBox::critical( 0, "Invalid lyrics", "Lyrics out of boundary" );
+			QMessageBox::critical( 0, "Invalid lyrics", QString("Lyrics out of boundary at %1") .arg( timing ) );
+			m_stream.clear();
 			return ;
 		}
 

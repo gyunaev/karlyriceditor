@@ -282,7 +282,7 @@ void Editor::validate( QList<ValidatorError>& errors )
 
 	// For CD+G validation
 	TextRenderer renderer( 100, 100 );
-	QFont renderFont = QFont( m_project->tag( Project::Tag_CDG_font ), m_project->tag( Project::Tag_CDG_fontsize ).toInt() );
+	renderer.setCDGfonts( m_project );
 
 	// Get the lyrics
 	QString text = toPlainText();
@@ -330,7 +330,7 @@ void Editor::validate( QList<ValidatorError>& errors )
 			if ( m_project->type() == Project::LyricType_CDG )
 			{
 				// Check if we exceed the screen height for CD+G
-				QRect r = renderer.boundingRect( paragraphtext, renderFont );
+				QRect r = renderer.boundingRect( paragraphtext );
 
 				if ( r.height() > (int) (CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT) )
 				{
@@ -350,21 +350,6 @@ cont_paragraph:
 
 		// If we're here, this is not an empty line.
 		linesinblock++;
-
-		// Check if we exceed the screen width for CD+G
-		if ( m_project->type() == Project::LyricType_CDG )
-		{
-			QRect r = renderer.boundingRect( line, renderFont );
-
-			if ( r.width() > (int) (CDG_FULL_WIDTH - CDG_BORDER_WIDTH) )
-			{
-				errors.push_back(
-						ValidatorError(
-								linenumber,
-								0,
-								tr("Line width exceed. This line cannot fit into CD+G screen using the selected font" ) ) );
-			}
-		}
 
 		// Check if we're out of block line limit
 		if ( pSettings->m_editorSupportBlocks && linesinblock > pSettings->m_editorMaxBlock )
@@ -402,6 +387,7 @@ cont_paragraph:
 		// Go through the line, and verify all time tags
 		int time_tag_start = 0;
 		bool in_time_tag = false;
+		QString linetext;
 
 		for ( int col = 0; col < line.size(); col++ )
 		{
@@ -491,10 +477,25 @@ cont_paragraph:
 								tr("Invalid closing bracket usage outside the time block") ) );
 			}
 			else
-				paragraphtext += line[col];
+				linetext += line[col];
 		}
 
-		paragraphtext += "\n";
+		// Check if we exceed the screen width for CD+G
+		if ( m_project->type() == Project::LyricType_CDG )
+		{
+			QRect r = renderer.boundingRect( linetext );
+
+			if ( r.width() >= (int) (CDG_FULL_WIDTH - 2*CDG_BORDER_WIDTH) )
+			{
+				errors.push_back(
+						ValidatorError(
+								linenumber,
+								0,
+								tr("Line width exceed. This line cannot fit into CD+G screen using the selected font" ) ) );
+			}
+		}
+
+		paragraphtext += linetext + "\n";
 
 		// Verify opened time block
 		if ( in_time_tag )

@@ -22,6 +22,8 @@
 #include "lyricsrenderer.h"
 #include "lyrics.h"
 
+class Project;
+
 class TextRenderer : public LyricsRenderer
 {
 	public:
@@ -44,8 +46,11 @@ class TextRenderer : public LyricsRenderer
 
 		// Returns the lyrics bounding box for a line or for paragraph using the font specified,
 		// or the default font if not specified
-		QRect	boundingRect( const QString& text, const QFont& font );
+		QRect	boundingRect( const QString& text );
 		QRect	boundingRect( const QString& text, const QFont& font, const QFont& smallfont );
+
+		// Helper: set up CD+G fonts
+		void	setCDGfonts( const Project * prj );
 
 	private:
 		void	init();

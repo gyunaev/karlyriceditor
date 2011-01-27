@@ -20,6 +20,7 @@
 
 #include "textrenderer.h"
 #include "settings.h"
+#include "project.h"
 
 
 // active - not sang, inactive - sang
@@ -137,6 +138,21 @@ void TextRenderer::setPreambleData( unsigned int height, unsigned int timems, un
 	m_forceRedraw = true;
 }
 
+void TextRenderer::setCDGfonts( const Project * prj )
+{
+	// Disable anti-aliasing for fonts
+	QFont renderFont = QFont( prj->tag( Project::Tag_CDG_font ), prj->tag( Project::Tag_CDG_fontsize ).toInt() );
+	renderFont.setStyleStrategy( QFont::NoAntialias );
+	renderFont.setWeight( QFont::Bold );
+	setRenderFont( renderFont );
+
+	QFont smallFont = QFont( prj->tag( Project::Tag_CDG_font ), prj->tag( Project::Tag_CDG_fontsize ).toInt() - 2 );
+	smallFont.setStyleStrategy( QFont::NoAntialias );
+	setRenderSmallFont( smallFont );
+
+	m_forceRedraw = true;
+}
+
 static inline QString stripActionSequences( const QString& line )
 {
 	QString stripped;
@@ -240,11 +256,9 @@ QString TextRenderer::lyricForTime( qint64 tickmark )
 	return block;
 }
 
-QRect TextRenderer::boundingRect( const QString& text, const QFont& font )
+QRect TextRenderer::boundingRect( const QString& text )
 {
-	QFont smallfont = QFont( font.family(), font.pixelSize() - 2 );
-
-	return boundingRect( text, font, smallfont );
+	return boundingRect( text, m_renderFont, m_smallFont );
 }
 
 QRect TextRenderer::boundingRect( const QString& text, const QFont& font, const QFont& smallfont )
