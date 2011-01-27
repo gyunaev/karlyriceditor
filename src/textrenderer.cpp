@@ -38,9 +38,9 @@ static const QString actionSetColorSang  = QString(actionChar) + actionColorSang
 static const QString actionSetSmallFont = QString(actionChar) + actionSmallFont;
 
 // Some preamble constants
-static const unsigned int PREAMBLE_SQUARE = 500; // 500ms for each square
-static const unsigned int PREAMBLE_MIN_PAUSE = 5000; // 5000ms minimum pause between verses for the preamble to appear
-static const unsigned int LYRICS_SHOW_ADVANCE = 5000; // Show the lyrics at least 5 seconds in advance
+static const int PREAMBLE_SQUARE = 500; // 500ms for each square
+static const int PREAMBLE_MIN_PAUSE = 5000; // 5000ms minimum pause between verses for the preamble to appear
+static const int LYRICS_SHOW_ADVANCE = 5000; // Show the lyrics at least 5 seconds in advance
 
 
 TextRenderer::TextRenderer( int width, int height )
@@ -242,6 +242,13 @@ QString TextRenderer::lyricForTime( qint64 tickmark )
 
 QRect TextRenderer::boundingRect( const QString& text, const QFont& font )
 {
+	QFont smallfont = QFont( font.family(), font.pixelSize() - 2 );
+
+	return boundingRect( text, font, smallfont );
+}
+
+QRect TextRenderer::boundingRect( const QString& text, const QFont& font, const QFont& smallfont )
+{
 	QStringList lines = text.split( "\n" );
 
 	// Calculate the height
@@ -266,8 +273,9 @@ QRect TextRenderer::boundingRect( const QString& text, const QFont& font )
 				ch++; // skip formatting char
 
 				if ( line[ch] == actionSmallFont )
-					m = QFontMetrics( QFont( font.family(), font.pixelSize() - 2 ) );
-				else if ( line[ch] != actionChar )
+					m = QFontMetrics( smallfont );
+
+				if ( line[ch] != actionChar )
 					continue; // allow unescape
 			}
 
@@ -318,7 +326,8 @@ void TextRenderer::drawLyrics( const QString& paragraph, const QRect& boundingRe
 				// Account for smaller font
 				if ( line[ch] == actionSmallFont )
 					m = QFontMetrics( m_smallFont );
-				else if ( line[ch] != actionChar )
+
+				if ( line[ch] != actionChar )
 					continue; // allow @@ as unescape
 			}
 
@@ -350,7 +359,7 @@ void TextRenderer::drawLyrics( const QString& paragraph, const QRect& boundingRe
 			}
 
 			painter.drawText( start_x, start_y, (QString) line[ch] );
-			start_x += m.width( line[ch] );
+			start_x += painter.fontMetrics().width( line[ch] );
 		}
 
 		start_y += painter.fontMetrics().height();
@@ -360,8 +369,10 @@ void TextRenderer::drawLyrics( const QString& paragraph, const QRect& boundingRe
 void TextRenderer::drawPreamble()
 {
 	// Is there anything to draw?
-	if ( m_preambleTimeLeft <= ((int) PREAMBLE_SQUARE - 150) )
+	if ( m_preambleTimeLeft <= PREAMBLE_SQUARE + 150 )
 		return;
+
+	int cutoff_time = m_preambleTimeLeft - PREAMBLE_SQUARE - 150;
 
 	int preamble_spacing = m_image.width() / 100;
 	int preamble_width = (m_image.width() - preamble_spacing * m_preambleCount ) / m_preambleCount;
@@ -371,9 +382,9 @@ void TextRenderer::drawPreamble()
 	painter.setBrush( m_colorTitle );
 
 	// Draw a square for each PREAMBLE_SQUARE; we do not draw anything for the last one, and speed up it 0.15sec
-	for ( unsigned int i = 0; i < m_preambleCount; i++ )
+	for ( int i = 0; i < (int) m_preambleCount; i++ )
 	{
-		if ( i * PREAMBLE_SQUARE > (m_preambleTimeLeft - PREAMBLE_SQUARE - 150) )
+		if ( i * PREAMBLE_SQUARE > cutoff_time )
 			continue;
 
 		painter.drawRect( preamble_spacing + i * (preamble_spacing + preamble_width),
@@ -403,7 +414,7 @@ int TextRenderer::update( qint64 timing )
 	&& timing < m_requestedTitleDuration
 	&& timing < (m_lyrics.block(0).first().first().timing - 1000) )
 	{
-		lyricstext = QString("%1%2\n\n%3\n\n%4Created by Karaoke Lyric Editor\n%7http://www.karlyriceditor.com/\n")
+		lyricstext = QString("%1%2\n\n%3\n\n%4Created by Karaoke Lyric Editor\n%5http://www.karlyriceditor.com/\n")
 						.arg( actionSetColorTitle )
 						.arg( m_titleArtist )
 						.arg( m_titleSong )
@@ -437,7 +448,7 @@ int TextRenderer::update( qint64 timing )
 	}
 
 	// Do the new lyrics fit into the image without resizing?
-	QRect imgrect = boundingRect( lyricstext, m_renderFont );
+	QRect imgrect = boundingRect( lyricstext, m_renderFont, m_smallFont );
 
 	if ( imgrect.width() > m_image.width() || imgrect.height() > m_image.height() )
 	{
@@ -459,7 +470,10 @@ int TextRenderer::update( qint64 timing )
 
 	// Is the text change significant enough to warrant full screen redraw?
 	if ( stripActionSequences( lyricstext ) != stripActionSequences( m_lastLyricsText ) || m_forceRedraw )
-		result = UPDATE_FULL;
+	{
+		if ( result != UPDATE_RESIZED )
+			result = UPDATE_FULL;
+	}
 
 	//saveImage();
 

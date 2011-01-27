@@ -80,6 +80,9 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		// Dock widgets
 		void	visibilityPlayer( bool visible );
 
+		// Test window
+		void	testWindowClosed();
+
 	protected:
 		void	closeEvent(QCloseEvent *event);
 

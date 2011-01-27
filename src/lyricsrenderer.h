@@ -21,6 +21,7 @@
 
 #include <QImage>
 
+// This is an abstract rendering class which covers CD+G and text rendering
 class LyricsRenderer
 {
 	public:

@@ -16,59 +16,41 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#ifndef PLAYERWIDGET_H
-#define PLAYERWIDGET_H
+#ifndef LYRICSWIDGET_H
+#define LYRICSWIDGET_H
 
-#include <QDockWidget>
+#include <QWidget>
 
-#include <phonon/mediaobject.h>
-#include <phonon/audiooutput.h>
+#include "lyrics.h"
+#include "cdgrenderer.h"
+#include "lyricsrenderer.h"
 
-#include "playerbutton.h"
-#include "ui_playerwidget.h"
-
-class Project;
-
-class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
+class LyricsWidget : public QWidget
 {
-    Q_OBJECT
+	Q_OBJECT
 
 	public:
-		PlayerWidget(QWidget *parent = 0);
-		~PlayerWidget();
+		LyricsWidget( QWidget * parent );
+		~LyricsWidget();
 
-		// Sets the current music file from a project. This operation is asynchronous, everything is
-		// handled in phonon_StateChanged() and propagated via MainWindow::updateState().
-		void	setMusicFile( Project * project );
+		// For lyrics
+		void	setLyrics( const Lyrics& lyrics, const QString& artist = "", const QString& title = "" );
 
-		// Is music file ready to play?
-		bool	isReady() const { return m_ready; }
-
-		qint64	currentTime() const;
-		qint64	totalTime() const;
-
-	signals:
-		void	tick( qint64 tickvalue );
+		// For CD+G
+		void	setCDGdata( const QByteArray& cdgdata );
 
 	public slots:
-		void	btn_playerStop();
-		void	btn_playerPlayPause();
+		void	updateLyrics( qint64 tickmark );
 
-	private slots:
-		void	phonon_StateChanged ( Phonon::State newstate, Phonon::State oldstate );
-		void	phonon_Tick( qint64 tickvalue );
-
-		void	btn_playerSeekForward();
-		void	btn_playerSeekBackward();
+	protected:
+		void	paintEvent( QPaintEvent * );
+		QSize	sizeHint () const;
+		QSize	minimumSizeHint() const;
 
 	private:
-		QString tickToString( qint64 tick );
-
-	private:
-		Phonon::MediaObject *	m_mediaObject;
-		Phonon::AudioOutput *	m_mediaAudioOutput;
-
-		bool					m_ready;
+		LyricsRenderer	* m_renderer;
+		QImage			  m_lastImage;
 };
 
-#endif // PLAYERWIDGET_H
+
+#endif // LYRICSWIDGET_H

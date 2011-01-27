@@ -20,41 +20,28 @@
 #define TESTWINDOW_H
 
 #include <QDialog>
-#include <QString>
+#include <QVBoxLayout>
 
-#include "ui_testwindow.h"
-#include "lyrics.h"
-#include "cdgrenderer.h"
-#include "lyricsrenderer.h"
+class LyricsWidget;
 
 
-class TestWindow : public QDialog, public Ui::TestWindow
+class TestWindow : public QDialog
 {
     Q_OBJECT
 
 	public:
-		TestWindow(QWidget *parent = 0);
+		TestWindow( QWidget *parent = 0 );
 
-		// For lyrics
-		void	setLyrics( const Lyrics& lyrics, const QString& artist, const QString& title );
+		void setLyricWidget( LyricsWidget * lw );
 
-		// For CD+G
-		void	setCDGdata( const QByteArray& cdgdata );
-
-	public slots:
-		void	tick( qint64 tickmark );
+	signals:
+		void closed();
 
 	protected:
-		// overriden
-		void	showEvent ( QShowEvent * event );
-		void	hideEvent( QShowEvent * event );
+		void	closeEvent( QCloseEvent * event );
 
 	private:
-		void	clear();
-		void	reset();
-
-	private:
-		LyricsRenderer	* m_renderer;
+		QVBoxLayout * m_layout;
 };
 
 

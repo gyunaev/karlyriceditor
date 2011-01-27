@@ -29,7 +29,8 @@ HEADERS += mainwindow.h \
     editorhighlighting.h \
     lyricsrenderer.h \
     videosurface.h \
-    textrenderer.h
+    textrenderer.h \
+    lyricswidget.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -53,7 +54,8 @@ SOURCES += mainwindow.cpp \
     editorhighlighting.cpp \
     lyricsrenderer.cpp \
     videosurface.cpp \
-    textrenderer.cpp
+    textrenderer.cpp \
+    lyricswidget.cpp
 RESOURCES += resources.qrc
 QT += phonon \
     multimedia

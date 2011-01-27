@@ -32,7 +32,8 @@
 static int COLOR_IDX_BACKGROUND = 0;	// background
 
 CDGGenerator::CDGGenerator( const Project * proj )
-	: m_renderer( CDG_FULL_WIDTH, CDG_FULL_HEIGHT ), m_project( proj )
+	: m_renderer( CDG_FULL_WIDTH - 2*CDG_BORDER_WIDTH, CDG_FULL_HEIGHT - 2*CDG_BORDER_HEIGHT ),
+		m_project( proj )
 {
 }
 

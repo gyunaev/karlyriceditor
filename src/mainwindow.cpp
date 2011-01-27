@@ -37,6 +37,7 @@
 #include "projectsettings.h"
 #include "recentfiles.h"
 #include "gentlemessagebox.h"
+#include "lyricswidget.h"
 #include "ui_dialog_about.h"
 
 
@@ -57,6 +58,7 @@ MainWindow::MainWindow()
 
 	// Initialize stuff
 	m_project = 0;
+	m_testWindow = 0;
 
 	// Create dock widgets
 	m_player = new PlayerWidget( this );
@@ -65,10 +67,6 @@ MainWindow::MainWindow()
 
 	// Create a lyric viewer window, hidden so far
 	m_viewer = new ViewWidget( this );
-
-	// Test window
-	m_testWindow = new TestWindow( this );
-	connect( m_player, SIGNAL(tick(qint64)), m_testWindow, SLOT(tick(qint64)) );
 
 	// Recent files
 	m_recentFiles = new RecentFiles( menuFile, actionQuit );
@@ -643,10 +641,31 @@ void MainWindow::act_projectTest()
 	if ( !editor->validate() )
 		return;
 
-	m_testWindow->setLyrics( editor->exportLyrics(),
-							 m_project->tag( Project::Tag_Artist ),
-							 m_project->tag( Project::Tag_Title ) );
+	if ( !m_testWindow )
+	{
+		m_testWindow = new TestWindow( this );
+		connect( m_testWindow, SIGNAL(closed()), this, SLOT( testWindowClosed() ) );
+	}
+
+	LyricsWidget * lw = new LyricsWidget( m_testWindow );
+	connect( m_player, SIGNAL(tick(qint64)), lw, SLOT(updateLyrics(qint64)) );
+	lw->setLyrics( editor->exportLyrics(),
+					 m_project->tag( Project::Tag_Artist ),
+					 m_project->tag( Project::Tag_Title ) );
+
+	m_testWindow->setLyricWidget( lw );
 	m_testWindow->show();
+
+	if ( m_player->currentTime() == 0 )
+		m_player->btn_playerPlayPause();
+}
+
+void MainWindow::testWindowClosed()
+{
+	m_player->btn_playerStop();
+
+	delete m_testWindow;
+	m_testWindow = 0;
 }
 
 void MainWindow::act_projectTestCDG()
@@ -667,7 +686,8 @@ void MainWindow::act_projectTestCDG()
 
 	QByteArray cdgdata = f.readAll();
 */
-	QByteArray cdgdata = m_project->exportLyricsAsCDG();
+
+/*	QByteArray cdgdata = m_project->exportLyricsAsCDG();
 	m_testWindow->setCDGdata( cdgdata );
 
 	QFile f( "out.cdg");
@@ -677,5 +697,5 @@ void MainWindow::act_projectTestCDG()
 
 	f.write( cdgdata );
 
-	m_testWindow->show();
+	m_testWindow->show();*/
 }
