@@ -21,6 +21,7 @@
 
 #include "lyricsrenderer.h"
 #include "lyrics.h"
+#include "ffmpegvideodecoder.h"
 
 class Project;
 
@@ -41,6 +42,7 @@ class TextRenderer : public LyricsRenderer
 		void	setColorSang( const QColor& color );
 		void	setPreambleData( unsigned int height, unsigned int timems, unsigned int count );
 		void	setTitlePageData( const QString& artist, const QString& title, unsigned int msec ); // duration = 0 - no title, default
+		bool	setVideoFile( const QString& filename );
 
 		virtual int	update( qint64 timing );
 
@@ -88,6 +90,9 @@ class TextRenderer : public LyricsRenderer
 		int						m_lastDrawnPreamble; // Timing when the last time the preamble changed
 		qint64					m_lastSungTime;
 		bool					m_drawPreamble;
+
+		// Video background
+		FFMpegVideoDecoder	*	m_videoDecoder;
 };
 
 #endif // TEXTRENDERER_H

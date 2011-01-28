@@ -70,6 +70,7 @@ void LyricsWidget::setLyrics( const Lyrics& lyrics, const QString& artist, const
 	if ( !artist.isEmpty() && !title.isEmpty() )
 		re->setTitlePageData( artist, title, 5000 );
 
+	//re->setVideoFile( "/home/tim/work/my/karlyriceditor/test/wffc_2004_canopy_accident.MPG" );
 	m_renderer = re;
 
 	updateGeometry();

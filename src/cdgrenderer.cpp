@@ -16,12 +16,14 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
+#include <QDebug>
 #include <QPainter>
 #include "cdgrenderer.h"
 
 CDGRenderer::CDGRenderer()
 	: LyricsRenderer()
 {
+	m_image = QImage( 100, 100, QImage::Format_ARGB32 );
 	m_cdgimage = QImage( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_Indexed8 );
 }
 
@@ -228,9 +230,6 @@ int CDGRenderer::update( qint64 tickmark )
 		status = UPDATE_RESIZED;
 	}
 
-	// Draw the image
-	QPainter p( &m_image );
-	p.drawImage( m_image.rect(), m_cdgimage, m_cdgimage.rect() );
-
+	m_image = m_cdgimage.scaled( m_image.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation );
 	return status;
 }
