@@ -30,7 +30,11 @@ HEADERS += mainwindow.h \
     lyricsrenderer.h \
     textrenderer.h \
     lyricswidget.h \
-    ffmpegvideodecoder.h
+    ffmpegvideodecoder.h \
+    ffmpegvideoencoder.h \
+    videogenerator.h \
+    lyricsevents.h \
+    background.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -55,7 +59,11 @@ SOURCES += mainwindow.cpp \
     lyricsrenderer.cpp \
     textrenderer.cpp \
     lyricswidget.cpp \
-    ffmpegvideodecoder.cpp
+    ffmpegvideodecoder.cpp \
+    ffmpegvideoencoder.cpp \
+    videogenerator.cpp \
+    lyricsevents.cpp \
+    background.cpp
 RESOURCES += resources.qrc
 QT += phonon
 FORMS += mainwindow.ui \
@@ -72,6 +80,14 @@ FORMS += mainwindow.ui \
     dialog_selectencoding.ui \
     gentlemessagebox.ui
 win32-g++-*::LIBS += -lwsock32
-LIBS += -lavformat -lavcodec -lswscale -lavutil -lfaac -lfaad \
-		-lmp3lame -ltheoraenc -ltheoradec -lx264 \
-		-lbz2
+LIBS += -lavformat \
+    -lavcodec \
+    -lswscale \
+    -lavutil \
+    -lfaac \
+    -lfaad \
+    -lmp3lame \
+    -ltheoraenc \
+    -ltheoradec \
+    -lx264 \
+    -lbz2

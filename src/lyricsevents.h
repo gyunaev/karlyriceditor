@@ -1,6 +1,6 @@
 /**************************************************************************
  *  Karlyriceditor - a lyrics editor for Karaoke songs                    *
- *  Copyright (C) 2009 George Yunaev, support@karlyriceditor.com          *
+ *  Copyright (C) 2009-2011 George Yunaev, support@karlyriceditor.com     *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
  *  it under the terms of the GNU General Public License as published by  *
@@ -16,28 +16,61 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#ifndef EDITORHIGHLIGHTING_H
-#define EDITORHIGHLIGHTING_H
+#ifndef LYRICSEVENTS_H
+#define LYRICSEVENTS_H
 
-#include <QSyntaxHighlighter>
+#include <QMap>
+#include <QImage>
 
-class EditorHighlighting : public QSyntaxHighlighter
+class Background;
+
+class LyricsEvents
 {
-	Q_OBJECT
-
 	public:
-		EditorHighlighting( QTextEdit *parent );
+		LyricsEvents();
+		~LyricsEvents();
 
-		void	highlightBlock ( const QString & text );
+		// copy
+		LyricsEvents( const LyricsEvents& );
 
-	private slots:
-		void	updateSettings();
+		// check
+		bool isEmpty() const;
+
+		// Add the events
+		bool addEvent( qint64 timing, const QString& text );
+
+		// When playing
+		bool prepare( QString * errmsg = 0 );
+		bool updated( qint64 timing ) const;
+		void draw( qint64 timing, QImage& image );
+
+		static QString validateEvent( const QString& text );
 
 	private:
-		QTextCharFormat		m_hlValidTiming;
-		QTextCharFormat		m_hlValidSpecial;
-		QTextCharFormat		m_hlInvalidTiming;
-		QTextCharFormat		m_hlPlaceholder;
+		class Event
+		{
+			public:
+				qint64		timing;
+				int			type;
+				QString		data;
+		};
+
+		void	cleanPrepared();
+		static bool parseEvent( const QString& text, Event * event = 0, QString * errmsg = 0 );
+
+		// Event storage which is copied
+		QMap< qint64, Event > m_events;
+
+		// Prepared event storage which is NOT copied
+		QMap< qint64, Background* > m_preparedEvents;
+
+		// State
+		QImage		m_cachedImage;
+		qint64		m_lastUpdate;
+		qint64		m_nextUpdate;
+
+		// Current event timing
+		qint64		m_eventTiming;
 };
 
-#endif // EDITORHIGHLIGHTING_H
+#endif // LYRICSEVENTS_H

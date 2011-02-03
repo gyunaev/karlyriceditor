@@ -28,7 +28,7 @@
 #include "validator.h"
 
 class Project;
-
+class BackgroundEvents;
 
 //
 // Architecturally only editor is responsible for formats, and know everything about
@@ -42,6 +42,7 @@ class Editor : public QTextEdit
 
 	public:
 		static const char * PLACEHOLDER;
+		static const char * PLACEHOLDER_VALUE;
 
 		Editor( QWidget * parent );
 
@@ -58,8 +59,8 @@ class Editor : public QTextEdit
 
 		// Export/Import functions to process lyrics. This generally does not work
 		// for lyrics in "editing" phase, and requires the lyrics to be validated.
-		Lyrics	exportLyrics();
-		void importLyrics( const Lyrics& lyrics );
+		bool	exportLyrics( Lyrics * lyrics );
+		void	importLyrics( const Lyrics& lyrics );
 
 		// Export/Import functions to store/load lyrics from a project file or
 		// temporary storage. Not really useful for anything else.
@@ -78,6 +79,7 @@ class Editor : public QTextEdit
 		bool event ( QEvent * event );
 
 	private:
+		QString		validateSpecial( const QString& string );
 		QTextCursor cursorAtPoint( const QPoint& point );
 		qint64		timeForPosition( QTextCursor cur );
 

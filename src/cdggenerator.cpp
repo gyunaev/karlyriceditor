@@ -305,7 +305,7 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	qint64 dialog_step = total_length / 100;
 
 	// Preallocate the array
-	m_stream.clear();
+	init();
 	m_stream.reserve( total_length * 300 / 1000 );
 
 	// Render

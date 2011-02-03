@@ -31,11 +31,13 @@
 #include "editor.h"
 #include "settings.h"
 #include "editorhighlighting.h"
+#include "lyricsevents.h"
 #include "textrenderer.h"
 #include "cdg.h"
 
 
 const char * Editor::PLACEHOLDER = "[--:--]";
+const char * Editor::PLACEHOLDER_VALUE = "--:--";
 
 Editor::Editor( QWidget * parent )
 	: QTextEdit( parent )
@@ -157,24 +159,22 @@ bool Editor::importFromOldString( const QString& lyricstr )
 	return true;
 }
 
-Lyrics Editor::exportLyrics()
+bool Editor::exportLyrics( Lyrics * lyrics )
 {
-	Lyrics lyrics;
-
 	if ( !validate() )
-		return lyrics;
+		return false;
 
 	QString text = toPlainText();
 	QStringList lines = text.split( '\n' );
 
-	lyrics.beginLyrics();
+	lyrics->beginLyrics();
 
 	foreach( QString line, lines )
 	{
 		if ( line.trimmed().isEmpty() )
 		{
 			// end of paragraph
-			lyrics.curLyricAddEndOfLine();
+			lyrics->curLyricAddEndOfLine();
 			continue;
 		}
 
@@ -182,7 +182,7 @@ Lyrics Editor::exportLyrics()
 
 		// First part must be empty
 		if ( !parts[0].isEmpty() )
-			return Lyrics();
+			return false;
 
 		parts.removeAt( 0 );
 
@@ -193,16 +193,26 @@ Lyrics Editor::exportLyrics()
 			QString timing = part.left( timeoff );
 			QString text = part.mid( timeoff + 1 );
 
-			lyrics.curLyricSetTime( timeToMark( timing ) );
-			lyrics.curLyricAppendText( text );
-			lyrics.curLyricAdd();
+			// Does timing contain special?
+			timeoff = timing.indexOf( ' ' );
+
+			if ( timeoff != -1 )
+			{
+				QString special = timing.mid( timeoff ).trimmed();
+				timing = timing.left( timeoff );
+				lyrics->addBackgroundEvent( timeToMark( timing ), special );
+			}
+
+			lyrics->curLyricSetTime( timeToMark( timing ) );
+			lyrics->curLyricAppendText( text );
+			lyrics->curLyricAdd();
 		}
 
-		lyrics.curLyricAddEndOfLine();
+		lyrics->curLyricAddEndOfLine();
 	}
 
-	lyrics.endLyrics();
-	return lyrics;
+	lyrics->endLyrics();
+	return true;
 }
 
 void Editor::importLyrics( const Lyrics& lyrics )
@@ -273,6 +283,7 @@ bool Editor::validate()
 
 	return true;
 }
+
 
 void Editor::validate( QList<ValidatorError>& errors )
 {
@@ -386,6 +397,7 @@ cont_paragraph:
 
 		// Go through the line, and verify all time tags
 		int time_tag_start = 0;
+		int time_tag_special_start = -1;
 		bool in_time_tag = false;
 		QString linetext;
 
@@ -396,10 +408,33 @@ cont_paragraph:
 				// Time tag ends?
 				if ( line[col] == ']' )
 				{
-					// Verify that the tag is valid
-					QString time = line.mid( time_tag_start, col - time_tag_start );
+					// Get the time and special part, if any
+					QString time, special;
 
-					if ( time == PLACEHOLDER )
+					if ( time_tag_special_start != -1 )
+					{
+						special = line.mid( time_tag_special_start, col - time_tag_special_start ).trimmed();
+						time = line.mid( time_tag_start, time_tag_special_start - time_tag_start );
+					}
+					else
+						time = line.mid( time_tag_start, col - time_tag_start );
+
+					if ( !special.isEmpty() )
+					{
+						QString errmsg = LyricsEvents::validateEvent( special );
+
+						if ( !errmsg.isEmpty() )
+						{
+							errors.push_back(
+									ValidatorError(
+											linenumber,
+											time_tag_start,
+											tr("Invalid special tag. %1") .arg( errmsg ) ) );
+						}
+					}
+
+					// Now validate the time
+					if ( time == PLACEHOLDER_VALUE )
 					{
 						errors.push_back(
 								ValidatorError(
@@ -450,22 +485,28 @@ cont_paragraph:
 				}
 
 				// Only accept those characters
-				if ( !line[col].isDigit() && line[col] != ':' && line[col] != '.' )
+				if ( time_tag_special_start == -1 && !line[col].isDigit() && line[col] != ':' && line[col] != '.' && line[col] != '-' )
 				{
-					errors.push_back(
-							ValidatorError(
-									linenumber,
-									col,
-									tr("Invalid character in the time tag. Time tag must be in format [mm:ss.ms] where mm is minutes, ss is seconds and ms is milliseconds * 10") ) );
+					if ( line[col] == ' ' )
+						time_tag_special_start = col;
+					else
+					{
+						errors.push_back(
+								ValidatorError(
+										linenumber,
+										col,
+										tr("Invalid character in the time tag. Time tag must be in format [mm:ss.ms] where mm is minutes, ss is seconds and ms is milliseconds * 10") ) );
 
-					in_time_tag = false;
-					break; // end with this line
+						in_time_tag = false;
+						break; // done with this line
+					}
 				}
 			}
 			else if ( line[col] == '[' )
 			{
 				in_time_tag = true;
 				time_tag_start = col + 1;
+				time_tag_special_start = -1;
 				continue;
 			}
 			else if ( line[col] == ']' )

@@ -39,6 +39,7 @@
 #include "gentlemessagebox.h"
 #include "lyricswidget.h"
 #include "ui_dialog_about.h"
+#include "videogenerator.h"
 
 
 MainWindow * pMainWindow;
@@ -165,6 +166,7 @@ void MainWindow::connectActions()
 	connect( actionAbout, SIGNAL( triggered()), this, SLOT(act_helpAbout()) );
 	connect( actionProject_settings, SIGNAL( triggered()), this, SLOT(act_projectSettings()) );
 	connect( actionExport_lyric_file, SIGNAL( triggered()), this, SLOT(act_projectExportLyricFile()) );
+	connect( actionExport_video_file, SIGNAL( triggered()), this, SLOT(act_projectExportVideoFile()) );
 	connect( actionEdit_header_data, SIGNAL( triggered()), this, SLOT( act_projectEditHeader()) );
 	connect( actionValidate_lyrics, SIGNAL( triggered()), this, SLOT( act_projectValidateLyrics()) );
 	connect( actionView_lyric_file, SIGNAL( triggered()), this, SLOT( act_projectViewLyricFile()) );
@@ -644,6 +646,11 @@ void MainWindow::act_projectTest()
 	if ( !editor->validate() )
 		return;
 
+	Lyrics lyrics;
+
+	if ( !editor->exportLyrics( &lyrics ) )
+		return;
+
 	if ( !m_testWindow )
 	{
 		m_testWindow = new TestWindow( this );
@@ -652,7 +659,8 @@ void MainWindow::act_projectTest()
 
 	LyricsWidget * lw = new LyricsWidget( m_testWindow );
 	connect( m_player, SIGNAL(tick(qint64)), lw, SLOT(updateLyrics(qint64)) );
-	lw->setLyrics( editor->exportLyrics(),
+
+	lw->setLyrics( lyrics,
 					 m_project->tag( Project::Tag_Artist ),
 					 m_project->tag( Project::Tag_Title ) );
 
@@ -710,4 +718,25 @@ void MainWindow::act_projectTestCDG()
 
 	if ( m_player->currentTime() == 0 )
 		m_player->btn_playerPlayPause();
+}
+
+
+void MainWindow::act_projectExportVideoFile()
+{
+	if ( !editor->validate() )
+		return;
+
+	Lyrics lyrics;
+
+	if ( !editor->exportLyrics( &lyrics ) )
+		return;
+
+	QString outfile = QFileDialog::getSaveFileName( 0, tr("Export video to a file") );
+
+	if ( outfile.isEmpty() )
+		return;
+
+	VideoGenerator videogen( m_project );
+
+	videogen.generate( lyrics, m_player->totalTime(), outfile );
 }

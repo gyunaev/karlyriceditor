@@ -27,6 +27,10 @@ Lyrics::Lyrics()
 	m_currentLyric.pitch = -1;
 }
 
+Lyrics::~Lyrics()
+{
+}
+
 void Lyrics::beginLyrics()
 {
 	m_scanning = true;
@@ -304,4 +308,14 @@ bool Lyrics::nextBlock( qint64 current, qint64& time, QString& text ) const
 	}
 
 	return false;
+}
+
+bool Lyrics::addBackgroundEvent( qint64 timing, const QString& text )
+{
+	return m_events.addEvent( timing, text );
+}
+
+LyricsEvents Lyrics::events() const
+{
+	return m_events;
 }

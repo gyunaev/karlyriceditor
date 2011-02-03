@@ -48,7 +48,6 @@ static const int LYRICS_SHOW_ADVANCE = 5000; // Show the lyrics at least 5 secon
 TextRenderer::TextRenderer( int width, int height )
 	: LyricsRenderer()
 {
-	m_videoDecoder = 0;
 	m_image = QImage( width, height, QImage::Format_ARGB32 );
 	init();
 }
@@ -58,6 +57,8 @@ void TextRenderer::setData( const Lyrics& lyrics )
 	init();
 
 	m_lyrics = lyrics;
+	m_lyricEvents = lyrics.events();
+	m_lyricEvents.prepare();
 }
 
 void TextRenderer::setRenderFont( const QFont& font )
@@ -108,22 +109,6 @@ void TextRenderer::setTitlePageData( const QString& artist, const QString& title
 	m_forceRedraw = true;
 }
 
-bool TextRenderer::setVideoFile( const QString& filename )
-{
-	delete m_videoDecoder;
-	m_videoDecoder = new FFMpegVideoDecoder();
-
-	if ( !m_videoDecoder->openFile( filename ) )
-	{
-		QMessageBox::critical( 0, "Invalid video file",
-							   QString("Cannot open video file %1: %2") .arg( filename) .arg( m_videoDecoder->errorMsg() ) );
-		delete m_videoDecoder;
-		return false;
-	}
-
-	return true;
-}
-
 void TextRenderer::init()
 {
 	m_forceRedraw = true;
@@ -161,7 +146,7 @@ void TextRenderer::setCDGfonts( const Project * prj )
 	// Disable anti-aliasing for fonts
 	QFont renderFont = QFont( prj->tag( Project::Tag_CDG_font ), prj->tag( Project::Tag_CDG_fontsize ).toInt() );
 	renderFont.setStyleStrategy( QFont::NoAntialias );
-	//renderFont.setWeight( QFont::Bold );
+	renderFont.setWeight( QFont::Bold );
 	setRenderFont( renderFont );
 
 	QFont smallFont = QFont( prj->tag( Project::Tag_CDG_font ), prj->tag( Project::Tag_CDG_fontsize ).toInt() - 2 );
@@ -444,19 +429,8 @@ void TextRenderer::drawBackground( qint64 timing )
 	// Fill the image background
 	m_image.fill( m_colorBackground.rgb() );
 
-	if ( m_videoDecoder )
-	{
-		if ( timing > m_videoDecoder->getVideoLengthMs() )
-			timing %= m_videoDecoder->getVideoLengthMs();
-
-		m_videoDecoder->seekMs( (int) timing );
-
-		QImage videoframe;
-		m_videoDecoder->getFrame( videoframe );
-
-		QPainter p( &m_image );
-		p.drawImage( m_image.rect(), videoframe, videoframe.rect() );
-	}
+	if ( !m_lyricEvents.isEmpty() )
+		m_lyricEvents.draw( timing, m_image );
 }
 
 int TextRenderer::update( qint64 timing )
@@ -491,7 +465,9 @@ int TextRenderer::update( qint64 timing )
 		redrawPreamble = true;
 
 	// Check whether we can skip the redraws
-	if ( !m_forceRedraw && !redrawPreamble && !m_videoDecoder )
+	bool background_updated = (m_lyricEvents.isEmpty() || !m_lyricEvents.updated( timing )) ? false : true;
+
+	if ( !m_forceRedraw && !redrawPreamble && !background_updated )
 	{
 		// Did lyrics change at all?
 		if ( lyricstext == m_lastLyricsText )

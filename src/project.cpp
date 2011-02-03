@@ -67,6 +67,16 @@ enum
 	PD_TAG_CDG_FONTSIZE,	// CD+G tag - font size
 	PD_TAG_CDG_MINTITLE,	// CD+G tag - minimum title time
 	PD_TAG_CDG_PREAMBLE,	// CD+G tag - whether to show squares
+
+	PD_TAG_VIDEO_BCOLOR,	// Video tag - background color
+	PD_TAG_VIDEO_ICOLOR,	// Video tag - info (title/credits) color
+	PD_TAG_VIDEO_ACOLOR,	// Video tag - active (not sung yet) color
+	PD_TAG_VIDEO_NCOLOR,	// Video tag - inactive (sung) color
+	PD_TAG_VIDEO_FONT,		// Video tag - font family
+	PD_TAG_VIDEO_FONTSIZE,	// Video tag - font size
+	PD_TAG_VIDEO_MINTITLE,	// Video tag - minimum title time
+	PD_TAG_VIDEO_PREAMBLE,	// Video tag - whether to show squares
+	PD_TAG_VIDEO_BGFILE,	// Video tag - video background file
 };
 
 
@@ -279,6 +289,42 @@ int	Project::tagToId( Tag tag  ) const
 		case Tag_CDG_preamble:
 			tagid = PD_TAG_CDG_PREAMBLE;
 			break;
+
+		case Tag_Video_bgcolor:
+			tagid = PD_TAG_VIDEO_BCOLOR;
+			break;
+
+		case Tag_Video_infocolor:
+			tagid = PD_TAG_VIDEO_ICOLOR;
+			break;
+
+		case Tag_Video_activecolor:
+			tagid = PD_TAG_VIDEO_ACOLOR;
+			break;
+
+		case Tag_Video_inactivecolor:
+			tagid = PD_TAG_VIDEO_NCOLOR;
+			break;
+
+		case Tag_Video_font:
+			tagid = PD_TAG_VIDEO_FONT;
+			break;
+
+		case Tag_Video_fontsize:
+			tagid = PD_TAG_VIDEO_FONTSIZE;
+			break;
+
+		case Tag_Video_titletime:
+			tagid = PD_TAG_VIDEO_MINTITLE;
+			break;
+
+		case Tag_Video_preamble:
+			tagid = PD_TAG_VIDEO_PREAMBLE;
+			break;
+
+		case Tag_Video_bgfile:
+			tagid = PD_TAG_VIDEO_BGFILE;
+			break;
 	}
 
 	return tagid;
@@ -438,7 +484,10 @@ QByteArray Project::exportLyricsAsLRC1()
 	}
 
 	QString	lrc = generateLRCheader();
-	Lyrics lyrics = m_editor->exportLyrics();
+	Lyrics lyrics;
+
+	if ( !m_editor->exportLyrics( &lyrics) )
+		return QByteArray();
 
 	for ( int bl = 0; bl < lyrics.totalBlocks(); bl++ )
 	{
@@ -503,8 +552,12 @@ QByteArray Project::exportLyricsAsLRC2()
 			return QByteArray();
 	}
 
+	Lyrics lyrics;
+
+	if ( !m_editor->exportLyrics( &lyrics ) )
+		return QByteArray();
+
 	QString	lrc = generateLRCheader();
-	Lyrics lyrics = m_editor->exportLyrics();
 
 	for ( int bl = 0; bl < lyrics.totalBlocks(); bl++ )
 	{
@@ -585,7 +638,10 @@ QByteArray Project::exportLyricsAsUStar()
 			return QByteArray();
 	}
 
-	Lyrics lyrics = m_editor->exportLyrics();
+	Lyrics lyrics;
+
+	if ( !m_editor->exportLyrics( &lyrics ) )
+		return QByteArray();
 
 	if ( lyrics.totalBlocks() > 1 )
 	{
@@ -1036,10 +1092,15 @@ QByteArray Project::exportLyricsAsCDG()
 	if ( !valid )
 		return QByteArray();
 
+	Lyrics lyrics;
+
+	if ( !m_editor->exportLyrics( &lyrics ) )
+		return QByteArray();
+
 	CDGGenerator cdggen( this );
 
 	cdggen.init();
-	cdggen.generate( m_editor->exportLyrics(), m_totalSongLength );
+	cdggen.generate( lyrics, m_totalSongLength );
 
 	return cdggen.stream();
 }

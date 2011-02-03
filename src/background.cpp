@@ -1,6 +1,6 @@
 /**************************************************************************
  *  Karlyriceditor - a lyrics editor for Karaoke songs                    *
- *  Copyright (C) 2009 George Yunaev, support@karlyriceditor.com          *
+ *  Copyright (C) 2009-2011 George Yunaev, support@karlyriceditor.com     *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
  *  it under the terms of the GNU General Public License as published by  *
@@ -16,28 +16,70 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#ifndef EDITORHIGHLIGHTING_H
-#define EDITORHIGHLIGHTING_H
+#include <QPainter>
 
-#include <QSyntaxHighlighter>
+#include "background.h"
 
-class EditorHighlighting : public QSyntaxHighlighter
+Background::Background()
 {
-	Q_OBJECT
+}
 
-	public:
-		EditorHighlighting( QTextEdit *parent );
+Background::~Background()
+{
+}
 
-		void	highlightBlock ( const QString & text );
+void Background::reset()
+{
+}
 
-	private slots:
-		void	updateSettings();
 
-	private:
-		QTextCharFormat		m_hlValidTiming;
-		QTextCharFormat		m_hlValidSpecial;
-		QTextCharFormat		m_hlInvalidTiming;
-		QTextCharFormat		m_hlPlaceholder;
-};
+//
+// BackgroundImage
+//
+BackgroundImage::BackgroundImage( const QString& filename )
+{
+	if ( !m_image.load( filename ) )
+		qWarning("Cannot load image file %s", qPrintable(filename));
+}
 
-#endif // EDITORHIGHLIGHTING_H
+bool BackgroundImage::isValid() const
+{
+	return !m_image.isNull();
+}
+
+qint64 BackgroundImage::doDraw( QImage& image, qint64 )
+{
+	// We don't care about timing
+	image = m_image;
+
+	// No updates
+	return -1;
+}
+
+
+//
+// BackgroundVideo
+//
+BackgroundVideo::BackgroundVideo( const QString& filename )
+{
+	m_valid = m_videoDecoder.openFile( filename );
+}
+
+bool BackgroundVideo::isValid() const
+{
+	return m_valid;
+}
+
+qint64 BackgroundVideo::doDraw( QImage& image, qint64 timing )
+{
+	QImage videoframe = m_videoDecoder.frame( timing );
+
+	if ( image.isNull() )
+		image = QImage( videoframe.size(), videoframe.format() );
+
+	QPainter p( &image );
+	p.drawImage( QPoint(0,0), videoframe );
+
+	// We use our own cache
+	return 0;
+}

@@ -62,6 +62,16 @@ class Project
 			Tag_CDG_fontsize,
 			Tag_CDG_titletime,
 			Tag_CDG_preamble,
+
+			Tag_Video_bgcolor,
+			Tag_Video_infocolor,
+			Tag_Video_activecolor,
+			Tag_Video_inactivecolor,
+			Tag_Video_font,
+			Tag_Video_fontsize,
+			Tag_Video_titletime,
+			Tag_Video_preamble,
+			Tag_Video_bgfile,
 		};
 
 		Project( Editor * editor );

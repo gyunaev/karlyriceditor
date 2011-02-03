@@ -1,3 +1,21 @@
+/**************************************************************************
+ *  Karlyriceditor - a lyrics editor for Karaoke songs                    *
+ *  Copyright (C) 2009 George Yunaev, support@karlyriceditor.com          *
+ *                                                                        *
+ *  This program is free software: you can redistribute it and/or modify  *
+ *  it under the terms of the GNU General Public License as published by  *
+ *  the Free Software Foundation, either version 3 of the License, or     *
+ *  (at your option) any later version.                                   *
+ *																	      *
+ *  This program is distributed in the hope that it will be useful,       *
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *  GNU General Public License for more details.                          *
+ *                                                                        *
+ *  You should have received a copy of the GNU General Public License     *
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
+ **************************************************************************/
+
 #include <sys/types.h>
 
 #define UINT64_C(c) c ## ULL
@@ -16,222 +34,169 @@ extern "C"
 class FFMpegVideoDecoderPriv
 {
 	public:
-		FFMpegVideoDecoderPriv();
-		virtual ~FFMpegVideoDecoderPriv();
+		void	init();
+		bool	readFrame( int frame );
 
-		virtual bool openFile( const QString& file);
-		virtual void close();
-
-		virtual bool getFrame(QImage&img,int *effectiveframenumber=0,int *effectiveframetime=0,int *desiredframenumber=0,int *desiredframetime=0);
-		virtual bool seekNextFrame();
-		virtual bool seekMs(int ts);
-		virtual bool seekFrame(int64_t frame);
-		virtual int  getVideoLengthMs();
-		virtual bool isOk();
-		QString errorMsg() const { return m_errorMsg; }
-
-	protected:
+	public:
 		AVFormatContext *pFormatCtx;
-		int videoStream;
+		int				 videoStream;
 		AVCodecContext  *pCodecCtx;
 		AVCodec         *pCodec;
 		AVFrame         *pFrame;
 		AVFrame         *pFrameRGB;
-		AVPacket        packet;
 		SwsContext      *img_convert_ctx;
-		//quint8          *buffer;
-		int             numBytes;
+
 		QByteArray		m_buffer;
 		QString			m_errorMsg;
-
-		// State infos for the wrapper
-		bool ok;
-		QImage LastFrame;
-		int LastFrameTime,LastLastFrameTime,LastLastFrameNumber,LastFrameNumber;
-		int DesiredFrameTime,DesiredFrameNumber;
-		bool LastFrameOk;                // Set upon start or after a seek we don't have a frame yet
-
-		// Initialization functions
-		virtual bool initCodec();
-		virtual void InitVars();
-
-		// Seek
-		virtual bool decodeSeekFrame(int after);
+		int				m_maxFrame;
+		int				m_currentFrameNumber;
+		QImage			m_currentFrameImage;
 };
 
-
-FFMpegVideoDecoderPriv::FFMpegVideoDecoderPriv()
+void FFMpegVideoDecoderPriv::init()
 {
-	InitVars();
-	initCodec();
-}
+	pFormatCtx = 0;
+	pCodecCtx = 0;
+	pCodec = 0;
+	pFrame = 0;
+	pFrameRGB = 0;
+	img_convert_ctx = 0;
 
-FFMpegVideoDecoderPriv::~FFMpegVideoDecoderPriv()
-{
-	close();
-}
-
-void FFMpegVideoDecoderPriv::InitVars()
-{
-	ok=false;
-	pFormatCtx=0;
-	pCodecCtx=0;
-	pCodec=0;
-	pFrame=0;
-	pFrameRGB=0;
-	img_convert_ctx=0;
-}
-
-void FFMpegVideoDecoderPriv::close()
-{
-	if ( !ok )
-		return;
-
-	// Free the YUV frame
-	if ( pFrame )
-		av_free( pFrame );
-
-	// Free the RGB frame
-	if(pFrameRGB)
-		av_free(pFrameRGB);
-
-	// Close the codec
-	if(pCodecCtx)
-		avcodec_close(pCodecCtx);
-
-	// Close the video file
-	if(pFormatCtx)
-		av_close_input_file(pFormatCtx);
-
-	InitVars();
+	m_maxFrame = 0;
+	m_currentFrameNumber = 0;
 }
 
 
-bool FFMpegVideoDecoderPriv::initCodec()
+//
+// A wrapper interface class
+//
+FFMpegVideoDecoder::FFMpegVideoDecoder()
 {
 	avcodec_init();
 	avcodec_register_all();
 	av_register_all();
 
-	return true;
+	d = new FFMpegVideoDecoderPriv();
+
+	// Reset the pointers
+	d->init();
 }
 
-bool FFMpegVideoDecoderPriv::openFile( const QString& filename)
+FFMpegVideoDecoder::~FFMpegVideoDecoder()
 {
-	// Close last video..
+	close();
+	delete d;
+}
+
+bool FFMpegVideoDecoder::openFile( const QString& filename )
+{
+	// See http://dranger.com/ffmpeg/tutorial01.html
 	close();
 
-	LastLastFrameTime=INT_MIN;       // Last last must be small to handle the seek well
-	LastFrameTime=0;
-	LastLastFrameNumber=INT_MIN;
-	LastFrameNumber=0;
-	DesiredFrameTime=DesiredFrameNumber=0;
-	LastFrameOk=false;
-
 	// Open video file
-	if ( av_open_input_file(&pFormatCtx, filename.toUtf8(), NULL, 0, NULL ) != 0 )
+	if ( av_open_input_file( &d->pFormatCtx, filename.toUtf8(), NULL, 0, NULL ) != 0 )
 	{
-		m_errorMsg = "Could not open video file";
+		d->m_errorMsg = "Could not open video file";
 		return false;
 	}
 
 	// Retrieve stream information
-	if ( av_find_stream_info( pFormatCtx ) < 0 )
+	if ( av_find_stream_info( d->pFormatCtx ) < 0 )
 	{
-		m_errorMsg = "Could not find stream information in the video file";
+		d->m_errorMsg = "Could not find stream information in the video file";
 		return false;
 	}
 
-	// Dump information about file onto standard error
-	dump_format( pFormatCtx, 0, filename.toUtf8(), false );
-
 	// Find the first video stream
-	videoStream = -1;
+	d->videoStream = -1;
 
-	for ( unsigned i = 0; i < pFormatCtx->nb_streams; i++ )
+	for ( unsigned i = 0; i < d->pFormatCtx->nb_streams; i++ )
 	{
-		if ( pFormatCtx->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO )
+		if ( d->pFormatCtx->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO )
 		{
-			videoStream = i;
+			d->videoStream = i;
 			break;
 		}
 	}
 
-	if ( videoStream == -1 )
+	if ( d->videoStream == -1 )
 		return false; // Didn't find a video stream
 
 	// Get a pointer to the codec context for the video stream
-	pCodecCtx = pFormatCtx->streams[videoStream]->codec;
+	d->pCodecCtx = d->pFormatCtx->streams[d->videoStream]->codec;
 
 	// Find the decoder for the video stream
-	pCodec = avcodec_find_decoder( pCodecCtx->codec_id );
+	d->pCodec = avcodec_find_decoder( d->pCodecCtx->codec_id );
 
-	if ( pCodec == NULL )
+	if ( d->pCodec == NULL )
 	{
-	   m_errorMsg = "Could not find the decoder for the video file";
+	   d->m_errorMsg = "Could not find the decoder for the video file";
 	   return false;
 	}
 
 	// Open codec
-	if ( avcodec_open( pCodecCtx, pCodec ) < 0 )
+	if ( avcodec_open( d->pCodecCtx, d->pCodec ) < 0 )
 	{
-	   m_errorMsg = "Could not open the codec for the video file";
+	   d->m_errorMsg = "Could not open the codec for the video file";
 	   return false;
 	}
 
-	// Hack to correct wrong frame rates that seem to be generated by some codecs
-	if ( pCodecCtx->time_base.num > 1000 && pCodecCtx->time_base.den == 1 )
-		pCodecCtx->time_base.den = 1000;
-
 	// Allocate video frame
-	pFrame = avcodec_alloc_frame();
+	d->pFrame = avcodec_alloc_frame();
 
 	// Allocate an AVFrame structure
-	pFrameRGB=avcodec_alloc_frame();
+	d->pFrameRGB = avcodec_alloc_frame();
 
-	if ( !pFrame || !pFrameRGB )
+	if ( !d->pFrame || !d->pFrameRGB )
 	{
-		m_errorMsg = "Could not allocate memory for video frames";
+		d->m_errorMsg = "Could not allocate memory for video frames";
 		return false;
 	}
 
 	// Determine required buffer size and allocate buffer
-	numBytes = avpicture_get_size( PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height );
-	m_buffer.resize( numBytes );
+	int numBytes = avpicture_get_size( PIX_FMT_RGB24, d->pCodecCtx->width, d->pCodecCtx->height );
+	d->m_buffer.resize( numBytes );
 
 	// Assign appropriate parts of buffer to image planes in pFrameRGB
-	avpicture_fill( (AVPicture *)pFrameRGB, (uint8_t*) m_buffer.data(), PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height );
+	avpicture_fill( (AVPicture *) d->pFrameRGB, (uint8_t*) d->m_buffer.data(),
+					PIX_FMT_RGB24, d->pCodecCtx->width, d->pCodecCtx->height );
 
-	ok = true;
 	return true;
 }
 
-bool FFMpegVideoDecoderPriv::isOk()
+QString FFMpegVideoDecoder::errorMsg() const
 {
-   return ok;
+	return d->m_errorMsg;
 }
 
-bool FFMpegVideoDecoderPriv::decodeSeekFrame(int after)
+void FFMpegVideoDecoder::close()
 {
-	if ( !ok )
-		return false;
+	// Free the YUV frame
+	if ( d->pFrame )
+		av_free( d->pFrame );
 
-	// If the last decoded frame satisfies the time condition we return it
-	//if( after!=-1 && ( LastDataInvalid==false && after>=LastLastFrameTime && after <= LastFrameTime))
-	if( after!=-1 && ( LastFrameOk==true && after>=LastLastFrameNumber && after <= LastFrameNumber))
-	{
-		// This is the frame we want to return
+	// Free the RGB frame
+	if ( d->pFrameRGB )
+		av_free( d->pFrameRGB );
 
-		// Compute desired frame time
-		AVRational millisecondbase = {1, 1000};
-		DesiredFrameTime = av_rescale_q(after,pFormatCtx->streams[videoStream]->time_base,millisecondbase);
-		return true;
-	}
+	// Close the codec
+	if ( d->pCodecCtx )
+		avcodec_close( d->pCodecCtx );
 
-	// The last decoded frame wasn't ok; either we need any new frame (after=-1), or a specific new frame with time>after
-	bool done = false;
+	// Close the video file
+	if ( d->pFormatCtx )
+		av_close_input_file( d->pFormatCtx );
 
-	while( !done )
+	// Reset the pointers
+	d->init();
+}
+
+bool FFMpegVideoDecoderPriv::readFrame( int frame )
+{
+	AVPacket packet;
+	int frameFinished;
+
+	while ( m_currentFrameNumber < frame )
 	{
 		// Read a frame
 		if ( av_read_frame( pFormatCtx, &packet ) < 0 )
@@ -240,36 +205,15 @@ bool FFMpegVideoDecoderPriv::decodeSeekFrame(int after)
 		if ( packet.stream_index == videoStream )
 		{
 			// Is this a packet from the video stream -> decode video frame
-			int frameFinished;
 			avcodec_decode_video2( pCodecCtx, pFrame, &frameFinished, &packet );
 
 			// Did we get a video frame?
-			if(frameFinished)
+			if ( frameFinished )
 			{
-				AVRational millisecondbase = {1, 1000};
-				int f = packet.dts;
-				int t = av_rescale_q(packet.dts,pFormatCtx->streams[videoStream]->time_base,millisecondbase);
+				m_currentFrameNumber++;
 
-				if( LastFrameOk == false )
+				if ( m_currentFrameNumber >= frame )
 				{
-					LastFrameOk=true;
-					LastLastFrameTime=LastFrameTime=t;
-					LastLastFrameNumber=LastFrameNumber=f;
-				}
-				else
-				{
-					// If we decoded 2 frames in a row, the last times are okay
-					LastLastFrameTime = LastFrameTime;
-					LastLastFrameNumber = LastFrameNumber;
-					LastFrameTime=t;
-					LastFrameNumber=f;
-				}
-
-				// Is this frame the desired frame?
-				if ( after==-1 || LastFrameNumber >= after )
-				{
-					// It's the desired frame
-					// Convert the image format (init the context the first time)
 					int w = pCodecCtx->width;
 					int h = pCodecCtx->height;
 
@@ -284,183 +228,47 @@ bool FFMpegVideoDecoderPriv::decodeSeekFrame(int after)
 					sws_scale( img_convert_ctx, pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize );
 
 					// Convert the frame to QImage
-					LastFrame=QImage(w,h,QImage::Format_RGB888);
+					m_currentFrameImage = QImage( w, h, QImage::Format_RGB888 );
 
 					for ( int y = 0; y < h; y++ )
-						memcpy(LastFrame.scanLine(y),pFrameRGB->data[0]+y*pFrameRGB->linesize[0],w*3);
+						memcpy( m_currentFrameImage.scanLine(y), pFrameRGB->data[0] + y * pFrameRGB->linesize[0], w*3 );
+				}
+			}
+		}
 
-					// Set the time
-					DesiredFrameTime = av_rescale_q(after,pFormatCtx->streams[videoStream]->time_base,millisecondbase);
-					LastFrameOk=true;
-
-					done = true;
-
-				} // frame of interest
-			}  // frameFinished
-		}  // stream_index==videoStream
-
-		av_free_packet(&packet);      // Free the packet that was allocated by av_read_frame
+		av_free_packet( &packet );
 	}
 
-	return done;   // done indicates whether or not we found a frame
+	return true;
 }
 
-/**
-   \brief Decodes the next frame in the video stream
-**/
-bool FFMpegVideoDecoderPriv::seekNextFrame()
+QImage FFMpegVideoDecoder::frame( qint64 timems )
 {
-	bool ret = decodeSeekFrame( DesiredFrameNumber + 1 );
+	// Use current frame?
+	int frame_for_time = ((timems * d->pCodecCtx->time_base.den) / d->pCodecCtx->time_base.num) / 1000;
 
-	if ( ret )
-		DesiredFrameNumber++;   // Only updates the DesiredFrameNumber if we were successful in getting that frame
-	else
-		LastFrameOk = false;      // We didn't find the next frame (e.g. seek out of range) - mark we don't know where we are.
+	// Loop if we know how many frames we have total
+	if ( d->m_maxFrame > 0 )
+		frame_for_time %= d->m_maxFrame;
 
-	return ret;
-}
-
-/**
-  \brief Seek to millisecond
-**/
-bool FFMpegVideoDecoderPriv::seekMs(int tsms)
-{
-	if ( !ok )
-		return false;
-
-	// Convert time into frame number
-	DesiredFrameNumber = av_rescale(tsms,pFormatCtx->streams[videoStream]->time_base.den,pFormatCtx->streams[videoStream]->time_base.num);
-	DesiredFrameNumber/=1000;
-
-	return seekFrame(DesiredFrameNumber);
-}
-
-/**
-  \brief Seek to frame
-**/
-bool FFMpegVideoDecoderPriv::seekFrame(int64_t frame)
-{
-	if ( !ok )
-		return false;
-
-	// Seek if:
-	// - we don't know where we are (Ok=false)
-	// - we know where we are but:
-	//    - the desired frame is after the last decoded frame (this could be optimized: if the distance is small, calling decodeSeekFrame may be faster than seeking from the last key frame)
-	//    - the desired frame is smaller or equal than the previous to the last decoded frame. Equal because if frame==LastLastFrameNumber we don't want the LastFrame, but the one before->we need to seek there
-	if( (LastFrameOk==false) || ((LastFrameOk==true) && (frame<=LastLastFrameNumber || frame>LastFrameNumber) ) )
+	while ( 1 )
 	{
-		if ( avformat_seek_file(pFormatCtx,videoStream,0,frame,frame,AVSEEK_FLAG_FRAME) < 0 )
-			return false;
+		if ( d->readFrame( frame_for_time ) )
+			break;
 
-		avcodec_flush_buffers(pCodecCtx);
+		// End of video; restart
+		d->m_maxFrame = d->m_currentFrameNumber - 1;
+		d->m_currentFrameNumber = 0;
+		frame_for_time = 0;
 
-		DesiredFrameNumber = frame;
-		LastFrameOk=false;
+		if ( av_seek_frame( d->pFormatCtx, d->videoStream, 0, 0 ) < 0 )
+		{
+			qWarning("Cannot seek video back to zero");
+			return QImage();
+		}
+
+		avcodec_flush_buffers( d->pCodecCtx );
 	}
 
-	return decodeSeekFrame(frame);
-}
-
-
-/**
-   Decodes the video stream until the first frame with number larger or equal than 'after' is found.
-
-   Returns:
-   - true if a frame is found, false otherwise.
-   - the image as a QImage if img is non-null
-   - time frame time, if frametime is non-null
-   - the frame number, if framenumber is non-null
-
-   All times are in milliseconds.
-**/
-bool FFMpegVideoDecoderPriv::getFrame(QImage&img,int *effectiveframenumber,int *effectiveframetime,int *desiredframenumber,int *desiredframetime)
-{
-	img = LastFrame;
-
-	if ( effectiveframenumber )
-		*effectiveframenumber = LastFrameNumber;
-
-	if ( effectiveframetime )
-		*effectiveframetime = LastFrameTime;
-
-	if ( desiredframenumber )
-		*desiredframenumber = DesiredFrameNumber;
-
-	if ( desiredframetime )
-		*desiredframetime = DesiredFrameTime;
-
-	return LastFrameOk;
-}
-
-int FFMpegVideoDecoderPriv::getVideoLengthMs()
-{
-	if ( !isOk() )
-		return -1;
-
-	int secs = pFormatCtx->duration / AV_TIME_BASE;
-	int us = pFormatCtx->duration % AV_TIME_BASE;
-	int l = secs*1000 + us/1000;
-
-	return l;
-}
-
-
-//
-// A wrapper interface class
-//
-FFMpegVideoDecoder::FFMpegVideoDecoder()
-{
-	d = new FFMpegVideoDecoderPriv();
-}
-
-FFMpegVideoDecoder::~FFMpegVideoDecoder()
-{
-	delete d;
-}
-
-bool FFMpegVideoDecoder::openFile( const QString& file )
-{
-	return d->openFile( file );
-}
-
-void FFMpegVideoDecoder::close()
-{
-	return d->close();
-}
-
-bool FFMpegVideoDecoder::getFrame( QImage & img, int *effectiveframenumber, int * effectiveframetime,
-								   int * desiredframenumber, int * desiredframetime )
-{
-	return d->getFrame( img, effectiveframenumber, effectiveframetime, desiredframenumber, desiredframetime );
-}
-
-bool FFMpegVideoDecoder::seekNextFrame()
-{
-	return d->seekNextFrame();
-}
-
-bool FFMpegVideoDecoder::seekMs(int ts)
-{
-	return d->seekMs( ts );
-}
-
-bool FFMpegVideoDecoder::seekFrame(int64_t frame)
-{
-	return d->seekFrame( frame );
-}
-
-int  FFMpegVideoDecoder::getVideoLengthMs()
-{
-	return d->getVideoLengthMs();
-}
-
-bool FFMpegVideoDecoder::isOk()
-{
-	return d->isOk();
-}
-
-QString FFMpegVideoDecoder::errorMsg() const
-{
-	return d->errorMsg();
+	return d->m_currentFrameImage;
 }

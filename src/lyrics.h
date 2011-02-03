@@ -24,10 +24,14 @@
 #include <QList>
 #include <QMap>
 
+#include "lyricsevents.h"
+
+
 class Lyrics
 {
 	public:
 		Lyrics();
+		~Lyrics();
 
 		static const int PITCH_NOTE_FREESTYLE = (1 << 17);
 		static const int PITCH_NOTE_GOLDEN = (1 << 18);
@@ -72,6 +76,9 @@ class Lyrics
 		// Set the time for current lyric
 		void	curLyricSetTime( qint64 timems );
 
+		// Add background event
+		bool	addBackgroundEvent( qint64 timing, const QString& text );
+
 		// Set the pitch for current lyric
 		void	curLyricSetPitch( int pitch );
 
@@ -99,11 +106,15 @@ class Lyrics
 		// Returns the next nearest block time
 		bool	nextBlock( qint64 current, qint64& time, QString& text ) const;
 
+		// Returns the events
+		LyricsEvents events() const;
+
 	private:
 		// Compile the lyrics
 		void	compile();
 
 		QList<Block>	m_lyrics;
+		LyricsEvents	m_events;
 
 		// Used during scanning lyrics
 		bool			m_scanning;

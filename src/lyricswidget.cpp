@@ -17,6 +17,7 @@
  **************************************************************************/
 
 #include <QPainter>
+#include <QImage>
 
 #include "lyricswidget.h"
 #include "testwindow.h"
@@ -31,7 +32,7 @@ LyricsWidget::LyricsWidget( QWidget *parent )
 	: QWidget(parent)
 {
 	m_renderer = 0;
-	m_lastImage = QImage( 100, 100, QImage::Format_ARGB32 );
+	m_lastImage = QImage( 720, 480, QImage::Format_ARGB32 );
 }
 
 LyricsWidget::~LyricsWidget()
@@ -57,8 +58,9 @@ void LyricsWidget::paintEvent( QPaintEvent * )
 
 	int x = (width() - m_lastImage.width()) / 2;
 	int y = (height() - m_lastImage.height() ) / 2;
-
 	p.drawImage( x, y, m_lastImage );
+
+//	p.drawImage( 0, 0, m_lastImage.scaled( QSize(width() - 1, height() - 1), Qt::IgnoreAspectRatio, Qt::FastTransformation ) );
 }
 
 void LyricsWidget::setLyrics( const Lyrics& lyrics, const QString& artist, const QString& title )
@@ -70,7 +72,6 @@ void LyricsWidget::setLyrics( const Lyrics& lyrics, const QString& artist, const
 	if ( !artist.isEmpty() && !title.isEmpty() )
 		re->setTitlePageData( artist, title, 5000 );
 
-	//re->setVideoFile( "/home/tim/work/my/karlyriceditor/test/wffc_2004_canopy_accident.MPG" );
 	m_renderer = re;
 
 	updateGeometry();

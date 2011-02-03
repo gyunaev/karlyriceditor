@@ -64,6 +64,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	act_projectTest();
 		void	act_projectTestCDG();
 		void	act_projectExportLyricFile();
+		void	act_projectExportVideoFile();
 		void	act_projectSettings();
 
 		void	act_settingsGeneral();
