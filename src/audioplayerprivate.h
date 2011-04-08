@@ -1,17 +1,15 @@
 #ifndef AUDIOPLAYERPRIVATE_H
 #define AUDIOPLAYERPRIVATE_H
 
-#include <QObject>
+#include <QMutex>
 #include <QString>
 
 #include "ffmpeg_headers.h"
 #include <SDL/SDL.h>
 
 
-class AudioPlayerPrivate : public QObject
+class AudioPlayerPrivate
 {
-	Q_OBJECT
-
 	public:
 		AudioPlayerPrivate();
 
@@ -35,14 +33,17 @@ class AudioPlayerPrivate : public QObject
 		void	queueClear();
 
 	private:
+		QString			m_errorMsg;
+
+		// Access to everything below is guarded by mutex
+		mutable QMutex	m_mutex;
+
 		AVFormatContext *pFormatCtx;
 		int				 audioStream;
 		AVCodecContext  *aCodecCtx;
 		AVCodec         *pCodec;
 
 		bool			m_playing;
-		QString			m_errorMsg;
-
 		qint64			m_currentTime;
 		qint64			m_totalTime;
 

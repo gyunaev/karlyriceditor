@@ -33,16 +33,19 @@ AudioPlayerPrivate::AudioPlayerPrivate()
 
 bool AudioPlayerPrivate::isPlaying() const
 {
+	QMutexLocker m( &m_mutex );
 	return m_playing;
 }
 
 qint64 AudioPlayerPrivate::currentTime() const
 {
+	QMutexLocker m( &m_mutex );
 	return m_currentTime;
 }
 
 qint64 AudioPlayerPrivate::totalTime() const
 {
+	QMutexLocker m( &m_mutex );
 	return m_totalTime;
 }
 
@@ -61,8 +64,8 @@ bool AudioPlayerPrivate::init()
 	if ( SDL_Init (SDL_INIT_AUDIO ) )
 	{
 		QMessageBox::critical( 0,
-							  tr("SDL init failed"),
-							  tr("Cannot initialize audio subsystem:\n\n%1").arg(SDL_GetError()) );
+							  QObject::tr("SDL init failed"),
+							  QObject::tr("Cannot initialize audio subsystem:\n\n%1").arg(SDL_GetError()) );
 		return false;
 	}
 
@@ -71,6 +74,7 @@ bool AudioPlayerPrivate::init()
 
 void AudioPlayerPrivate::close()
 {
+	QMutexLocker m( &m_mutex );
 	SDL_PauseAudio( 1 );
 
 	// Close the codec
@@ -90,6 +94,8 @@ bool AudioPlayerPrivate::open( const QString& filename )
 {
 	// Close if opened
 	close();
+
+	QMutexLocker m( &m_mutex );
 
 	// Open the file
 	if ( av_open_input_file( &pFormatCtx, filename.toUtf8(), NULL, 0, NULL ) != 0 )
@@ -132,7 +138,6 @@ bool AudioPlayerPrivate::open( const QString& filename )
 	m_totalTime = av_rescale_q( pFormatCtx->streams[audioStream]->duration,
 							   pFormatCtx->streams[audioStream]->time_base,
 							   AV_TIME_BASE_Q ) / 1000;
-	qDebug("duration %d", m_totalTime );
 
 	aCodecCtx = pFormatCtx->streams[audioStream]->codec;
 
@@ -147,21 +152,6 @@ bool AudioPlayerPrivate::open( const QString& filename )
 
 	avcodec_open( aCodecCtx, aCodec );
 
-/*	// time_base
-	// frame_number
-	if (ic->duration != AV_NOPTS_VALUE) {
-		 int hours, mins, secs, us;
-		 secs = ic->duration / AV_TIME_BASE;
-		 us = ic->duration % AV_TIME_BASE;
-		 mins = secs / 60;
-		 secs %= 60;
-		 hours = mins / 60;
-		 mins %= 60;
-		 av_log(NULL, AV_LOG_INFO, "%02d:%02d:%02d.%02d", hours, mins, secs,
-				(100 * us) / AV_TIME_BASE);
-*/
-
-
 	// Now initialize the SDL audio device
 	SDL_AudioSpec wanted_spec, spec;
 
@@ -175,7 +165,7 @@ bool AudioPlayerPrivate::open( const QString& filename )
 
 	if ( SDL_OpenAudio( &wanted_spec, &spec ) < 0 )
 	{
-		m_errorMsg = tr("Cannot initialize audio device: %1") .arg( SDL_GetError() );
+		m_errorMsg = QObject::tr("Cannot initialize audio device: %1") .arg( SDL_GetError() );
 		return false;
 	}
 
@@ -194,32 +184,38 @@ void AudioPlayerPrivate::queueClear()
 
 void AudioPlayerPrivate::play()
 {
+	QMutexLocker m( &m_mutex );
 	m_playing = true;
 	SDL_PauseAudio( 0 );
 }
 
 void AudioPlayerPrivate::reset()
 {
-	av_seek_frame( pFormatCtx, audioStream, 0, 0 );
-	avcodec_flush_buffers( aCodecCtx );
-
-	queueClear();
+	seekTo( 0 );
 }
 
 void AudioPlayerPrivate::stop()
 {
+	QMutexLocker m( &m_mutex );
 	m_playing = false;
 	SDL_PauseAudio( 1 );
 }
 
 void AudioPlayerPrivate::seekTo( qint64 value )
 {
+	QMutexLocker m( &m_mutex );
 
+	av_seek_frame( pFormatCtx, audioStream, value * 10000, 0 );
+	avcodec_flush_buffers( aCodecCtx );
+
+	queueClear();
 }
 
 
 void AudioPlayerPrivate::SDL_audio_callback( Uint8 *stream, int len)
 {
+	QMutexLocker m( &m_mutex );
+
 	while ( len > 0 )
 	{
 		if ( m_sample_buf_idx >= m_sample_buf_size )
@@ -247,7 +243,6 @@ void AudioPlayerPrivate::SDL_audio_callback( Uint8 *stream, int len)
 
 bool AudioPlayerPrivate::MoreAudio()
 {
-	//while ( m_currentFrameNumber < frame )
 	while ( m_playing )
 	{
 		AVPacket packet;
@@ -268,8 +263,6 @@ bool AudioPlayerPrivate::MoreAudio()
 
 		m_currentTime = packet.pts / 10000;
 		pAudioPlayer->emitTickSignal( m_currentTime );
-
-		qDebug("current time: %d", m_currentTime );
 
 		// Save the orig data so we can call av_free_packet() on it
 		void * porigdata = packet.data;

@@ -56,6 +56,8 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 	private slots:
 		void	slotAudioTick( qint64 tickvalue );
 		void	seekSliderMoved( int newvalue );
+		void	seekSliderUp();
+		void	seekSliderDown();
 
 	private:
 		QString tickToString( qint64 tick );
@@ -63,6 +65,7 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 
 	private:
 		bool			m_ready;
+		bool			m_sliderDown; // do not update position
 };
 
 #endif // PLAYERWIDGET_H

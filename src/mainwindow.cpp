@@ -128,6 +128,8 @@ void MainWindow::checkNewVersionAvailable()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+	pAudioPlayer->stop();
+
 	if ( m_project && !tryCloseCurrentProject() )
 	{
 		event->ignore();

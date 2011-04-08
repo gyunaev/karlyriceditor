@@ -39,6 +39,7 @@ PlayerWidget::PlayerWidget(QWidget *parent)
 	setupUi(this);
 
 	m_ready = false;
+	m_sliderDown = false;
 
 	// Set up icons
 	btnFwd->setPixmap( QPixmap(":images/dryicons_forward.png") );
@@ -74,6 +75,8 @@ PlayerWidget::PlayerWidget(QWidget *parent)
 
 	// Connect the seek slider
 	connect( seekSlider, SIGNAL(sliderMoved(int)), this, SLOT(seekSliderMoved(int)) );
+	connect( seekSlider, SIGNAL(sliderPressed()), this, SLOT(seekSliderDown()) );
+	connect( seekSlider, SIGNAL(sliderReleased()), this, SLOT(seekSliderUp()) );
 }
 
 PlayerWidget::~PlayerWidget()
@@ -89,7 +92,12 @@ void PlayerWidget::slotAudioTick( qint64 tickvalue )
 	lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( tickvalue ) ) );
 	lblTimeRemaining->setText( tr("<b>-%1</b>") .arg( tickToString( remaining ) ) );
 
-	seekSlider->setValue( currentTime() * seekSlider->maximum() / totalTime() );
+	if ( !m_sliderDown )
+	{
+		int value = currentTime() * seekSlider->maximum() / totalTime();
+		if ( seekSlider->value() != value )
+			seekSlider->setValue( value );
+	}
 }
 
 QString PlayerWidget::tickToString( qint64 tickvalue )
@@ -215,6 +223,18 @@ void PlayerWidget::updatePlayerState( int newstate )
 	}
 
 	pMainWindow->updateState();
+}
+
+
+void PlayerWidget::seekSliderUp()
+{
+	pAudioPlayer->seekTo( seekSlider->value() * totalTime() / seekSlider->maximum() );
+	m_sliderDown = false;
+}
+
+void PlayerWidget::seekSliderDown()
+{
+	m_sliderDown = true;
 }
 
 void PlayerWidget::seekSliderMoved( int newvalue )
