@@ -281,7 +281,7 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	// Title
 	lyricrenderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
 								 m_project->tag( Project::Tag_Title ),
-								 5000 );
+								 m_project->tag( Project::Tag_CDG_titletime ).toInt() * 1000 );
 
 	// Preamble
 	lyricrenderer.setPreambleData( 4, 5000, 8 );

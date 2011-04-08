@@ -42,7 +42,20 @@ class TextRenderer : public LyricsRenderer
 		void	setColorSang( const QColor& color );
 		void	setPreambleData( unsigned int height, unsigned int timems, unsigned int count );
 		void	setTitlePageData( const QString& artist, const QString& title, unsigned int msec ); // duration = 0 - no title, default
+		void	setColorAlpha( int alpha ); // 0 - 255
 
+		// Typically lyrics are shown a little before they are being sung, and kept after they end.
+		// This function overrides default before (5000ms) and after (1000ms) lengths
+		void	setDurations( unsigned int before, unsigned int after );
+
+		// Some formats (like CD+G) draw lyrics pretty slow, which means if the lyrics screens
+		// change immediately, at the time the next page is being drawn it is already sung.
+		// This parameter changes the prefetch, meaning if its value is 1000, the new lyrics block
+		// is always shown at least 1000ms before it is being sing, even if it is necessary to cut the
+		// old block earlier. Default is zero.
+		void	setPrefetch( unsigned int prefetch );
+
+		// Draw a new lyrics image
 		virtual int	update( qint64 timing );
 
 		// Returns the lyrics bounding box for a line or for paragraph using the font specified,
@@ -82,7 +95,11 @@ class TextRenderer : public LyricsRenderer
 		unsigned int			m_preambleCount;	// how many preamble squares to draw for m_preambleLengthMs
 		QString					m_titleArtist;
 		QString					m_titleSong;
+
 		unsigned int			m_requestedTitleDuration;
+		unsigned int			m_beforeDuration;
+		unsigned int			m_afterDuration;
+		unsigned int			m_prefetchDuration;
 
 		// Handling the preamble stuff
 		int						m_preambleTimeLeft;	// Time left to show the current preamble - 5000 ... 0

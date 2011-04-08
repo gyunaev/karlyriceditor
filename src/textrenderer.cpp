@@ -42,7 +42,6 @@ static const QString actionSetSmallFont = QString(actionChar) + actionSmallFont;
 // Some preamble constants
 static const int PREAMBLE_SQUARE = 500; // 500ms for each square
 static const int PREAMBLE_MIN_PAUSE = 5000; // 5000ms minimum pause between verses for the preamble to appear
-static const int LYRICS_SHOW_ADVANCE = 5000; // Show the lyrics at least 5 seconds in advance
 
 
 TextRenderer::TextRenderer( int width, int height )
@@ -100,6 +99,13 @@ void TextRenderer::setColorSang( const QColor& color )
 	m_forceRedraw = true;
 }
 
+void TextRenderer::setColorAlpha( int alpha )
+{
+	m_colorTitle.setAlpha( alpha );
+	m_colorToSing.setAlpha( alpha );
+	m_colorSang.setAlpha( alpha );
+}
+
 void TextRenderer::setTitlePageData( const QString& artist, const QString& title, unsigned int msec )
 {
 	m_titleArtist = artist;
@@ -129,6 +135,10 @@ void TextRenderer::init()
 	m_lastSungTime = 0;
 	m_drawPreamble = false;
 
+	m_beforeDuration = 5000;
+	m_afterDuration = 1000;
+	m_prefetchDuration = 0;
+
 	m_lastLyricsText.clear();
 }
 
@@ -153,6 +163,20 @@ void TextRenderer::setCDGfonts( const Project * prj )
 	smallFont.setStyleStrategy( QFont::NoAntialias );
 	setRenderSmallFont( smallFont );
 
+	m_forceRedraw = true;
+}
+
+void TextRenderer::setDurations( unsigned int before, unsigned int after )
+{
+	m_beforeDuration = before;
+	m_afterDuration = after;
+
+	m_forceRedraw = true;
+}
+
+void TextRenderer::setPrefetch( unsigned int prefetch )
+{
+	m_prefetchDuration = prefetch;
 	m_forceRedraw = true;
 }
 
@@ -193,8 +217,8 @@ QString TextRenderer::lyricForTime( qint64 tickmark )
 	int pos;
 	qint64 nexttime;
 
-	// If there is a block within next one second, show it.
-	if ( m_lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= 1000 )
+	// If there is a block within the prefetch timing, show it.
+	if ( m_prefetchDuration > 0 && m_lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= m_prefetchDuration )
 	{
 		// We update the timing, but the preamble show/noshow does not change here
 		m_preambleTimeLeft = qMax( 0, (int) (nexttime - tickmark) );
@@ -206,7 +230,7 @@ QString TextRenderer::lyricForTime( qint64 tickmark )
 	if ( !m_lyrics.blockForTime( tickmark, block, pos, nexttime ) )
 	{
 		// Nothing active to show, so if there is a block within next five seconds, show it.
-		if ( m_lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= LYRICS_SHOW_ADVANCE )
+		if ( m_lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= m_beforeDuration )
 		{
 			m_preambleTimeLeft = qMax( 0, (int) (nexttime - tickmark) );
 
@@ -442,7 +466,7 @@ int TextRenderer::update( qint64 timing )
 	// Should we show the title?
 	if ( m_requestedTitleDuration > 0
 	&& timing < m_requestedTitleDuration
-	&& timing < (m_lyrics.block(0).first().first().timing - 1000) )
+	&& timing < (m_lyrics.firstLyric() - 1000) )
 	{
 		lyricstext = QString("%1%2\n\n%3\n\n%4Created by Karaoke Lyric Editor\n%5http://www.karlyriceditor.com/\n")
 						.arg( actionSetColorTitle )
@@ -513,3 +537,4 @@ int TextRenderer::update( qint64 timing )
 	m_forceRedraw = false;
 	return result;
 }
+

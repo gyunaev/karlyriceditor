@@ -16,19 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#include <sys/types.h>
-
-#define UINT64_C(c) c ## ULL
-
-extern "C"
-{
-#include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
-#include "libswscale/swscale.h"
-};
-
+#include "ffmpeg_headers.h"
 #include "ffmpegvideodecoder.h"
-
 
 
 class FFMpegVideoDecoderPriv
@@ -49,6 +38,8 @@ class FFMpegVideoDecoderPriv
 		QByteArray		m_buffer;
 		QString			m_errorMsg;
 		int				m_maxFrame;
+		int				m_fps_den;
+		int				m_fps_num;
 		int				m_currentFrameNumber;
 		QImage			m_currentFrameImage;
 };
@@ -72,9 +63,7 @@ void FFMpegVideoDecoderPriv::init()
 //
 FFMpegVideoDecoder::FFMpegVideoDecoder()
 {
-	avcodec_init();
-	avcodec_register_all();
-	av_register_all();
+	ffmpeg_init_once();
 
 	d = new FFMpegVideoDecoderPriv();
 
@@ -122,6 +111,12 @@ bool FFMpegVideoDecoder::openFile( const QString& filename )
 	if ( d->videoStream == -1 )
 		return false; // Didn't find a video stream
 
+	d->m_fps_den = d->pFormatCtx->streams[d->videoStream]->r_frame_rate.den;
+	d->m_fps_num = d->pFormatCtx->streams[d->videoStream]->r_frame_rate.num;
+
+	if ( d->m_fps_den == 60000 )
+		d->m_fps_den = 30000;
+	
 	// Get a pointer to the codec context for the video stream
 	d->pCodecCtx = d->pFormatCtx->streams[d->videoStream]->codec;
 
@@ -245,7 +240,10 @@ bool FFMpegVideoDecoderPriv::readFrame( int frame )
 QImage FFMpegVideoDecoder::frame( qint64 timems )
 {
 	// Use current frame?
-	int frame_for_time = ((timems * d->pCodecCtx->time_base.den) / d->pCodecCtx->time_base.num) / 1000;
+	int frame_for_time = ((timems * d->m_fps_num) / d->m_fps_den) / 1000;
+
+	if ( frame_for_time == 0 )
+		frame_for_time = 1;
 
 	// Loop if we know how many frames we have total
 	if ( d->m_maxFrame > 0 )

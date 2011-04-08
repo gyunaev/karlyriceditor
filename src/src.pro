@@ -1,13 +1,13 @@
 TEMPLATE = app
 TARGET = ../bin/karlyriceditor
 DEPENDPATH += .
-INCLUDEPATH += .
+INCLUDEPATH += /usr/local/ffmpeg/include
+LIBPATH += /usr/local/ffmpeg/lib
 
 # Input
 HEADERS += mainwindow.h \
     wizard_newproject.h \
     project.h \
-    phononhelper.h \
     playerwidget.h \
     playerbutton.h \
     editor.h \
@@ -34,12 +34,14 @@ HEADERS += mainwindow.h \
     ffmpegvideoencoder.h \
     videogenerator.h \
     lyricsevents.h \
-    background.h
+    background.h \
+    audioplayer.h \
+    ffmpeg_headers.h \
+    audioplayerprivate.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
     project.cpp \
-    phononhelper.cpp \
     playerwidget.cpp \
     playerbutton.cpp \
     editor.cpp \
@@ -63,9 +65,11 @@ SOURCES += mainwindow.cpp \
     ffmpegvideoencoder.cpp \
     videogenerator.cpp \
     lyricsevents.cpp \
-    background.cpp
+    background.cpp \
+    audioplayer.cpp \
+    audioplayerprivate.cpp \
+    ffmpeg_headers.cpp
 RESOURCES += resources.qrc
-QT += phonon
 FORMS += mainwindow.ui \
     wiznewproject_lyrictype.ui \
     wiznewproject_lyrics.ui \
@@ -84,10 +88,8 @@ LIBS += -lavformat \
     -lavcodec \
     -lswscale \
     -lavutil \
-    -lfaac \
-    -lfaad \
     -lmp3lame \
-    -ltheoraenc \
-    -ltheoradec \
     -lx264 \
+    -lxvidcore \
+	-lSDL \
     -lbz2

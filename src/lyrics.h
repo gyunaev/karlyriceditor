@@ -109,12 +109,16 @@ class Lyrics
 		// Returns the events
 		LyricsEvents events() const;
 
+		// Returns first non-empty lyric timing
+		qint64	firstLyric() const;
+
 	private:
 		// Compile the lyrics
 		void	compile();
 
 		QList<Block>	m_lyrics;
 		LyricsEvents	m_events;
+		qint64			m_textStarts;	// first non-empty lyric
 
 		// Used during scanning lyrics
 		bool			m_scanning;

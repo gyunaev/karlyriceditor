@@ -20,7 +20,6 @@
 #define WIZARD_NEWPROJECT_H
 
 #include <QWizardPage>
-#include <phonon/mediaobject.h>
 
 #include "ui_wiznewproject_musicfile.h"
 #include "ui_wiznewproject_lyrics.h"
@@ -79,11 +78,9 @@ class PageMusicFile : public QWizardPage, public Ui::WizNewProject_MusicFile
 		bool validatePage();
 
 	public slots:
-		void	phonon_StateChanged ( Phonon::State newstate, Phonon::State oldstate );
 		void	browse();
 
 	private:
-		Phonon::MediaObject *	m_mediaObject;
 		Project *	m_project;
 		QString		m_lastMusicFile;
 };

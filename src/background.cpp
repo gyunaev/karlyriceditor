@@ -74,6 +74,9 @@ qint64 BackgroundVideo::doDraw( QImage& image, qint64 timing )
 {
 	QImage videoframe = m_videoDecoder.frame( timing );
 
+	if ( videoframe.isNull() )
+		return 0;
+
 	if ( image.isNull() )
 		image = QImage( videoframe.size(), videoframe.format() );
 

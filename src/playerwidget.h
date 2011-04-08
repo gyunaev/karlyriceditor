@@ -21,12 +21,10 @@
 
 #include <QDockWidget>
 
-#include <phonon/mediaobject.h>
-#include <phonon/audiooutput.h>
-
 #include "playerbutton.h"
 #include "ui_playerwidget.h"
 
+class AudioPlayer;
 class Project;
 
 class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
@@ -37,9 +35,8 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 		PlayerWidget(QWidget *parent = 0);
 		~PlayerWidget();
 
-		// Sets the current music file from a project. This operation is asynchronous, everything is
-		// handled in phonon_StateChanged() and propagated via MainWindow::updateState().
-		void	setMusicFile( Project * project );
+		// Sets the current music file from a project.
+		bool	openMusicFile( Project * project );
 
 		// Is music file ready to play?
 		bool	isReady() const { return m_ready; }
@@ -53,22 +50,19 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 	public slots:
 		void	btn_playerStop();
 		void	btn_playerPlayPause();
-
-	private slots:
-		void	phonon_StateChanged ( Phonon::State newstate, Phonon::State oldstate );
-		void	phonon_Tick( qint64 tickvalue );
-
 		void	btn_playerSeekForward();
 		void	btn_playerSeekBackward();
 
+	private slots:
+		void	slotAudioTick( qint64 tickvalue );
+		void	seekSliderMoved( int newvalue );
+
 	private:
 		QString tickToString( qint64 tick );
+		void	updatePlayerState( int state );
 
 	private:
-		Phonon::MediaObject *	m_mediaObject;
-		Phonon::AudioOutput *	m_mediaAudioOutput;
-
-		bool					m_ready;
+		bool			m_ready;
 };
 
 #endif // PLAYERWIDGET_H

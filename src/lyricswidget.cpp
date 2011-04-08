@@ -68,6 +68,7 @@ void LyricsWidget::setLyrics( const Lyrics& lyrics, const QString& artist, const
 	TextRenderer * re = new TextRenderer( 100, 100 );
 	re->setData( lyrics );
 	re->setPreambleData( 5, 5000, 10 );
+	//re->setColorAlpha( 128 );
 
 	if ( !artist.isEmpty() && !title.isEmpty() )
 		re->setTitlePageData( artist, title, 5000 );

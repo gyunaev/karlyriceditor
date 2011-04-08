@@ -47,15 +47,7 @@
  * SUCH DAMAGE.                                                           *
  **************************************************************************/
 
-#define UINT64_C(c) c ## ULL
-
-extern "C"
-{
-#include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
-#include "libswscale/swscale.h"
-};
-
+#include "ffmpeg_headers.h"
 #include "ffmpegvideoencoder.h"
 
 class FFMpegVideoEncoderPriv
@@ -120,7 +112,6 @@ class FFMpegVideoEncoderPriv
 FFMpegVideoEncoderPriv::FFMpegVideoEncoderPriv()
 {
    initVars();
-   initCodec();
 }
 
 FFMpegVideoEncoderPriv::~FFMpegVideoEncoderPriv()
@@ -334,17 +325,6 @@ void FFMpegVideoEncoderPriv::initVars()
    img_convert_ctx=0;
 }
 
-
-/**
-   \brief Register the codecs
-**/
-bool FFMpegVideoEncoderPriv::initCodec()
-{
-   avcodec_init();
-   av_register_all();
-
-   return true;
-}
 
 
 /**
@@ -575,6 +555,7 @@ bool FFMpegVideoEncoderPriv::convertImage_sws(const QImage &img)
 
 FFMpegVideoEncoder::FFMpegVideoEncoder()
 {
+	ffmpeg_init_once();
 	d = new FFMpegVideoEncoderPriv();
 }
 

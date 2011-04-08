@@ -22,6 +22,7 @@ Lyrics::Lyrics()
 {
 	m_scanning = false;
 	m_added_eofs = 0;
+	m_textStarts = 0;
 
 	m_currentLyric.timing = -1;
 	m_currentLyric.pitch = -1;
@@ -35,6 +36,7 @@ void Lyrics::beginLyrics()
 {
 	m_scanning = true;
 	m_added_eofs = 0;
+	m_textStarts = 0;
 
 	m_currentLyric.timing = -1;
 	m_currentLyric.pitch = -1;
@@ -218,6 +220,9 @@ void Lyrics::compile()
 				if ( lentry.text.trimmed().isEmpty() )
 					continue;
 
+				if ( m_textStarts == 0 )
+					m_textStarts = lentry.timing;
+
 				qint64 starttime = line[pos].timing;
 				qint64 endtime = (pos + 1 == line.size()) ? endlinetime : line[pos+1].timing;
 				int blockpos = binfo.text.size();
@@ -318,4 +323,9 @@ bool Lyrics::addBackgroundEvent( qint64 timing, const QString& text )
 LyricsEvents Lyrics::events() const
 {
 	return m_events;
+}
+
+qint64 Lyrics::firstLyric() const
+{
+	return m_textStarts;
 }

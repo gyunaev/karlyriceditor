@@ -20,10 +20,9 @@
 #include <QWhatsThis>
 #include <QMessageBox>
 #include <QFileDialog>
-#include <phonon/mediasource.h>
 
+#include "audioplayer.h"
 #include "project.h"
-#include "phononhelper.h"
 #include "wizard_newproject.h"
 
 namespace WizardNewProject
@@ -80,17 +79,13 @@ PageMusicFile::PageMusicFile( Project * project, QWidget *parent )
 	setupUi( this );
 
 	m_project = project;
-	m_mediaObject = new Phonon::MediaObject(this);
 	lblPicture->setPixmap( QPixmap( ":/images/nocover.png" ) );
 
 	connect( btnBrowse, SIGNAL( clicked() ), this, SLOT( browse() ) );
-	connect( m_mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)),
-			 this, SLOT(phonon_StateChanged(Phonon::State,Phonon::State)) );
 }
 
 PageMusicFile::~PageMusicFile()
 {
-	delete m_mediaObject;
 }
 
 void PageMusicFile::browse()
@@ -101,9 +96,16 @@ void PageMusicFile::browse()
 	if ( filename.isEmpty() )
 		return;
 
-	// Set the source, and wait for state change
-	m_mediaObject->clear();
-	m_mediaObject->setCurrentSource( filename );
+	// Try to open it
+	if ( pAudioPlayer->open( filename ) )
+	{
+		leSongFile->setText( filename );
+
+		//FIXME!!
+	//	leTitle->setText( PhononHelper::getTag( m_mediaObject, Phonon::TitleMetaData ) );
+	//	leArtist->setText( PhononHelper::getTag( m_mediaObject, Phonon::ArtistMetaData ) );
+	//	leAlbum->setText( PhononHelper::getTag( m_mediaObject, Phonon::AlbumMetaData ) );
+	}
 }
 
 bool PageMusicFile::validatePage()
@@ -115,6 +117,9 @@ bool PageMusicFile::validatePage()
 							   tr("You must select a music file to continue.") );
 		return false;
 	}
+
+	if ( !pAudioPlayer->open( leSongFile->text() ) )
+		return false;
 
 	if ( leTitle->text().isEmpty() )
 	{
@@ -142,42 +147,6 @@ bool PageMusicFile::validatePage()
 	return true;
 }
 
-
-void PageMusicFile::phonon_StateChanged ( Phonon::State newstate, Phonon::State )
-{
-	if ( newstate != Phonon::StoppedState && newstate != Phonon::ErrorState )
-		return;
-
-	if ( newstate == Phonon::ErrorState
-		 || !m_mediaObject->isSeekable()
-		 || m_mediaObject->totalTime() == 0 )
-	{
-		// Phonon tends to send duplicate StateChanged messages when the previous file cannot be loaded
-		if ( m_lastMusicFile != m_mediaObject->currentSource().fileName() )
-		{
-			QMessageBox::critical( 0,
-							   tr("Error loading file"),
-							   tr("Music file %1 cannot be loaded.")
-								.arg( m_mediaObject->currentSource().fileName() ) );
-
-			m_lastMusicFile = m_mediaObject->currentSource().fileName();
-		}
-
-		return;
-	}
-
-	if ( newstate != Phonon::StoppedState )
-		return;
-
-	// Fill the data
-	m_lastMusicFile = m_mediaObject->currentSource().fileName();
-	leSongFile->setText( m_mediaObject->currentSource().fileName() );
-
-	// Unfortunately Phonon-parsed metadata is a complete disaster.
-	leTitle->setText( PhononHelper::getTag( m_mediaObject, Phonon::TitleMetaData ) );
-	leArtist->setText( PhononHelper::getTag( m_mediaObject, Phonon::ArtistMetaData ) );
-	leAlbum->setText( PhononHelper::getTag( m_mediaObject, Phonon::AlbumMetaData ) );
-}
 
 //
 // "Choose lyrics" page

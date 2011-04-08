@@ -26,6 +26,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 
+#include "audioplayer.h"
 #include "wizard_newproject.h"
 #include "mainwindow.h"
 #include "playerwidget.h"
@@ -91,13 +92,6 @@ MainWindow::MainWindow()
 
 	// Update window state
 	updateState();
-
-	// Show some message boxes about Phonon
-	GentleMessageBox::warning( this,
-							   "phonongstreamer",
-							   tr("Advice: set Phonon backend to Xine?"),
-							   tr("GStreamer Phonon backend is less reliable than Xine for reporting time, "
-								  "so it is suggested to use Xine backend." ) );
 
 	checkNewVersionAvailable();
 }
@@ -376,7 +370,7 @@ void MainWindow::setCurrentProject( Project * proj )
 	statusBar()->showMessage( tr("Loading the music file %1") .arg(m_project->musicFile()), 2000);
 
 	// Set the music file into player; it will call updateState()
-	m_player->setMusicFile( m_project );
+	m_player->openMusicFile( m_project );
 }
 
 void MainWindow::act_editInsertTag()
@@ -532,7 +526,7 @@ void MainWindow::act_projectSettings()
 	if ( ps.exec() == QDialog::Accepted )
 	{
 		if ( ps.musicFileChanged() )
-			m_player->setMusicFile( m_project );
+			m_player->openMusicFile( m_project );
 	}
 }
 

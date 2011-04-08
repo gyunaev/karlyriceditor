@@ -21,7 +21,8 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length, const 
 	lyricrenderer.setData( lyrics );
 
 	// Initialize colors from m_project
-	lyricrenderer.setColorBackground( Project::Tag_Video_bgcolor );
+	lyricrenderer.setRenderFont( QFont( m_project->tag(Project::Tag_Video_font), m_project->tag(Project::Tag_Video_fontsize).toInt()) );
+	lyricrenderer.setColorBackground( m_project->tag( Project::Tag_Video_bgcolor ) );
 	lyricrenderer.setColorTitle( m_project->tag( Project::Tag_Video_infocolor ) );
 	lyricrenderer.setColorSang( m_project->tag( Project::Tag_Video_inactivecolor ) );
 	lyricrenderer.setColorToSing( m_project->tag( Project::Tag_Video_activecolor ) );
