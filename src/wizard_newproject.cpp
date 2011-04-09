@@ -100,11 +100,7 @@ void PageMusicFile::browse()
 	if ( pAudioPlayer->open( filename ) )
 	{
 		leSongFile->setText( filename );
-
-		//FIXME!!
-	//	leTitle->setText( PhononHelper::getTag( m_mediaObject, Phonon::TitleMetaData ) );
-	//	leArtist->setText( PhononHelper::getTag( m_mediaObject, Phonon::ArtistMetaData ) );
-	//	leAlbum->setText( PhononHelper::getTag( m_mediaObject, Phonon::AlbumMetaData ) );
+		pAudioPlayer->close();
 	}
 }
 

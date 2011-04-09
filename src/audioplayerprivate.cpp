@@ -1,11 +1,25 @@
+/**************************************************************************
+ *  Karlyriceditor - a lyrics editor for Karaoke songs                    *
+ *  Copyright (C) 2009 George Yunaev, support@karlyriceditor.com          *
+ *                                                                        *
+ *  This program is free software: you can redistribute it and/or modify  *
+ *  it under the terms of the GNU General Public License as published by  *
+ *  the Free Software Foundation, either version 3 of the License, or     *
+ *  (at your option) any later version.                                   *
+ *																	      *
+ *  This program is distributed in the hope that it will be useful,       *
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *  GNU General Public License for more details.                          *
+ *                                                                        *
+ *  You should have received a copy of the GNU General Public License     *
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
+ **************************************************************************/
+
 #include <QMessageBox>
 
 #include "audioplayer.h"
 #include "audioplayerprivate.h"
-
-//#ifdef __MINGW32__
-//#undef main /* Prevents SDL from overriding main() */
-//#endif
 
 #define SDL_AUDIO_BUFFER_SIZE 1024
 
@@ -23,6 +37,7 @@ AudioPlayerPrivate::AudioPlayerPrivate()
 	aCodecCtx = 0;
 	pCodec = 0;
 
+	m_audioOpened = false;
 	m_playing = false;
 	m_currentTime = 0;
 	m_totalTime = 0;
@@ -84,6 +99,12 @@ void AudioPlayerPrivate::close()
 	// Close the video file
 	if ( pFormatCtx )
 		av_close_input_file( pFormatCtx );
+
+	if ( m_audioOpened )
+	{
+		SDL_CloseAudio();
+		m_audioOpened = false;
+	}
 
 	pFormatCtx = 0;
 	aCodecCtx = 0;
@@ -169,6 +190,8 @@ bool AudioPlayerPrivate::open( const QString& filename )
 		return false;
 	}
 
+	m_audioOpened = true;
+
 	// Init the packet queue
 	queueClear();
 	return true;
@@ -211,7 +234,7 @@ void AudioPlayerPrivate::seekTo( qint64 value )
 	queueClear();
 }
 
-
+// Called from SDL thread - no GUI/Widget functions!
 void AudioPlayerPrivate::SDL_audio_callback( Uint8 *stream, int len)
 {
 	QMutexLocker m( &m_mutex );
@@ -241,6 +264,7 @@ void AudioPlayerPrivate::SDL_audio_callback( Uint8 *stream, int len)
 	}
 }
 
+// Called from the callback - no GUI/Widget functions!
 bool AudioPlayerPrivate::MoreAudio()
 {
 	while ( m_playing )
@@ -262,7 +286,9 @@ bool AudioPlayerPrivate::MoreAudio()
 		m_sample_buffer.clear();
 
 		m_currentTime = packet.pts / 10000;
-		pAudioPlayer->emitTickSignal( m_currentTime );
+
+		// pAudioPlayer->emitTickSignal( m_currentTime );
+		QMetaObject::invokeMethod( pAudioPlayer, "emitTickSignal", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
 
 		// Save the orig data so we can call av_free_packet() on it
 		void * porigdata = packet.data;

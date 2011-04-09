@@ -546,9 +546,9 @@ void MainWindow::act_helpAbout()
 	ui_about.setupUi( &dlg );
 
 	ui_about.labelAbout->setText( tr("<b>Karaoke Lyrics Editor version %1.%2</b><br><br>"
-			"Copyright (C) George Yunaev 2009, <a href=\"mailto:support@karlyriceditor.com\">support@karlyriceditor.com</a><br><br>"
+			"Copyright (C) George Yunaev 2009-2011, <a href=\"mailto:support@karlyriceditor.com\">support@karlyriceditor.com</a><br><br>"
 			"Web site: <a href=\"http://www.karlyriceditor.com\">www.karlyriceditor.com</a><br><br>"
-			"This program is licensed under terms of GNU General Public License<br>"
+			"This program is licensed under terms of GNU General Public License "
 			"version 3; see LICENSE file for details.") .arg(APP_VERSION_MAJOR) .arg(APP_VERSION_MINOR) );
 
 	dlg.exec();

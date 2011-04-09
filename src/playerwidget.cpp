@@ -95,6 +95,7 @@ void PlayerWidget::slotAudioTick( qint64 tickvalue )
 	if ( !m_sliderDown )
 	{
 		int value = currentTime() * seekSlider->maximum() / totalTime();
+
 		if ( seekSlider->value() != value )
 			seekSlider->setValue( value );
 	}
