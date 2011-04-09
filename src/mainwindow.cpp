@@ -737,12 +737,7 @@ void MainWindow::act_projectExportVideoFile()
 	if ( !editor->exportLyrics( &lyrics ) )
 		return;
 
-	QString outfile = QFileDialog::getSaveFileName( 0, tr("Export video to a file") );
-
-	if ( outfile.isEmpty() )
-		return;
 
 	VideoGenerator videogen( m_project );
-
-	videogen.generate( lyrics, m_player->totalTime(), outfile );
+	videogen.generate( lyrics, m_player->totalTime() );
 }

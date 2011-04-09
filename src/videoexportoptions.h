@@ -1,6 +1,6 @@
 /**************************************************************************
  *  Karlyriceditor - a lyrics editor for Karaoke songs                    *
- *  Copyright (C) 2009 George Yunaev, support@karlyriceditor.com          *
+ *  Copyright (C) 2009-2011 George Yunaev, support@karlyriceditor.com     *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
  *  it under the terms of the GNU General Public License as published by  *
@@ -16,31 +16,41 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#ifndef PROJECTSETTINGS_H
-#define PROJECTSETTINGS_H
+#ifndef VIDEOEXPORTOPTIONS_H
+#define VIDEOEXPORTOPTIONS_H
 
 #include <QDialog>
-#include "ui_dialog_projectsettings.h"
+#include "ui_video_export_params.h"
+#include "project.h"
 
-class Project;
 
-class ProjectSettings : public QDialog, public Ui::DialogProjectSettings
+class VideoExportOptionsDialog : public QDialog, public Ui::VideoExportParams
 {
-	Q_OBJECT
+    Q_OBJECT
 
 	public:
-		ProjectSettings( Project* proj, bool showtype = true, QWidget * parent = 0 );
-		bool	musicFileChanged() const { return m_musicFileChanged; }
+		VideoExportOptionsDialog( Project * project, QWidget *parent = 0 );
+
+		// Index lookups
+		static QSize	getVideoSize( Project * project );
+		static void		getFPS( Project * project, unsigned int * num, unsigned int * den );
+		static QString	getEncoding( Project * project );
+		static QString	getContainer( Project * project );
 
 	public slots:
-		void	browseMusicFile();
-		void	changeProjectType();
+		void	autodetectFontSize();
+		void	showPreview();
+		void	browseOutputVideo();
 		void	accept();
+
+	public:
+		QString	m_outputVideo;
+
+	private:
+		void	setBoxIndex( Project::Tag tag, QComboBox * box );
 
 	private:
 		Project*	m_project;
-		bool		m_musicFileChanged; // to reinitialize the player if changed
-		bool		m_generalTabShown;
 };
 
-#endif // PROJECTSETTINGS_H
+#endif // VIDEOEXPORTOPTIONS_H

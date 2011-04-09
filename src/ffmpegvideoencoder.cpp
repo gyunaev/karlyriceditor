@@ -34,7 +34,7 @@ class FFMpegVideoEncoderPriv
 		FFMpegVideoEncoderPriv();
 		~FFMpegVideoEncoderPriv();
 
-		bool createFile( const QString& filename );
+		bool createFile( const QString& filename, const QString& outformat );
 		bool close();
 		int encodeImage( qint64 timing, const QImage & img);
 
@@ -44,10 +44,14 @@ class FFMpegVideoEncoderPriv
 		unsigned int	m_height;
 		unsigned int	m_videobitrate;
 		unsigned int	m_videogop; // maximal interval in frames between keyframes
-		unsigned int	m_videofps;
+		unsigned int	m_time_base_num;
+		unsigned int	m_time_base_den;
 
 		// Do we also have an audio source?
 		AudioPlayerPrivate * m_aplayer;
+
+		// Error message
+		QString		m_errorMsg;
 
 	private:
 		bool convertImage_sws(const QImage &img);
@@ -94,8 +98,10 @@ FFMpegVideoEncoderPriv::~FFMpegVideoEncoderPriv()
 	close();
 }
 
-bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
+bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString& outformat )
 {
+	int size;
+
 	// If we had an open video, close it.
 	close();
 
@@ -107,32 +113,32 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 		return false;
 
 	// Allocate output format
-	pOutputFormat = guess_format(NULL, fileName.toStdString().c_str(), NULL);
+	pOutputFormat = av_guess_format( outformat.toUtf8().data(), fileName.toUtf8().data(), 0 );
 
 	if ( !pOutputFormat )
 	{
-		printf("Could not deduce output format from file extension: using MPEG.\n");
-		pOutputFormat = guess_format("mpeg", NULL, NULL);
+		m_errorMsg = QString("Could not guess the output format %1") .arg(outformat);
+		goto cleanup;
 	}
 
 	pOutputCtx = avformat_alloc_context();
 
 	if ( !pOutputCtx )
 	{
-		printf("Error allocating format context\n");
-		return false;
+		m_errorMsg = "Error allocating format context";
+		goto cleanup;
 	}
 
 	pOutputCtx->oformat = pOutputFormat;
-	strncpy( pOutputCtx->filename, fileName.toUtf8(), sizeof(pOutputCtx->filename) );
+	strncpy( pOutputCtx->filename, fileName.toUtf8().data(), sizeof(pOutputCtx->filename) );
 
 	// Add the video stream, index 0
 	pVideoStream = av_new_stream( pOutputCtx, 0 );
 
 	if ( !pVideoStream )
 	{
-		printf("Could not allocate video stream\n");
-		return false;
+		m_errorMsg = "Could not allocate video stream";
+		goto cleanup;
 	}
 
 	pVideoCodecCtx = pVideoStream->codec;
@@ -142,8 +148,9 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 	pVideoCodecCtx->bit_rate = m_videobitrate;
 	pVideoCodecCtx->width = m_width;
 	pVideoCodecCtx->height = m_height;
-	pVideoCodecCtx->time_base.den = 25;
-	pVideoCodecCtx->time_base.num = 1;
+	pVideoCodecCtx->time_base.num = m_time_base_num;
+	pVideoCodecCtx->time_base.den = m_time_base_den;
+
 	pVideoCodecCtx->gop_size = m_videogop;
 	pVideoCodecCtx->pix_fmt = PIX_FMT_YUV420P;
 
@@ -155,8 +162,8 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 
 		if ( !pAudioStream )
 		{
-			printf("Could not allocate audio stream\n");
-			return false;
+			m_errorMsg = "Could not allocate audio stream";
+			goto cleanup;
 		}
 
 		// Copy the stream data
@@ -206,15 +213,15 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 
 	if ( !pCodec )
 	{
-		printf("codec not found\n");
-		return false;
+		m_errorMsg = "Video codec not found";
+		goto cleanup;
 	}
 
 	// open the codec
 	if ( avcodec_open( pVideoCodecCtx, pCodec ) < 0 )
 	{
-		printf("could not open codec\n");
-		return false;
+		m_errorMsg = "Could not open video codec";
+		goto cleanup;
 	}
 
 	// Allocate memory for output
@@ -222,31 +229,75 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 	outbuf = new uint8_t[ outbuf_size ];
 
 	if ( !outbuf )
-		return false;
+	{
+		m_errorMsg = "Could not open allocate output buffer";
+		goto cleanup;
+	}
 
 	// Allocate the YUV frame
 	ppicture = avcodec_alloc_frame();
 
 	if ( !ppicture )
-		return false;
+	{
+		m_errorMsg = "Could not open allocate picture frame buffer";
+		goto cleanup;
+	}
 
-	int size = avpicture_get_size( pVideoCodecCtx->pix_fmt, pVideoCodecCtx->width, pVideoCodecCtx->height );
+	size = avpicture_get_size( pVideoCodecCtx->pix_fmt, pVideoCodecCtx->width, pVideoCodecCtx->height );
 	picture_buf = new uint8_t[size];
 
 	if ( !picture_buf )
-		return false;
+	{
+		m_errorMsg = "Could not open allocate picture buffer";
+		goto cleanup;
+	}
 
 	// Setup the planes
 	avpicture_fill( (AVPicture *)ppicture, picture_buf,pVideoCodecCtx->pix_fmt, pVideoCodecCtx->width, pVideoCodecCtx->height );
 
-	if ( url_fopen( &pOutputCtx->pb, fileName.toStdString().c_str(), URL_WRONLY) < 0 )
+	if ( url_fopen( &pOutputCtx->pb, fileName.toUtf8().data(), URL_WRONLY) < 0 )
 	{
-		printf( "Could not open '%s'\n", fileName.toStdString().c_str());
-		return false;
+		m_errorMsg = "Could not create the video file";
+		goto cleanup;
 	}
 
 	av_write_header(pOutputCtx);
 	return true;
+
+cleanup:
+	if ( pOutputCtx )
+	{
+		// free the streams
+		for ( int i = 0; i < pOutputCtx->nb_streams; i++ )
+		{
+			av_freep(&pOutputCtx->streams[i]->codec);
+			av_freep(&pOutputCtx->streams[i]);
+		}
+
+		// Free the format
+		av_free( pOutputCtx );
+		pOutputCtx = 0;
+	}
+
+	if ( outbuf )
+	{
+		delete[] outbuf;
+		outbuf = 0;
+	}
+
+	if ( picture_buf )
+	{
+		delete[] picture_buf;
+		picture_buf = 0;
+	}
+
+	if ( ppicture )
+	{
+		av_free(ppicture);
+		ppicture = 0;
+	}
+
+	return false;
 }
 
 bool FFMpegVideoEncoderPriv::close()
@@ -455,16 +506,20 @@ int FFMpegVideoEncoder::encodeImage( qint64 timing, const QImage & img)
 	return d->encodeImage( timing, img );
 }
 
-bool FFMpegVideoEncoder::createFile( const QString& filename, unsigned int width, unsigned int height,
-									unsigned int videobitrate,  unsigned int fps, unsigned int gop,
-									AudioPlayer * audio )
+QString FFMpegVideoEncoder::createFile( const QString& filename, const QString& outformat, QSize size,
+									unsigned int videobitrate, unsigned int time_base_num,
+									unsigned int time_base_den, unsigned int gop, AudioPlayer * audio )
 {
 	d->m_aplayer = audio ? audio->impl() : 0;
-	d->m_width = width;
-	d->m_height = height;
+	d->m_width = size.width();
+	d->m_height = size.height();
 	d->m_videobitrate = videobitrate;
-	d->m_videofps = fps;
+	d->m_time_base_den = time_base_den;
+	d->m_time_base_num = time_base_num;
 	d->m_videogop = gop;
 
-	return d->createFile( filename );
+	if ( d->createFile( filename, outformat ) )
+		return QString();
+
+	return d->m_errorMsg;
 }

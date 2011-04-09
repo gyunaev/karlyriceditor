@@ -5,20 +5,37 @@
 #include "audioplayer.h"
 #include "videogenerator.h"
 #include "textrenderer.h"
+#include "videoexportoptions.h"
 #include "ffmpegvideoencoder.h"
 
 
 VideoGenerator::VideoGenerator( Project * prj )
 {
 	m_project = prj;
-	m_size = QSize( 720, 480 );
-	m_fps = 25;
 }
 
-void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length, const QString& outfile )
+
+void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 {
+	// Show the dialog with video options
+	VideoExportOptionsDialog dlg( m_project );
+
+	if ( dlg.exec() != QDialog::Accepted )
+		return;
+
+	// Validate params
+	unsigned int num, den;
+	QSize videosize = dlg.getVideoSize( m_project );
+	dlg.getFPS( m_project, &num, &den );
+
+	if ( videosize.isEmpty() || num == 0 || den == 0 )
+	{
+		QMessageBox::critical( 0, "Invalid parameters", "Video size or FPS is not valid" );
+		return;
+	}
+
 	// Prepare the renderer
-	TextRenderer lyricrenderer( m_size.width(), m_size.height() );
+	TextRenderer lyricrenderer( videosize.width(), videosize.height() );
 	lyricrenderer.setData( lyrics );
 
 	// Initialize colors from m_project
@@ -31,45 +48,51 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length, const 
 	// Title
 	lyricrenderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
 								 m_project->tag( Project::Tag_Title ),
-								 5000 );
+								 m_project->tag( Project::Tag_Video_titletime ).toInt() * 1000 );
 
 	// Preamble
-	lyricrenderer.setPreambleData( 4, 5000, 8 );
+	if ( m_project->tag( Project::Tag_Video_preamble).toInt() != 0 )
+		lyricrenderer.setPreambleData( 4, 5000, 8 );
 
 	// Video encoder
 	FFMpegVideoEncoder encoder;
 
-	if ( !encoder.createFile( outfile,
-							 m_size.width(),
-							 m_size.height(),
-							 2000000,
-							 25,
-							 25,
-							 pAudioPlayer) )
+	QString errmsg = encoder.createFile( dlg.m_outputVideo,
+										dlg.getContainer( m_project ),
+										videosize,
+										2000000,
+										num, den,
+										m_project->tag( Project::Tag_Video_AllKeyframes ).toInt() > 0 ? 1 : (int) (num * 5 / den), // every 5 secs
+										m_project->tag( Project::Tag_Video_ExportNoAudio).toInt() > 0 ? 0 : pAudioPlayer );
+
+	if ( !errmsg.isEmpty() )
 	{
-		QMessageBox::critical( 0, "Cannot write video", "Cannot create video file" );
+		QMessageBox::critical( 0,
+							  "Cannot write video",
+							  QString("Cannot create video file: %1") .arg(errmsg) );
 		return;
 	}
 
 	// Pop up progress dialog
-	QProgressDialog dlg ("Rendering video lyrics",
+	QProgressDialog progressdlg ("Rendering video lyrics",
 						 QString::null,
 						 0,
 						 99 );
 
-	dlg.setMinimumDuration( 2000 );
-	dlg.setValue( 0 );
+	progressdlg.setValue( 0 );
+	progressdlg.show();
 
 	qint64 dialog_step = total_length / 100;
-	qint64 time_step = 1000 / m_fps;
+	qint64 time_step = (1000 * den) / num;
 
 	// Rendering
 	for ( qint64 time = 0; time < total_length; time += time_step )
 	{
+		qDebug("time %d, total %d, step %d", (int) time, (int) total_length, (int) time_step );
 		// Should we show the next step?
-		if ( time / dialog_step > dlg.value() )
+		if ( time / dialog_step > progressdlg.value() )
 		{
-			dlg.setValue( time / dialog_step );
+			progressdlg.setValue( time / dialog_step );
 			qApp->processEvents( QEventLoop::ExcludeUserInputEvents );
 		}
 

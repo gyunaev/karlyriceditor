@@ -37,7 +37,8 @@ HEADERS += mainwindow.h \
     background.h \
     audioplayer.h \
     ffmpeg_headers.h \
-    audioplayerprivate.h
+    audioplayerprivate.h \
+    videoexportoptions.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -68,7 +69,8 @@ SOURCES += mainwindow.cpp \
     background.cpp \
     audioplayer.cpp \
     audioplayerprivate.cpp \
-    ffmpeg_headers.cpp
+    ffmpeg_headers.cpp \
+    videoexportoptions.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \
     wiznewproject_lyrictype.ui \
@@ -82,7 +84,8 @@ FORMS += mainwindow.ui \
     dialog_projectsettings.ui \
     dialog_settings.ui \
     dialog_selectencoding.ui \
-    gentlemessagebox.ui
+    gentlemessagebox.ui \
+    video_export_params.ui
 win32-g++-*::LIBS += -lwsock32
 LIBS += -lavformat \
     -lavcodec \

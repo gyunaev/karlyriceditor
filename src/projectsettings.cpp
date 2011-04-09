@@ -80,18 +80,6 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 	fontCDG->setFontFilters( QFontComboBox::ScalableFonts | QFontComboBox::MonospacedFonts | QFontComboBox::ProportionalFonts );
 	cbCDGPreamble->setChecked( m_project->tag( Project::Tag_CDG_preamble).toInt() );
 
-	// Video tab
-	btnVideoColorActive->setColor( m_project->tag( Project::Tag_Video_activecolor ) );
-	btnVideoColorBg->setColor( m_project->tag( Project::Tag_Video_bgcolor ) );
-	btnVideoColorInactive->setColor( m_project->tag( Project::Tag_Video_inactivecolor ) );
-	btnVideoColorInfo->setColor( m_project->tag( Project::Tag_Video_infocolor ) );
-	fontVideo->setCurrentFont( QFont( m_project->tag( Project::Tag_Video_font ) ) );
-	fontVideoSize->setValue( m_project->tag( Project::Tag_Video_fontsize).toInt() );
-	titleVideoMin->setValue( m_project->tag( Project::Tag_Video_titletime).toInt() );
-	fontVideo->setFontFilters( QFontComboBox::ScalableFonts | QFontComboBox::MonospacedFonts | QFontComboBox::ProportionalFonts );
-	cbVideoPreamble->setChecked( m_project->tag( Project::Tag_Video_preamble).toInt() );
-	leVideoBackground->setText( m_project->tag( Project::Tag_Video_bgfile ) );
-
 	if ( m_project->type() == Project::LyricType_UStar )
 	{
 		if ( m_project->tag( Project::Tag_MP3File ).isEmpty() )
@@ -156,17 +144,6 @@ void ProjectSettings::browseMusicFile()
 		return;
 
 	leSongFile->setText( filename );
-}
-
-void ProjectSettings::browseVideoFile()
-{
-	QString filename = QFileDialog::getOpenFileName( 0,
-			tr("Choose a video file"), "." );
-
-	if ( filename.isEmpty() )
-		return;
-
-	leVideoBackground->setText( filename );
 }
 
 void ProjectSettings::changeProjectType()
@@ -304,16 +281,6 @@ void ProjectSettings::accept()
 	m_project->setTag( Project::Tag_CDG_fontsize, QString::number( fontCDGSize->value() ) );
 	m_project->setTag( Project::Tag_CDG_titletime, QString::number( titleCDGmin->value() ) );
 	m_project->setTag( Project::Tag_CDG_preamble, cbCDGPreamble->isChecked() ? "1" : "0" );
-
-	m_project->setTag( Project::Tag_Video_activecolor, btnVideoColorActive->color().name() );
-	m_project->setTag( Project::Tag_Video_bgcolor, btnVideoColorBg->color().name() );
-	m_project->setTag( Project::Tag_Video_inactivecolor, btnVideoColorInactive->color().name() );
-	m_project->setTag( Project::Tag_Video_infocolor, btnVideoColorInfo->color().name() );
-	m_project->setTag( Project::Tag_Video_font, fontVideo->currentFont().family() );
-	m_project->setTag( Project::Tag_Video_fontsize, QString::number( fontVideoSize->value() ) );
-	m_project->setTag( Project::Tag_Video_titletime, QString::number( titleVideoMin->value() ) );
-	m_project->setTag( Project::Tag_Video_preamble, cbVideoPreamble->isChecked() ? "1" : "0" );
-	m_project->setTag( Project::Tag_Video_bgfile, leVideoBackground->text() );
 
 	QDialog::accept();
 }

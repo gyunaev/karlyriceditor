@@ -62,11 +62,13 @@ class FFMpegVideoEncoder
 		FFMpegVideoEncoder();
 		virtual ~FFMpegVideoEncoder();
 
-		bool createFile( const QString& filename,
-						unsigned int width,
-						unsigned int height,
+		// Returns non-empty error message if failed
+		QString createFile( const QString& filename,
+						const QString& outformat,
+						QSize size,
 						unsigned int videobitrate,
-						unsigned int fps,
+						unsigned int time_base_num,
+						unsigned int time_base_den,
 						unsigned int gop,	// maximal interval in frames between keyframes
 						AudioPlayer * audio = 0 );
 

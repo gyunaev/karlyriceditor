@@ -76,7 +76,13 @@ enum
 	PD_TAG_VIDEO_FONTSIZE,	// Video tag - font size
 	PD_TAG_VIDEO_MINTITLE,	// Video tag - minimum title time
 	PD_TAG_VIDEO_PREAMBLE,	// Video tag - whether to show squares
-	PD_TAG_VIDEO_BGFILE,	// Video tag - video background file
+	PD_TAG_VIDEO_BGFILE,	// unused
+	PD_TAG_VIDEO_IMAGESIZE,	// index of image size
+	PD_TAG_VIDEO_FPSSIZE,	// index of FPS
+	PD_TAG_VIDEO_ENCODING,	// index of video encoding
+	PD_TAG_VIDEO_CONTAINER,	// index of container format
+	PD_TAG_VIDEO_ALLKEYFRAMES, // if nonzero, every frame is a keyframe
+	PD_TAG_VIDEO_NOAUDIO	// export no audio
 };
 
 
@@ -322,8 +328,28 @@ int	Project::tagToId( Tag tag  ) const
 			tagid = PD_TAG_VIDEO_PREAMBLE;
 			break;
 
-		case Tag_Video_bgfile:
-			tagid = PD_TAG_VIDEO_BGFILE;
+		case Tag_Video_ImgSizeIndex:
+			tagid = PD_TAG_VIDEO_IMAGESIZE;
+			break;
+
+		case Tag_Video_FpsIndex:
+			tagid = PD_TAG_VIDEO_FPSSIZE;
+			break;
+
+		case Tag_Video_EncodingIndex:
+			tagid = PD_TAG_VIDEO_ENCODING;
+			break;
+
+		case Tag_Video_ContainerIndex:
+			tagid = PD_TAG_VIDEO_CONTAINER;
+			break;
+
+		case Tag_Video_AllKeyframes:
+			tagid = PD_TAG_VIDEO_ALLKEYFRAMES;
+			break;
+
+		case Tag_Video_ExportNoAudio:
+			tagid = PD_TAG_VIDEO_NOAUDIO;
 			break;
 	}
 

@@ -71,7 +71,12 @@ class Project
 			Tag_Video_fontsize,
 			Tag_Video_titletime,
 			Tag_Video_preamble,
-			Tag_Video_bgfile,
+			Tag_Video_ImgSizeIndex,
+			Tag_Video_FpsIndex,
+			Tag_Video_EncodingIndex,
+			Tag_Video_ContainerIndex,
+			Tag_Video_AllKeyframes,
+			Tag_Video_ExportNoAudio,
 		};
 
 		Project( Editor * editor );
