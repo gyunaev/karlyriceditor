@@ -45,7 +45,7 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length, const 
 							 2000000,
 							 25,
 							 25,
-							 0/*pAudioPlayer*/) )
+							 pAudioPlayer) )
 	{
 		QMessageBox::critical( 0, "Cannot write video", "Cannot create video file" );
 		return;
