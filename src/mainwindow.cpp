@@ -295,6 +295,11 @@ bool MainWindow::loadProject( const QString& fileName )
 	m_recentFiles->setCurrentFile( fileName );
 	m_projectFile = fileName;
 	setCurrentProject( newproj );
+
+	// Change the current dir
+	QFileInfo finfo( fileName );
+	QDir::setCurrent( finfo.path() );
+
 	return true;
 }
 
@@ -320,6 +325,11 @@ bool MainWindow::act_fileSaveProjectAs()
 		return false;
 
 	m_projectFile = fileName;
+
+	// Change the current dir
+	QFileInfo finfo( fileName );
+	QDir::setCurrent( finfo.path() );
+
 	return true;
 }
 
