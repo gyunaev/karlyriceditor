@@ -53,6 +53,7 @@
 #include <QString>
 #include <QImage>
 
+class AudioPlayer;
 class FFMpegVideoEncoderPriv;
 
 class FFMpegVideoEncoder
@@ -61,14 +62,16 @@ class FFMpegVideoEncoder
 		FFMpegVideoEncoder();
 		virtual ~FFMpegVideoEncoder();
 
-		// Output video is 25FPS
-		// gop: maximal interval in frames between keyframes
-		bool createFile( const QString& filename, unsigned int width, unsigned int height,
-						 unsigned int bitrate, unsigned int gop );
-		bool close();
+		bool createFile( const QString& filename,
+						unsigned int width,
+						unsigned int height,
+						unsigned int videobitrate,
+						unsigned int fps,
+						unsigned int gop,	// maximal interval in frames between keyframes
+						AudioPlayer * audio = 0 );
 
-		int encodeImage( const QImage & img);
-		bool isOk();
+		bool close();
+		int encodeImage( qint64 timing, const QImage & img);
 
 	private:
 		FFMpegVideoEncoderPriv * d;

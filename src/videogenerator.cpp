@@ -2,6 +2,7 @@
 #include <QApplication>
 #include <QMessageBox>
 
+#include "audioplayer.h"
 #include "videogenerator.h"
 #include "textrenderer.h"
 #include "ffmpegvideoencoder.h"
@@ -38,7 +39,13 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length, const 
 	// Video encoder
 	FFMpegVideoEncoder encoder;
 
-	if ( !encoder.createFile( outfile, m_size.width(), m_size.height(), 2000000, 25 ) )
+	if ( !encoder.createFile( outfile,
+							 m_size.width(),
+							 m_size.height(),
+							 2000000,
+							 25,
+							 25,
+							 0/*pAudioPlayer*/) )
 	{
 		QMessageBox::critical( 0, "Cannot write video", "Cannot create video file" );
 		return;
@@ -67,7 +74,7 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length, const 
 		}
 
 		lyricrenderer.update( time );
-		encoder.encodeImage( lyricrenderer.image() );
+		encoder.encodeImage( time, lyricrenderer.image() );
 	}
 
 	encoder.close();

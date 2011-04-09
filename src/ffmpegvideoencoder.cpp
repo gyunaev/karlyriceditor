@@ -49,193 +49,212 @@
 
 #include "ffmpeg_headers.h"
 #include "ffmpegvideoencoder.h"
+#include "audioplayer.h"
+#include "audioplayerprivate.h"
+
 
 class FFMpegVideoEncoderPriv
 {
 	public:
-		// gop: maximal interval in frames between keyframes
-		bool createFile( const QString& filename, unsigned int width, unsigned int height,
-						 unsigned int bitrate, unsigned int gop );
+		FFMpegVideoEncoderPriv();
+		~FFMpegVideoEncoderPriv();
+
+		bool createFile( const QString& filename );
 		bool close();
+		int encodeImage( qint64 timing, const QImage & img);
 
-		int encodeImage( const QImage & img);
-		bool isOk();
+	public:
+		// Video output parameters
+		unsigned int	m_width;
+		unsigned int	m_height;
+		unsigned int	m_videobitrate;
+		unsigned int	m_videogop; // maximal interval in frames between keyframes
+		unsigned int	m_videofps;
 
-		unsigned Width,Height;
-		unsigned Bitrate;
-		unsigned Gop;
-		bool ok;
+		// Do we also have an audio source?
+		AudioPlayerPrivate * m_aplayer;
+
+	private:
+		void initVars();
+		bool convertImage_sws(const QImage &img);
 
 		// FFmpeg stuff
 		AVFormatContext *pFormatCtx;
 		AVOutputFormat *pOutputFormat;
 		AVCodecContext *pCodecCtx;
 		AVStream *pVideoStream;
+		AVStream *pAudioStream;
 		AVCodec *pCodec;
+
 		// Frame data
 		AVFrame *ppicture;
 		uint8_t *picture_buf;
+
 		// Compressed data
 		int outbuf_size;
 		uint8_t* outbuf;
+
 		// Conversion
 		SwsContext *img_convert_ctx;
+
 		// Packet
-		AVPacket pkt;
+
 
 		QString fileName;
-
-		FFMpegVideoEncoderPriv();
-		~FFMpegVideoEncoderPriv();
-
-		unsigned getWidth();
-		unsigned getHeight();
-		bool isSizeValid();
-
-		void initVars();
-		bool initCodec();
-
-		// Alloc/free the output buffer
-		bool initOutputBuf();
-		void freeOutputBuf();
-
-		// Alloc/free a frame
-		bool initFrame();
-		void freeFrame();
-
-		// Frame conversion
-		bool convertImage(const QImage &img);
-		bool convertImage_sws(const QImage &img);
 };
 
 
 FFMpegVideoEncoderPriv::FFMpegVideoEncoderPriv()
 {
-   initVars();
+	ffmpeg_init_once();
+
+	initVars();
 }
 
 FFMpegVideoEncoderPriv::~FFMpegVideoEncoderPriv()
 {
-   close();
+	close();
 }
 
-bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, unsigned int width, unsigned int height, unsigned int bitrate, unsigned int gop )
+bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 {
-   // If we had an open video, close it.
-   close();
+	// If we had an open video, close it.
+	close();
 
-   Width=width;
-   Height=height;
-   Gop=gop;
-   Bitrate=bitrate;
+	// Check sizes
+	if ( m_width % 8 )
+		return false;
 
-   if(!isSizeValid())
-   {
-	  printf("Invalid size\n");
-	  return false;
-   }
+	if ( m_height % 8 )
+		return false;
 
-   pOutputFormat = guess_format(NULL, fileName.toStdString().c_str(), NULL);
-   if (!pOutputFormat) {
-	  printf("Could not deduce output format from file extension: using MPEG.\n");
-	  pOutputFormat = guess_format("mpeg", NULL, NULL);
-   }
+	pOutputFormat = guess_format(NULL, fileName.toStdString().c_str(), NULL);
 
-   pFormatCtx=avformat_alloc_context();
-   if(!pFormatCtx)
-   {
-	  printf("Error allocating format context\n");
-	  return false;
-   }
-   pFormatCtx->oformat = pOutputFormat;
-   strncpy( pFormatCtx->filename, fileName.toUtf8(), sizeof(pFormatCtx->filename) );
+	if ( !pOutputFormat )
+	{
+		printf("Could not deduce output format from file extension: using MPEG.\n");
+		pOutputFormat = guess_format("mpeg", NULL, NULL);
+	}
 
+	pFormatCtx = avformat_alloc_context();
 
-   // Add the video stream
+	if ( !pFormatCtx )
+	{
+		printf("Error allocating format context\n");
+		return false;
+	}
 
-   pVideoStream = av_new_stream(pFormatCtx,0);
-   if(!pVideoStream )
-   {
-	  printf("Could not allocate stream\n");
-	  return false;
-   }
+	pFormatCtx->oformat = pOutputFormat;
+	strncpy( pFormatCtx->filename, fileName.toUtf8(), sizeof(pFormatCtx->filename) );
 
+	// Add the video stream, index 0
+	pVideoStream = av_new_stream( pFormatCtx, 0 );
 
-   pCodecCtx=pVideoStream->codec;
-   pCodecCtx->codec_id = pOutputFormat->video_codec;
-   pCodecCtx->codec_type = CODEC_TYPE_VIDEO;
+	if ( !pVideoStream )
+	{
+		printf("Could not allocate video stream\n");
+		return false;
+	}
 
-   pCodecCtx->bit_rate = Bitrate;
-   pCodecCtx->width = getWidth();
-   pCodecCtx->height = getHeight();
-   pCodecCtx->time_base.den = 25;
-   pCodecCtx->time_base.num = 1;
-   pCodecCtx->gop_size = Gop;
-   pCodecCtx->pix_fmt = PIX_FMT_YUV420P;
+	pCodecCtx = pVideoStream->codec;
+	pCodecCtx->codec_id = pOutputFormat->video_codec;
+	pCodecCtx->codec_type = CODEC_TYPE_VIDEO;
 
+	pCodecCtx->bit_rate = m_videobitrate;
+	pCodecCtx->width = m_width;
+	pCodecCtx->height = m_height;
+	pCodecCtx->time_base.den = 25;
+	pCodecCtx->time_base.num = 1;
+	pCodecCtx->gop_size = m_videogop;
+	pCodecCtx->pix_fmt = PIX_FMT_YUV420P;
 
-   avcodec_thread_init(pCodecCtx, 10);
+	// Do we also have audio stream?
+	if ( m_aplayer )
+	{
+		// Add the audio stream, index 1
+		pAudioStream = av_new_stream( pFormatCtx, 1 );
 
-   //if (c->codec_id == CODEC_ID_MPEG2VIDEO)
-   //{
-	  //c->max_b_frames = 2;  // just for testing, we also add B frames
-   //}
+		if ( !pAudioStream )
+		{
+			printf("Could not allocate audio stream\n");
+			return false;
+		}
 
-   // some formats want stream headers to be separate
-   if(pFormatCtx->oformat->flags & AVFMT_GLOBALHEADER)
-	  pCodecCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
+		AVCodecContext * aCodecCtx = pAudioStream->codec;
+		aCodecCtx->codec_type = CODEC_TYPE_AUDIO;
 
+		aCodecCtx->codec_id = m_aplayer->aCodecCtx->codec_id;
+		aCodecCtx->bit_rate = m_aplayer->aCodecCtx->bit_rate;
+		aCodecCtx->sample_rate = m_aplayer->aCodecCtx->sample_rate;
+		aCodecCtx->sample_fmt = m_aplayer->aCodecCtx->sample_fmt;
+		aCodecCtx->channels = m_aplayer->aCodecCtx->channels;
+		aCodecCtx->time_base.den = m_aplayer->aCodecCtx->time_base.den;
+		aCodecCtx->time_base.num = m_aplayer->aCodecCtx->time_base.num;
 
-   if (av_set_parameters(pFormatCtx, NULL) < 0)
-   {
-	  printf("Invalid output format parameters\n");
-	  return false;
-   }
+		// Rewind the player
+		m_aplayer->reset();
+	}
 
-   dump_format(pFormatCtx, 0, fileName.toStdString().c_str(), 1);
+	avcodec_thread_init( pCodecCtx, 10 );
 
-   // open_video
-   // find the video encoder
-   pCodec = avcodec_find_encoder(pCodecCtx->codec_id);
-   if (!pCodec)
-   {
-	  printf("codec not found\n");
-	  return false;
-   }
-   // open the codec
-   if (avcodec_open(pCodecCtx, pCodec) < 0)
-   {
-	  printf("could not open codec\n");
-	  return false;
-   }
+	// some formats want stream headers to be separate
+	if ( pFormatCtx->oformat->flags & AVFMT_GLOBALHEADER )
+		pCodecCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
-   // Allocate memory for output
-   if(!initOutputBuf())
-   {
-	  printf("Can't allocate memory for output bitstream\n");
-	  return false;
-   }
+	if ( av_set_parameters(pFormatCtx, NULL) < 0 )
+	{
+		printf("Invalid output format parameters\n");
+		return false;
+	}
 
-   // Allocate the YUV frame
-   if(!initFrame())
-   {
-	  printf("Can't init frame\n");
-	  return false;
-   }
+	dump_format(pFormatCtx, 0, fileName.toStdString().c_str(), 1);
 
-   if (url_fopen(&pFormatCtx->pb, fileName.toStdString().c_str(), URL_WRONLY) < 0)
-   {
-	  printf( "Could not open '%s'\n", fileName.toStdString().c_str());
-	  return false;
-   }
+	// find the video encoder
+	pCodec = avcodec_find_encoder( pCodecCtx->codec_id );
 
-   av_write_header(pFormatCtx);
+	if ( !pCodec )
+	{
+		printf("codec not found\n");
+		return false;
+	}
 
+	// open the codec
+	if ( avcodec_open( pCodecCtx, pCodec ) < 0 )
+	{
+		printf("could not open codec\n");
+		return false;
+	}
 
+	// Allocate memory for output
+	outbuf_size = m_width * m_height * 3;
+	outbuf = new uint8_t[ outbuf_size ];
 
-   ok=true;
+	if ( !outbuf )
+		return false;
 
-   return true;
+	// Allocate the YUV frame
+	ppicture = avcodec_alloc_frame();
+
+	if ( !ppicture )
+		return false;
+
+	int size = avpicture_get_size( pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height );
+	picture_buf = new uint8_t[size];
+
+	if ( !picture_buf )
+		return false;
+
+	// Setup the planes
+	avpicture_fill( (AVPicture *)ppicture, picture_buf,pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height );
+
+	if ( url_fopen( &pFormatCtx->pb, fileName.toStdString().c_str(), URL_WRONLY) < 0 )
+	{
+		printf( "Could not open '%s'\n", fileName.toStdString().c_str());
+		return false;
+	}
+
+	av_write_header(pFormatCtx);
+	return true;
 }
 
 /**
@@ -243,34 +262,38 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, unsigned int w
 **/
 bool FFMpegVideoEncoderPriv::close()
 {
-   if(!isOk())
-	  return false;
+	if ( pFormatCtx )
+	{
+		av_write_trailer( pFormatCtx );
 
-   av_write_trailer(pFormatCtx);
+		// close video
+		avcodec_close( pVideoStream->codec );
 
-   // close_video
+		// free the streams
+		for ( int i = 0; i < pFormatCtx->nb_streams; i++ )
+		{
+			av_freep(&pFormatCtx->streams[i]->codec);
+			av_freep(&pFormatCtx->streams[i]);
+		}
 
-   avcodec_close(pVideoStream->codec);
-   freeFrame();
-   freeOutputBuf();
+		// Close file
+		url_fclose(pFormatCtx->pb);
 
+		// Free the format
+		av_free( pFormatCtx );
+	}
 
-   /* free the streams */
+	if ( outbuf )
+		delete[] outbuf;
 
-   for(int i = 0; i < pFormatCtx->nb_streams; i++)
-   {
-	  av_freep(&pFormatCtx->streams[i]->codec);
-	  av_freep(&pFormatCtx->streams[i]);
-   }
+	if ( picture_buf )
+		delete[] picture_buf;
 
-   // Close file
-   url_fclose(pFormatCtx->pb);
+	if ( ppicture )
+		av_free(ppicture);
 
-   // Free the stream
-   av_free(pFormatCtx);
-
-   initVars();
-   return true;
+	initVars();
+	return true;
 }
 
 
@@ -279,227 +302,88 @@ bool FFMpegVideoEncoderPriv::close()
 
    The frame must be of the same size as specifie
 **/
-int FFMpegVideoEncoderPriv::encodeImage(const QImage &img)
+int FFMpegVideoEncoderPriv::encodeImage( qint64 timing, const QImage &img )
 {
-   if(!isOk())
-	  return -1;
+	AVPacket pkt;
 
-   //convertImage(img);       // Custom conversion routine
-   convertImage_sws(img);     // SWS conversion
+	// If we have audio, first add all audio packets
+	if ( m_aplayer )
+	{
+		while ( 1 )
+		{
+			// Read a frame from audio stream
+			if ( av_read_frame( m_aplayer->pFormatCtx, &pkt ) < 0 )
+				break;
 
-   int out_size = avcodec_encode_video(pCodecCtx,outbuf,outbuf_size,ppicture);
-   //printf("Frame size: %d\n",out_size);
-   if (out_size > 0)
-   {
+			if ( pkt.stream_index != m_aplayer->audioStream )
+			{
+				av_free_packet( &pkt );
+				continue;
+			}
 
-	  av_init_packet(&pkt);
+			// Store the packet
+			int ret = av_interleaved_write_frame( pFormatCtx, &pkt);
 
-	  //if (pCodecCtx->coded_frame->pts != AV_NOPTS_VALUE)
-	  if (pCodecCtx->coded_frame->pts != (0x8000000000000000LL))
-		 pkt.pts= av_rescale_q(pCodecCtx->coded_frame->pts, pCodecCtx->time_base, pVideoStream->time_base);
-	  if(pCodecCtx->coded_frame->key_frame)
-		 pkt.flags |= PKT_FLAG_KEY;
+			// and free it
+			av_free_packet( &pkt );
 
-	  pkt.stream_index= pVideoStream->index;
-	  pkt.data= outbuf;
-	  pkt.size= out_size;
-	  int ret = av_interleaved_write_frame(pFormatCtx, &pkt);
-	  //printf("Wrote %d\n",ret);
-	  if(ret<0)
-		 return -1;
-   }
-   return out_size;
+			if ( ret < 0 )
+				return -1;
+
+			qint64 audio_timing = av_rescale_q( pkt.pts,
+									 m_aplayer->pFormatCtx->streams[m_aplayer->audioStream]->time_base,
+									 AV_TIME_BASE_Q ) / 1000;
+
+			// No more audio packets for this frame?
+			if ( audio_timing >= timing )
+				break;
+
+			// Proceed with the next packet
+		}
+	}
+
+	// SWS conversion
+	convertImage_sws(img);
+
+	int out_size = avcodec_encode_video(pCodecCtx,outbuf,outbuf_size,ppicture);
+
+	if (out_size > 0)
+	{
+		av_init_packet(&pkt);
+
+		if (pCodecCtx->coded_frame->pts != (0x8000000000000000LL))
+			pkt.pts= av_rescale_q(pCodecCtx->coded_frame->pts, pCodecCtx->time_base, pVideoStream->time_base);
+		if(pCodecCtx->coded_frame->key_frame)
+			pkt.flags |= PKT_FLAG_KEY;
+
+		pkt.stream_index= pVideoStream->index;
+		pkt.data= outbuf;
+		pkt.size= out_size;
+		int ret = av_interleaved_write_frame(pFormatCtx, &pkt);
+
+		av_free_packet( &pkt );
+
+		if(ret<0)
+			return -1;
+	}
+	return out_size;
 }
 
 void FFMpegVideoEncoderPriv::initVars()
 {
-   ok=false;
-   pFormatCtx=0;
-   pOutputFormat=0;
-   pCodecCtx=0;
-   pVideoStream=0;
-   pCodec=0;
-   ppicture=0;
-   outbuf=0;
-   picture_buf=0;
-   img_convert_ctx=0;
+	pFormatCtx = 0;
+	pOutputFormat = 0;
+	pCodecCtx = 0;
+	pVideoStream = 0;
+	pAudioStream = 0;
+	pCodec = 0;
+	ppicture = 0;
+	outbuf = 0;
+	picture_buf = 0;
+	img_convert_ctx = 0;
 }
 
 
-
-/**
-  Ensures sizes are some reasonable multiples
-**/
-bool FFMpegVideoEncoderPriv::isSizeValid()
-{
-   if(getWidth()%8)
-	  return false;
-   if(getHeight()%8)
-	  return false;
-   return true;
-}
-
-unsigned FFMpegVideoEncoderPriv::getWidth()
-{
-   return Width;
-}
-
-unsigned FFMpegVideoEncoderPriv::getHeight()
-{
-   return Height;
-}
-
-bool FFMpegVideoEncoderPriv::isOk()
-{
-   return ok;
-}
-
-/**
-  Allocate memory for the compressed bitstream
-**/
-bool FFMpegVideoEncoderPriv::initOutputBuf()
-{
-   outbuf_size = getWidth()*getHeight()*3;        // Some extremely generous memory allocation for the encoded frame.
-   outbuf = new uint8_t[outbuf_size];
-   if(outbuf==0)
-	  return false;
-   return true;
-}
-/**
-  Free memory for the compressed bitstream
-**/
-void FFMpegVideoEncoderPriv::freeOutputBuf()
-{
-   if(outbuf)
-   {
-	  delete[] outbuf;
-	  outbuf=0;
-   }
-}
-
-bool FFMpegVideoEncoderPriv::initFrame()
-{
-   ppicture = avcodec_alloc_frame();
-   if(ppicture==0)
-	  return false;
-
-   int size = avpicture_get_size(pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height);
-   picture_buf = new uint8_t[size];
-   if(picture_buf==0)
-   {
-	  av_free(ppicture);
-	  ppicture=0;
-	  return false;
-   }
-
-   // Setup the planes
-   avpicture_fill((AVPicture *)ppicture, picture_buf,pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height);
-
-   return true;
-}
-
-void FFMpegVideoEncoderPriv::freeFrame()
-{
-   if(picture_buf)
-   {
-	  delete[] picture_buf;
-	  picture_buf=0;
-   }
-   if(ppicture)
-   {
-	  av_free(ppicture);
-	  ppicture=0;
-   }
-}
-
-/**
-  \brief Convert the QImage to the internal YUV format
-
-  Custom conversion - not very optimized.
-
-**/
-
-bool FFMpegVideoEncoderPriv::convertImage(const QImage &img)
-{
-   // Check if the image matches the size
-   if(img.width()!=getWidth() || img.height()!=getHeight())
-   {
-	  printf("Wrong image size!\n");
-	  return false;
-   }
-   if(img.format()!=QImage::Format_RGB32	&& img.format() != QImage::Format_ARGB32)
-   {
-	  printf("Wrong image format\n");
-	  return false;
-   }
-
-   // RGB32 to YUV420
-
-   int size = getWidth()*getHeight();
-   // Y
-   for(unsigned y=0;y<getHeight();y++)
-   {
-
-	  unsigned char *s = (unsigned char*)img.scanLine(y);
-	  unsigned char *d = (unsigned char*)&picture_buf[y*getWidth()];
-	  //printf("Line %d. d: %p. picture_buf: %p\n",y,d,picture_buf);
-
-	  for(unsigned x=0;x<getWidth();x++)
-	  {
-		 unsigned int r=s[2];
-		 unsigned int g=s[1];
-		 unsigned int b=s[0];
-
-		 unsigned Y = (r*2104 + g*4130 + b*802 + 4096 + 131072) >> 13;
-		 if(Y>235) Y=235;
-
-		 *d = Y;
-
-		 d+=1;
-		 s+=4;
-	  }
-   }
-
-   // U,V
-   for(unsigned y=0;y<getHeight();y+=2)
-   {
-	  unsigned char *s = (unsigned char*)img.scanLine(y);
-	  unsigned int ss = img.bytesPerLine();
-	  unsigned char *d = (unsigned char*)&picture_buf[size+y/2*getWidth()/2];
-
-	  //printf("Line %d. d: %p. picture_buf: %p\n",y,d,picture_buf);
-
-	  for(unsigned x=0;x<getWidth();x+=2)
-	  {
-		 // Cr = 128 + 1/256 * ( 112.439 * R'd -  94.154 * G'd -  18.285 * B'd)
-		 // Cb = 128 + 1/256 * (- 37.945 * R'd -  74.494 * G'd + 112.439 * B'd)
-
-		 // Get the average RGB in a 2x2 block
-		 int r=(s[2] + s[6] + s[ss+2] + s[ss+6] + 2) >> 2;
-		 int g=(s[1] + s[5] + s[ss+1] + s[ss+5] + 2) >> 2;
-		 int b=(s[0] + s[4] + s[ss+0] + s[ss+4] + 2) >> 2;
-
-		 int Cb = (-1214*r - 2384*g + 3598*b + 4096 + 1048576)>>13;
-		 if(Cb<16)
-			Cb=16;
-		 if(Cb>240)
-			Cb=240;
-
-		 int Cr = (3598*r - 3013*g - 585*b + 4096 + 1048576)>>13;
-		 if(Cr<16)
-			Cr=16;
-		 if(Cr>240)
-			Cr=240;
-
-		 *d = Cb;
-		 *(d+size/4) = Cr;
-
-		 d+=1;
-		 s+=8;
-	  }
-   }
-   return true;
-}
 
 /**
   \brief Convert the QImage to the internal YUV format
@@ -512,50 +396,56 @@ bool FFMpegVideoEncoderPriv::convertImage(const QImage &img)
    We keep the custom conversion for that case.
 
 **/
-
 bool FFMpegVideoEncoderPriv::convertImage_sws(const QImage &img)
 {
-   // Check if the image matches the size
-   if(img.width()!=getWidth() || img.height()!=getHeight())
-   {
-	  printf("Wrong image size!\n");
-	  return false;
-   }
-   if(img.format()!=QImage::Format_RGB32	&& img.format() != QImage::Format_ARGB32)
-   {
-	  printf("Wrong image format\n");
-	  return false;
-   }
+	// Check if the image matches the size
+	if ( img.width() != m_width || img.height() != m_height )
+	{
+		printf("Wrong image size!\n");
+		return false;
+	}
 
-   img_convert_ctx = sws_getCachedContext(img_convert_ctx,getWidth(),getHeight(),PIX_FMT_BGRA,getWidth(),getHeight(),PIX_FMT_YUV420P,SWS_BICUBIC, NULL, NULL, NULL);
-   //img_convert_ctx = sws_getCachedContext(img_convert_ctx,getWidth(),getHeight(),PIX_FMT_BGRA,getWidth(),getHeight(),PIX_FMT_YUV420P,SWS_FAST_BILINEAR, NULL, NULL, NULL);
-   if (img_convert_ctx == NULL)
-   {
-	  printf("Cannot initialize the conversion context\n");
-	  return false;
-   }
+	if ( img.format()!=QImage::Format_RGB32	&& img.format() != QImage::Format_ARGB32 )
+	{
+		printf("Wrong image format\n");
+		return false;
+	}
 
-   uint8_t *srcplanes[3];
-   srcplanes[0]=(uint8_t*)img.bits();
-   srcplanes[1]=0;
-   srcplanes[2]=0;
+	img_convert_ctx = sws_getCachedContext( img_convert_ctx,
+										   m_width,
+										   m_height,
+										   PIX_FMT_BGRA,
+										   m_width,
+										   m_height,
+										   PIX_FMT_YUV420P,
+										   SWS_BICUBIC,
+										   NULL,
+										   NULL,
+										   NULL );
+	if ( img_convert_ctx == NULL )
+	{
+		printf("Cannot initialize the conversion context\n");
+		return false;
+	}
 
-   int srcstride[3];
-   srcstride[0]=img.bytesPerLine();
-   srcstride[1]=0;
-   srcstride[2]=0;
+	uint8_t *srcplanes[3];
+	srcplanes[0]=(uint8_t*)img.bits();
+	srcplanes[1]=0;
+	srcplanes[2]=0;
 
+	int srcstride[3];
+	srcstride[0]=img.bytesPerLine();
+	srcstride[1]=0;
+	srcstride[2]=0;
 
-   sws_scale(img_convert_ctx, srcplanes, srcstride,0, getHeight(), ppicture->data, ppicture->linesize);
-
-   return true;
+	sws_scale( img_convert_ctx, srcplanes, srcstride,0, m_height, ppicture->data, ppicture->linesize);
+	return true;
 }
 
 
 
 FFMpegVideoEncoder::FFMpegVideoEncoder()
 {
-	ffmpeg_init_once();
 	d = new FFMpegVideoEncoderPriv();
 }
 
@@ -564,25 +454,27 @@ FFMpegVideoEncoder::~FFMpegVideoEncoder()
 	delete d;
 }
 
-bool FFMpegVideoEncoder::createFile( const QString& filename, unsigned int width, unsigned int height,
-				 unsigned int bitrate, unsigned int gop )
-{
-	return d->createFile( filename, width, height, bitrate, gop );
-}
 
 bool FFMpegVideoEncoder::close()
 {
 	return d->close();
-
 }
 
-int FFMpegVideoEncoder::encodeImage( const QImage & img)
+int FFMpegVideoEncoder::encodeImage( qint64 timing, const QImage & img)
 {
-	return d->encodeImage( img );
-
+	return d->encodeImage( timing, img );
 }
 
-bool FFMpegVideoEncoder::isOk()
+bool FFMpegVideoEncoder::createFile( const QString& filename, unsigned int width, unsigned int height,
+									unsigned int videobitrate,  unsigned int fps, unsigned int gop,
+									AudioPlayer * audio )
 {
-	return d->isOk();
+	d->m_aplayer = audio ? audio->impl() : 0;
+	d->m_width = width;
+	d->m_height = height;
+	d->m_videobitrate = videobitrate;
+	d->m_videofps = fps;
+	d->m_videogop = gop;
+
+	return d->createFile( filename );
 }

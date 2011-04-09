@@ -56,6 +56,9 @@ class AudioPlayer : public QObject
 		// The audio file length
 		qint64	totalTime() const;
 
+		// To access the implementation (for video encoding)
+		AudioPlayerPrivate * impl();
+
 	signals:
 		// Emitted every time the new audio packet is processed
 		void	tick( qint64 tickvalue );

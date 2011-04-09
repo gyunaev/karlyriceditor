@@ -96,3 +96,8 @@ void AudioPlayer::close()
 {
 	d->close();
 }
+
+AudioPlayerPrivate * AudioPlayer::impl()
+{
+	return d;
+}

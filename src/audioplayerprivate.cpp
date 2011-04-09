@@ -285,9 +285,10 @@ bool AudioPlayerPrivate::MoreAudio()
 		m_sample_buf_size = 0;
 		m_sample_buffer.clear();
 
-		m_currentTime = packet.pts / 10000;
+		m_currentTime = av_rescale_q( packet.pts,
+									 pFormatCtx->streams[audioStream]->time_base,
+									 AV_TIME_BASE_Q ) / 1000;
 
-		// pAudioPlayer->emitTickSignal( m_currentTime );
 		QMetaObject::invokeMethod( pAudioPlayer, "emitTickSignal", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
 
 		// Save the orig data so we can call av_free_packet() on it

@@ -25,6 +25,7 @@
 #include "ffmpeg_headers.h"
 #include <SDL/SDL.h>
 
+class FFMpegVideoEncoderPriv;
 
 class AudioPlayerPrivate
 {
@@ -52,6 +53,9 @@ class AudioPlayerPrivate
 		void	queueClear();
 
 	private:
+		// Video encoder private class gets direct access to ffmpeg stuff
+		friend class FFMpegVideoEncoderPriv;
+
 		QString			m_errorMsg;
 		bool			m_audioOpened;
 
