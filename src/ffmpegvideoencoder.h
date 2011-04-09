@@ -73,7 +73,7 @@ class FFMpegVideoEncoder
 						AudioPlayer * audio = 0 );
 
 		bool close();
-		int encodeImage( qint64 timing, const QImage & img);
+		int encodeImage( const QImage & img);
 
 	private:
 		FFMpegVideoEncoderPriv * d;

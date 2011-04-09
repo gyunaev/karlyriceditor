@@ -36,7 +36,7 @@ class FFMpegVideoEncoderPriv
 
 		bool createFile( const QString& filename, const QString& outformat );
 		bool close();
-		int encodeImage( qint64 timing, const QImage & img);
+		int encodeImage( const QImage & img);
 
 	public:
 		// Video output parameters
@@ -100,7 +100,7 @@ FFMpegVideoEncoderPriv::~FFMpegVideoEncoderPriv()
 
 bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString& outformat )
 {
-	int size;
+	int err, size;
 
 	// If we had an open video, close it.
 	close();
@@ -113,7 +113,8 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 		return false;
 
 	// Allocate output format
-	pOutputFormat = av_guess_format( outformat.toUtf8().data(), fileName.toUtf8().data(), 0 );
+	//pOutputFormat = av_guess_format( outformat.toUtf8().data(), fileName.toUtf8().data(), 0 );
+	pOutputFormat = av_guess_format( 0, fileName.toUtf8().data(), 0 );
 
 	if ( !pOutputFormat )
 	{
@@ -150,9 +151,10 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 	pVideoCodecCtx->height = m_height;
 	pVideoCodecCtx->time_base.num = m_time_base_num;
 	pVideoCodecCtx->time_base.den = m_time_base_den;
-
 	pVideoCodecCtx->gop_size = m_videogop;
 	pVideoCodecCtx->pix_fmt = PIX_FMT_YUV420P;
+
+	//pVideoCodecCtx->bit_rate_tolerance = pVideoCodecCtx->bit_rate * av_q2d(pVideoCodecCtx->time_base);
 
 	// Do we also have audio stream?
 	if ( m_aplayer )
@@ -218,9 +220,9 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 	}
 
 	// open the codec
-	if ( avcodec_open( pVideoCodecCtx, pCodec ) < 0 )
+	if ( ( err = avcodec_open( pVideoCodecCtx, pCodec )) < 0 )
 	{
-		m_errorMsg = "Could not open video codec";
+		m_errorMsg = QString("Could not open video codec: error %1") .arg( err );
 		goto cleanup;
 	}
 
@@ -346,7 +348,7 @@ bool FFMpegVideoEncoderPriv::close()
 	return true;
 }
 
-int FFMpegVideoEncoderPriv::encodeImage( qint64 timing, const QImage &img )
+int FFMpegVideoEncoderPriv::encodeImage( const QImage &img )
 {
 	int outsize = 0;
 	AVPacket pkt;
@@ -501,9 +503,9 @@ bool FFMpegVideoEncoder::close()
 	return d->close();
 }
 
-int FFMpegVideoEncoder::encodeImage( qint64 timing, const QImage & img)
+int FFMpegVideoEncoder::encodeImage( const QImage & img)
 {
-	return d->encodeImage( timing, img );
+	return d->encodeImage( img );
 }
 
 QString FFMpegVideoEncoder::createFile( const QString& filename, const QString& outformat, QSize size,

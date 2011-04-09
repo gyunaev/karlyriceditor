@@ -46,10 +46,10 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	lyricrenderer.setColorToSing( m_project->tag( Project::Tag_Video_activecolor ) );
 
 	// Title
-	lyricrenderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
+/*	lyricrenderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
 								 m_project->tag( Project::Tag_Title ),
 								 m_project->tag( Project::Tag_Video_titletime ).toInt() * 1000 );
-
+*/
 	// Preamble
 	if ( m_project->tag( Project::Tag_Video_preamble).toInt() != 0 )
 		lyricrenderer.setPreambleData( 4, 5000, 8 );
@@ -62,7 +62,8 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 										videosize,
 										2000000,
 										num, den,
-										m_project->tag( Project::Tag_Video_AllKeyframes ).toInt() > 0 ? 1 : (int) (num * 5 / den), // every 5 secs
+										//m_project->tag( Project::Tag_Video_AllKeyframes ).toInt() > 0 ? 1 : (int) (num * 5 / den), // every 5 secs
+										25,
 										m_project->tag( Project::Tag_Video_ExportNoAudio).toInt() > 0 ? 0 : pAudioPlayer );
 
 	if ( !errmsg.isEmpty() )
@@ -83,12 +84,11 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	progressdlg.show();
 
 	qint64 dialog_step = total_length / 100;
-	qint64 time_step = (1000 * den) / num;
+	qint64 time_step = (1000 * num) / den;
 
 	// Rendering
 	for ( qint64 time = 0; time < total_length; time += time_step )
 	{
-		qDebug("time %d, total %d, step %d", (int) time, (int) total_length, (int) time_step );
 		// Should we show the next step?
 		if ( time / dialog_step > progressdlg.value() )
 		{
@@ -97,7 +97,7 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 		}
 
 		lyricrenderer.update( time );
-		encoder.encodeImage( time, lyricrenderer.image() );
+		encoder.encodeImage( lyricrenderer.image() );
 	}
 
 	encoder.close();

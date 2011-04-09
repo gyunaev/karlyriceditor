@@ -150,13 +150,18 @@ void VideoExportOptionsDialog::getFPS( Project * project, unsigned int * num, un
 
 		if ( fps == 25.0 )
 		{
-			*num = 25;
-			*den = 1;
+			*num = 1;
+			*den = 25;
 		}
 		else if ( fps == 29.97 )
 		{
-			*num = 30000;
-			*den = 1001;
+			*num = 1001;
+			*den = 30000;
+		}
+		else if ( fps == 23.976 )
+		{
+			*num = 1001;
+			*den = 24000;
 		}
 	}
 }
