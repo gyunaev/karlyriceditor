@@ -46,10 +46,10 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	lyricrenderer.setColorToSing( m_project->tag( Project::Tag_Video_activecolor ) );
 
 	// Title
-/*	lyricrenderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
+	lyricrenderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
 								 m_project->tag( Project::Tag_Title ),
 								 m_project->tag( Project::Tag_Video_titletime ).toInt() * 1000 );
-*/
+
 	// Preamble
 	if ( m_project->tag( Project::Tag_Video_preamble).toInt() != 0 )
 		lyricrenderer.setPreambleData( 4, 5000, 8 );
