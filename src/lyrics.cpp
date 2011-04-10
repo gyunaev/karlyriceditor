@@ -269,6 +269,17 @@ void Lyrics::compile()
 	*/
 }
 
+
+int	Lyrics::totalBlockInfoBlocks() const
+{
+	return m_playBlocks.size();
+}
+
+QString	Lyrics::getBlockText( int block ) const
+{
+	return m_playBlocks[block].text;
+}
+
 bool Lyrics::blockForTime( qint64 timing, QString& block, int& position, qint64& nexttiming ) const
 {
 	for ( int bl = 0; bl < m_playBlocks.size(); bl++ )

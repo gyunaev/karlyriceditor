@@ -584,6 +584,7 @@ void MainWindow::updateState()
 	actionClear_text->setEnabled( project_available );
 	actionTrimspaces->setEnabled( project_available );
 	actionExport_lyric_file->setEnabled( project_available );
+	actionExport_video_file->setEnabled( project_available );
 	actionEdit_header_data->setEnabled( project_available );
 	actionProject_settings->setEnabled( project_available );
 

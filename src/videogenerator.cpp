@@ -21,7 +21,7 @@ VideoGenerator::VideoGenerator( Project * prj )
 void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 {
 	// Show the dialog with video options
-	VideoExportOptionsDialog dlg( m_project );
+	VideoExportOptionsDialog dlg( m_project, lyrics );
 
 	if ( dlg.exec() != QDialog::Accepted )
 		return;
@@ -65,7 +65,6 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 										videosize,
 										2000000,
 										num, den,
-										//m_project->tag( Project::Tag_Video_AllKeyframes ).toInt() > 0 ? 1 : (int) (num * 5 / den), // every 5 secs
 										25,
 										m_project->tag( Project::Tag_Video_ExportNoAudio).toInt() > 0 ? 0 : pAudioPlayer );
 

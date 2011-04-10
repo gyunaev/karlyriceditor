@@ -100,6 +100,10 @@ class Lyrics
 		// Pitch text representation
 		static QString pitchToNote( int pitch, bool show_octave = true );
 
+		// Accessing blockinfo
+		int		totalBlockInfoBlocks() const;
+		QString	getBlockText( int block ) const;
+
 		// For playing
 		bool	blockForTime( qint64 timing, QString& block, int& position, qint64& nexttiming ) const;
 

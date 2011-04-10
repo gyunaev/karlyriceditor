@@ -18,13 +18,15 @@
 
 #include <QFileDialog>
 #include <QMessageBox>
+
+#include "textrenderer.h"
 #include "videoexportoptions.h"
 
-
-VideoExportOptionsDialog::VideoExportOptionsDialog( Project * project, QWidget *parent )
+VideoExportOptionsDialog::VideoExportOptionsDialog( Project * project, const Lyrics& lyrics, QWidget *parent )
 	: QDialog(parent), Ui::VideoExportParams()
 {
 	m_project = project;
+	m_lyrics = lyrics;
 
 	// UIC stuff
 	setupUi( this );
@@ -75,7 +77,38 @@ void VideoExportOptionsDialog::setBoxIndex( Project::Tag tag, QComboBox * box )
 
 void VideoExportOptionsDialog::autodetectFontSize()
 {
+	QSize videosize = getVideoSize( m_project );
 
+	// Prepare the renderer
+	TextRenderer renderer( videosize.width(), videosize.height() );
+	renderer.setData( m_lyrics );
+
+	QFont font = fontVideo->currentFont();
+	int lastfontsize = 2;
+
+	while ( 1 )
+	{
+		// Initialize the font
+		font.setPixelSize( lastfontsize );
+		renderer.setRenderFont( font );
+
+		// Test all lyrics whether it fits
+		for ( int bl = 0; bl < m_lyrics.totalBlockInfoBlocks(); bl++ )
+		{
+			QString text = m_lyrics.getBlockText( bl );
+			QRect rect = renderer.boundingRect( text );
+
+			// Still fit?
+			if ( rect.width() >= videosize.width() || rect.height() >= videosize.height() )
+			{
+				// Not fit, use a previous font size
+				fontVideoSize->setValue( lastfontsize - 1 );
+				return;
+			}
+		}
+
+		lastfontsize++;
+	}
 }
 
 void VideoExportOptionsDialog::showPreview()

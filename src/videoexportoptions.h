@@ -21,6 +21,7 @@
 
 #include <QDialog>
 #include "ui_video_export_params.h"
+#include "lyrics.h"
 #include "project.h"
 
 
@@ -29,7 +30,7 @@ class VideoExportOptionsDialog : public QDialog, public Ui::VideoExportParams
     Q_OBJECT
 
 	public:
-		VideoExportOptionsDialog( Project * project, QWidget *parent = 0 );
+		VideoExportOptionsDialog( Project * project, const Lyrics& lyrics, QWidget *parent = 0 );
 
 		// Index lookups
 		static QSize	getVideoSize( Project * project );
@@ -51,6 +52,7 @@ class VideoExportOptionsDialog : public QDialog, public Ui::VideoExportParams
 
 	private:
 		Project*	m_project;
+		Lyrics		m_lyrics;
 };
 
 #endif // VIDEOEXPORTOPTIONS_H
