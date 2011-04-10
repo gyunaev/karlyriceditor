@@ -1,6 +1,7 @@
 /**************************************************************************
- *  Karlyriceditor - a lyrics editor for Karaoke songs                    *
- *  Copyright (C) 2009 George Yunaev, support@karlyriceditor.com          *
+ *  Karlyriceditor - a lyrics editor and CD+G / video export for Karaoke  *
+ *  songs.                                                                *
+ *  Copyright (C) 2009-2011 George Yunaev, support@karlyriceditor.com     *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
  *  it under the terms of the GNU General Public License as published by  *
@@ -15,6 +16,7 @@
  *  You should have received a copy of the GNU General Public License     *
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
+
 
 #ifndef LYRICS_H
 #define LYRICS_H
