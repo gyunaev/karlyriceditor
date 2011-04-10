@@ -33,8 +33,7 @@ class Project
 		{
 			LyricType_LRC1 = 1,
 			LyricType_LRC2,
-			LyricType_UStar,
-			LyricType_CDG,
+			LyricType_UStar, // if adding more, skip the #4!
 		};
 
 		enum Tag
@@ -106,7 +105,6 @@ class Project
 		QByteArray	exportLyricsAsLRC1();
 		QByteArray	exportLyricsAsLRC2();
 		QByteArray	exportLyricsAsUStar();
-		QByteArray	exportLyricsAsCDG();
 
 		// Import lyrics. So far the formats are fairly recognizable, so other imports are private
 		bool	importLyrics( const QString& filename, LyricType type );

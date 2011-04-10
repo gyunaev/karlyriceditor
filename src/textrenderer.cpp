@@ -283,35 +283,45 @@ QString TextRenderer::lyricForTime( qint64 tickmark )
 	return block;
 }
 
+bool TextRenderer::verifyFontSize( const QSize& size, const Lyrics& lyrics, const QFont& font )
+{
+	// Initialize the fonts
+	QFont normalfont = font;
+	QFont smallfont = font;
+	smallfont.setPixelSize( font.pointSize() - 2 );
+
+	// Test all lyrics whether it fits
+	for ( int bl = 0; bl < lyrics.totalBlockInfoBlocks(); bl++ )
+	{
+		QString text = lyrics.getBlockText( bl );
+		QRect rect = boundingRect( text, normalfont, smallfont );
+
+		// Still fit?
+		if ( rect.width() >= size.width() || rect.height() >= size.height() )
+		{
+			// Not fit, use a previous font size
+			return false;
+		}
+	}
+
+	return true;
+}
+
 int	TextRenderer::autodetectFontSize( const QSize& size, const Lyrics& lyrics, const QFont& font )
 {
 	QFont normalfont = font;
-	QFont smallfont = font;
 
 	// Start with 8
-	int lastfontsize = 8;
+	int fontsize = 8;
 
 	while ( 1 )
 	{
-		// Initialize the fonts
-		normalfont.setPixelSize( lastfontsize );
-		smallfont.setPixelSize( lastfontsize - 2 );
+		normalfont.setPixelSize( fontsize );
 
-		// Test all lyrics whether it fits
-		for ( int bl = 0; bl < lyrics.totalBlockInfoBlocks(); bl++ )
-		{
-			QString text = lyrics.getBlockText( bl );
-			QRect rect = boundingRect( text, normalfont, smallfont );
+		if ( !verifyFontSize( size, lyrics, normalfont ) )
+			return fontsize - 1;
 
-			// Still fit?
-			if ( rect.width() >= size.width() || rect.height() >= size.height() )
-			{
-				// Not fit, use a previous font size
-				return lastfontsize - 1;
-			}
-		}
-
-		lastfontsize++;
+		fontsize++;
 	}
 }
 

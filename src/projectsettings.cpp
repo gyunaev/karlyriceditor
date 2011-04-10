@@ -54,10 +54,6 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 			case Project::LyricType_UStar:
 				rbLRC3->setChecked( true );
 				break;
-
-			case Project::LyricType_CDG:
-				rbLRC4->setChecked( true );
-				break;
 		}
 
 		leSongFile->setText( m_project->musicFile() );
@@ -68,17 +64,6 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 	// Init general params
 	leTitle->setText( m_project->tag( Project::Tag_Title ) );
 	leArtist->setText( m_project->tag( Project::Tag_Artist ) );
-
-	// CD+G tab
-	btnCDGColorActive->setColor( m_project->tag( Project::Tag_CDG_activecolor ) );
-	btnCDGColorBg->setColor( m_project->tag( Project::Tag_CDG_bgcolor ) );
-	btnCDGColorInactive->setColor( m_project->tag( Project::Tag_CDG_inactivecolor ) );
-	btnCDGColorInfo->setColor( m_project->tag( Project::Tag_CDG_infocolor ) );
-	fontCDG->setCurrentFont( QFont( m_project->tag( Project::Tag_CDG_font ) ) );
-	fontCDGSize->setValue( m_project->tag( Project::Tag_CDG_fontsize).toInt() );
-	titleCDGmin->setValue( m_project->tag( Project::Tag_CDG_titletime).toInt() );
-	fontCDG->setFontFilters( QFontComboBox::ScalableFonts | QFontComboBox::MonospacedFonts | QFontComboBox::ProportionalFonts );
-	cbCDGPreamble->setChecked( m_project->tag( Project::Tag_CDG_preamble).toInt() );
 
 	if ( m_project->type() == Project::LyricType_UStar )
 	{
@@ -121,13 +106,6 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 			leUSlang->setText( m_project->tag( Project::Tag_Language ) );
 			leUSvideo->setText( m_project->tag( Project::Tag_Video ) );
 			leUSvideogap->setText( m_project->tag( Project::Tag_VideoGap ) );
-			break;
-
-		case Project::LyricType_CDG:
-			// Hide LRC and UStar groups
-			groupLRC->hide();
-			groupUStar->hide();
-
 			break;
 	}
 
@@ -174,17 +152,6 @@ void ProjectSettings::changeProjectType()
 		// Hide ultrastar group
 		groupUStar->show();
 	}
-	else if ( rbLRC4->isChecked() )
-	{
-		// Hide LRC group
-		groupLRC->hide();
-		groupUStar->hide();
-
-		// Hide Ultrastar-specific fields
-		labelUSbpmgap->hide();
-		labelMusicFile->hide();
-		leUSmp3->hide();
-	}
 }
 
 void ProjectSettings::accept()
@@ -212,8 +179,6 @@ void ProjectSettings::accept()
 			m_project->setType( Project::LyricType_LRC2 );
 		else if ( rbLRC3->isChecked() )
 			m_project->setType( Project::LyricType_UStar );
-		else if ( rbLRC4->isChecked() )
-			m_project->setType( Project::LyricType_CDG );
 	}
 
 	// 2nd tab
@@ -272,15 +237,6 @@ void ProjectSettings::accept()
 		m_project->setTag( Project::Tag_Video, leUSvideo->text() );
 		m_project->setTag( Project::Tag_VideoGap, leUSvideogap->text() );
 	}
-
-	m_project->setTag( Project::Tag_CDG_activecolor, btnCDGColorActive->color().name() );
-	m_project->setTag( Project::Tag_CDG_bgcolor, btnCDGColorBg->color().name() );
-	m_project->setTag( Project::Tag_CDG_inactivecolor, btnCDGColorInactive->color().name() );
-	m_project->setTag( Project::Tag_CDG_infocolor, btnCDGColorInfo->color().name() );
-	m_project->setTag( Project::Tag_CDG_font, fontCDG->currentFont().family() );
-	m_project->setTag( Project::Tag_CDG_fontsize, QString::number( fontCDGSize->value() ) );
-	m_project->setTag( Project::Tag_CDG_titletime, QString::number( titleCDGmin->value() ) );
-	m_project->setTag( Project::Tag_CDG_preamble, cbCDGPreamble->isChecked() ? "1" : "0" );
 
 	QDialog::accept();
 }

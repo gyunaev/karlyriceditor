@@ -246,10 +246,10 @@ void Editor::cursorToLine( int line, int column )
 }
 
 // validators
-bool Editor::validate()
+bool Editor::validate( const QFont * font, const QSize * fitsize )
 {
 	QList<ValidatorError> errors;
-	validate( errors );
+	validate( errors, font, fitsize );
 
 	if ( !errors.isEmpty() )
 	{
@@ -266,15 +266,11 @@ bool Editor::validate()
 }
 
 
-void Editor::validate( QList<ValidatorError>& errors )
+void Editor::validate( QList<ValidatorError>& errors, const QFont * font, const QSize * fitsize )
 {
 	int linesinblock = 0;
 	qint64 last_time = 0;
 	QString paragraphtext;
-
-	// For CD+G validation
-	TextRenderer renderer( 100, 100 );
-	renderer.setCDGfonts( m_project );
 
 	// Get the lyrics
 	QString text = toPlainText();
@@ -319,18 +315,22 @@ void Editor::validate( QList<ValidatorError>& errors )
 			}
 
 			// Paragraph-specific checks
-			if ( m_project->type() == Project::LyricType_CDG )
+			if ( font && fitsize )
 			{
-				// Check if we exceed the screen height for CD+G
-				QRect r = renderer.boundingRect( paragraphtext );
+				// Check if we exceed the screen height
+				QFont normalfont = *font;
+				QFont smallfont = *font;
+				smallfont.setPixelSize( normalfont.pointSize() - 2 );
 
-				if ( r.height() > (int) (CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT) )
+				QRect r = TextRenderer::boundingRect( paragraphtext, normalfont, smallfont );
+
+				if ( r.height() >= fitsize->width() )
 				{
 					errors.push_back(
 							ValidatorError(
 									linenumber - 1,
 									0,
-									tr("Paragraph height exceed. This paragraph cannot fit into CD+G screen using the selected font" ) ) );
+									tr("Paragraph height exceed.\nThis paragraph cannot fit into the screen using the selected font" ) ) );
 				}
 			}
 
@@ -502,18 +502,23 @@ cont_paragraph:
 				linetext += line[col];
 		}
 
-		// Check if we exceed the screen width for CD+G
-		if ( m_project->type() == Project::LyricType_CDG )
+		// Check if we exceed the screen width
+		if ( font && fitsize )
 		{
-			QRect r = renderer.boundingRect( linetext );
+			// Check if we exceed the screen height
+			QFont normalfont = *font;
+			QFont smallfont = *font;
+			smallfont.setPixelSize( normalfont.pointSize() - 2 );
 
-			if ( r.width() >= (int) (CDG_FULL_WIDTH - 2*CDG_BORDER_WIDTH) )
+			QRect r = TextRenderer::boundingRect( linetext, normalfont, smallfont );
+
+			if ( r.width() >= fitsize->width() )
 			{
 				errors.push_back(
 						ValidatorError(
 								linenumber,
 								0,
-								tr("Line width exceed. This line cannot fit into CD+G screen using the selected font" ) ) );
+								tr("Line width exceed.\nThis line cannot fit into the screen using the selected font" ) ) );
 			}
 		}
 

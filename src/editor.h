@@ -74,8 +74,8 @@ class Editor : public QTextEdit
 		void	removeExtraWhitespace();
 
 		// Validate the lyrics
-		bool	validate();
-		void	validate( QList<ValidatorError>& errors );
+		bool	validate( const QFont * font = 0, const QSize * fitsize = 0 );
+		void	validate( QList<ValidatorError>& errors, const QFont * font = 0, const QSize * fitsize = 0 );
 
 		// Export/Import functions to process lyrics. This generally does not work
 		// for lyrics in "editing" phase, and requires the lyrics to be validated.

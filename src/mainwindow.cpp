@@ -163,6 +163,7 @@ void MainWindow::connectActions()
 	connect( actionProject_settings, SIGNAL( triggered()), this, SLOT(act_projectSettings()) );
 	connect( actionExport_lyric_file, SIGNAL( triggered()), this, SLOT(act_projectExportLyricFile()) );
 	connect( actionExport_video_file, SIGNAL( triggered()), this, SLOT(act_projectExportVideoFile()) );
+	connect( actionExport_CD_G_file, SIGNAL( triggered()), this, SLOT(act_projectExportCDGFile()) );
 	connect( actionEdit_header_data, SIGNAL( triggered()), this, SLOT( act_projectEditHeader()) );
 	connect( actionValidate_lyrics, SIGNAL( triggered()), this, SLOT( act_projectValidateLyrics()) );
 	connect( actionView_lyric_file, SIGNAL( triggered()), this, SLOT( act_projectViewLyricFile()) );
@@ -468,30 +469,24 @@ void MainWindow::act_projectExportLyricFile()
 	QString filter_LRC1 = tr("LRC version 1 (*.lrc1)");
 	QString filter_LRC2 = tr("LRC version 2 (*.lrc)");
 	QString filter_UStar = tr("UltraStar (*.txt)");
-	QString filter_CDG = tr("CD+G (*.cdg)");
 
 	QString filter, selected, outfilter;
 
 	switch ( m_project->type() )
 	{
 		case Project::LyricType_LRC1:
-			filter = filter_LRC1 + ";;" + filter_LRC2 + ";;" + filter_UStar + ";;" + filter_CDG;
+			filter = filter_LRC1 + ";;" + filter_LRC2 + ";;" + filter_UStar;
 			selected = filter_LRC1;
 			break;
 
 		case Project::LyricType_LRC2:
-			filter = filter_LRC2 + ";;" + filter_LRC1 + ";;" + filter_UStar + ";;" + filter_CDG;
+			filter = filter_LRC2 + ";;" + filter_LRC1 + ";;" + filter_UStar;
 			selected = filter_LRC2;
 			break;
 
 		case Project::LyricType_UStar:
-			filter = filter_UStar + ";;" + filter_LRC2 + ";;" + filter_LRC1 + ";;" + filter_CDG;
+			filter = filter_UStar + ";;" + filter_LRC2 + ";;" + filter_LRC1;
 			selected = filter_UStar;
-			break;
-
-		case Project::LyricType_CDG:
-			filter =  filter_CDG + ";;" + filter_UStar + ";;" + filter_LRC2 + ";;" + filter_LRC1;
-			selected = filter_CDG;
 			break;
 	}
 
@@ -507,8 +502,6 @@ void MainWindow::act_projectExportLyricFile()
 		lyrics = m_project->exportLyricsAsLRC2();
 	else if ( outfilter == filter_UStar )
 		lyrics = m_project->exportLyricsAsUStar();
-	else if ( outfilter == filter_CDG )
-		lyrics = m_project->exportLyricsAsCDG();
 	else
 	{
 		QMessageBox::critical( 0, "Unknown filter", "Unknown filter" );
@@ -585,10 +578,10 @@ void MainWindow::updateState()
 	actionTrimspaces->setEnabled( project_available );
 	actionExport_lyric_file->setEnabled( project_available );
 	actionExport_video_file->setEnabled( project_available );
+	actionExport_CD_G_file->setEnabled( project_available );
 	actionEdit_header_data->setEnabled( project_available );
 	actionProject_settings->setEnabled( project_available );
-
-	actionView_lyric_file->setEnabled( project_ready && m_project->type() != Project::LyricType_CDG );
+	actionView_lyric_file->setEnabled( project_ready );
 
 	editor->setEnabled( project_available );
 
@@ -705,7 +698,7 @@ void MainWindow::act_projectTestCDG()
 	QByteArray cdgdata = f.readAll();
 */
 
-	QByteArray cdgdata = m_project->exportLyricsAsCDG();
+/*	QByteArray cdgdata = m_project->exportLyricsAsCDG();
 
 	if ( cdgdata.isEmpty() )
 		return;
@@ -725,6 +718,7 @@ void MainWindow::act_projectTestCDG()
 
 	if ( m_player->currentTime() == 0 )
 		m_player->btn_playerPlayPause();
+		*/
 }
 
 
@@ -738,7 +732,20 @@ void MainWindow::act_projectExportVideoFile()
 	if ( !editor->exportLyrics( &lyrics ) )
 		return;
 
-
 	VideoGenerator videogen( m_project );
 	videogen.generate( lyrics, m_player->totalTime() );
+}
+
+void MainWindow::act_projectExportCDGFile()
+{
+	if ( !editor->validate() )
+		return;
+
+	Lyrics lyrics;
+
+	if ( !editor->exportLyrics( &lyrics ) )
+		return;
+
+//	VideoGenerator videogen( m_project );
+//	videogen.generate( lyrics, m_player->totalTime() );
 }

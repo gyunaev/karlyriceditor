@@ -90,9 +90,12 @@
     <addaction name="actionValidate_lyrics"/>
     <addaction name="actionView_lyric_file"/>
     <addaction name="actionTest_lyric_file"/>
-    <addaction name="actionTest_CDG_lyrics"/>
     <addaction name="actionExport_lyric_file"/>
+    <addaction name="separator"/>
     <addaction name="actionExport_video_file"/>
+    <addaction name="separator"/>
+    <addaction name="actionTest_CDG_lyrics"/>
+    <addaction name="actionExport_CD_G_file"/>
     <addaction name="separator"/>
     <addaction name="actionEdit_header_data"/>
     <addaction name="actionProject_settings"/>
@@ -493,6 +496,15 @@ Note that for formats which support blocks nothing will be shown until it's less
    </property>
    <property name="text">
     <string>Export video file...</string>
+   </property>
+  </action>
+  <action name="actionExport_CD_G_file">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/images/dryicons_cd.png</normaloff>:/images/dryicons_cd.png</iconset>
+   </property>
+   <property name="text">
+    <string>Export CD+G file...</string>
    </property>
   </action>
  </widget>

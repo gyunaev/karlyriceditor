@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>477</width>
-    <height>282</height>
+    <height>253</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -53,7 +53,7 @@ p, li { white-space: pre-wrap; }
       <item>
        <widget class="QRadioButton" name="rbLRC2">
         <property name="text">
-         <string>LRC version 2</string>
+         <string>LRC version 2 (also recommended for CD+G or video export)</string>
         </property>
         <property name="checked">
          <bool>true</bool>
@@ -64,13 +64,6 @@ p, li { white-space: pre-wrap; }
        <widget class="QRadioButton" name="rbLRC3">
         <property name="text">
          <string>UltraStar lyrics</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QRadioButton" name="rbLRC4">
-        <property name="text">
-         <string>CD+G lyrics</string>
         </property>
        </widget>
       </item>

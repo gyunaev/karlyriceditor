@@ -171,7 +171,21 @@ bool Project::load( const QString& filename )
 	else
 		m_editor->importFromOldString( m_projectData[ PD_LYRICS_OLD ] );
 
-	m_modified = false;
+	// Check the lyrics type, and reset it to LRC2 if not specified
+	switch ( type() )
+	{
+		case LyricType_LRC1:
+		case LyricType_LRC2:
+		case LyricType_UStar:
+			m_modified = false;
+			break;
+
+		default:
+			setType( LyricType_LRC2 );
+			m_modified = true;
+			break;
+	}
+
 	return true;
 }
 
@@ -409,9 +423,6 @@ void Project::appendIfPresent( int id, const QString& prefix, QString& src, Lyri
 		case LyricType_UStar:
 			src += "#" + prefix + ":" + m_projectData[id] + "\n";
 			break;
-
-		case LyricType_CDG:
-			break; // unused
 	}
 }
 
@@ -460,9 +471,6 @@ QByteArray Project::exportLyrics()
 
 		case LyricType_UStar:
 			return exportLyricsAsUStar();
-
-		case LyricType_CDG:
-			return exportLyricsAsCDG();
 	}
 
 	return "UNSUPORTED";
@@ -475,13 +483,6 @@ QByteArray Project::exportLyricsAsLRC1()
 
 	switch ( type() )
 	{
-		case LyricType_CDG:
-			warntext = QObject::tr("Current lyrics format is set to CD+G.\n\n"
-			"When exporting it as LRC version 1 all time tags except the one in front of the line "
-			"will be ignored.\n\n"
-			"Do you want to proceed with export?");
-			break;
-
 		case LyricType_LRC2:
 			warntext = QObject::tr("Current lyrics format is set to LRC version 2.\n\n"
 				"When exporting it as LRC version 1 all time tags except the one in front of the line "
@@ -559,7 +560,6 @@ QByteArray Project::exportLyricsAsLRC2()
 	{
 		case LyricType_LRC1:
 		case LyricType_LRC2:
-		case LyricType_CDG:
 			break; // seamless conversion
 
 		case LyricType_UStar:
@@ -644,12 +644,6 @@ QByteArray Project::exportLyricsAsUStar()
 
 		case LyricType_LRC2:
 			warntext = QObject::tr("Current lyrics format is set to LRC version 2.\n\n"
-				"When exporting it as UltraStar format the output lyrics will not contain pitch information.\n\n"
-				"Do you want to proceed with export?");
-			break;
-
-		case LyricType_CDG:
-			warntext = QObject::tr("Current lyrics format is set to CD+G.\n\n"
 				"When exporting it as UltraStar format the output lyrics will not contain pitch information.\n\n"
 				"Do you want to proceed with export?");
 			break;
@@ -818,9 +812,6 @@ bool Project::importLyrics( const QString& filename, LyricType type )
 			success = importLyricsLRC( linedtext, lyr );
 			lyr.endLyrics();
 			break;
-
-		case LyricType_CDG:
-			qFatal("No import for CD+G lyrics");
 	}
 
 	// importLyrics* already showed error message
@@ -1106,6 +1097,7 @@ void Project::setSongLength( qint64 length )
 }
 
 
+/*
 QByteArray Project::exportLyricsAsCDG()
 {
 	// We cheat to force the editor to test CD+G piece too
@@ -1130,3 +1122,4 @@ QByteArray Project::exportLyricsAsCDG()
 
 	return cdggen.stream();
 }
+*/

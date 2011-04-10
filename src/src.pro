@@ -38,7 +38,7 @@ HEADERS += mainwindow.h \
     audioplayer.h \
     ffmpeg_headers.h \
     audioplayerprivate.h \
-    videoexportoptions.h \
+	export_params.h \
     dialog_renderpreview.h
 SOURCES += mainwindow.cpp \
     main.cpp \
@@ -71,7 +71,7 @@ SOURCES += mainwindow.cpp \
     audioplayer.cpp \
     audioplayerprivate.cpp \
     ffmpeg_headers.cpp \
-    videoexportoptions.cpp \
+	export_params.cpp \
     dialog_renderpreview.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \
@@ -87,7 +87,7 @@ FORMS += mainwindow.ui \
     dialog_settings.ui \
     dialog_selectencoding.ui \
     gentlemessagebox.ui \
-    video_export_params.ui \
+	dialog_export_params.ui \
     dialog_renderpreview.ui \
     dialog_videoencprogress.ui
 win32-g++-*::LIBS += -lwsock32

@@ -69,6 +69,9 @@ class TextRenderer : public LyricsRenderer
 		// Autodetects the largest font size to fit all lyrics into a specific image size.
 		static int	autodetectFontSize( const QSize& size, const Lyrics& lyrics, const QFont& font );
 
+		// Verifies that all lyrics could be rendered into a specific image size using the provided font
+		static bool	verifyFontSize( const QSize& size, const Lyrics& lyrics, const QFont& font );
+
 	private:
 		void	init();
 		QString lyricForTime( qint64 tick );

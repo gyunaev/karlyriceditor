@@ -5,7 +5,7 @@
 #include "audioplayer.h"
 #include "videogenerator.h"
 #include "textrenderer.h"
-#include "videoexportoptions.h"
+#include "export_params.h"
 #include "ffmpegvideoencoder.h"
 #include "editor.h"
 
@@ -21,7 +21,7 @@ VideoGenerator::VideoGenerator( Project * prj )
 void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 {
 	// Show the dialog with video options
-	VideoExportOptionsDialog dlg( m_project, lyrics );
+	DialogExportOptions dlg( m_project, lyrics, true );
 
 	if ( dlg.exec() != QDialog::Accepted )
 		return;
