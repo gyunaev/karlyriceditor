@@ -58,13 +58,16 @@ class TextRenderer : public LyricsRenderer
 		// Draw a new lyrics image
 		virtual int	update( qint64 timing );
 
+		// Helper: set up CD+G fonts
+		void	setCDGfonts( const Project * prj );
+
 		// Returns the lyrics bounding box for a line or for paragraph using the font specified,
 		// or the default font if not specified
 		QRect	boundingRect( const QString& text );
-		QRect	boundingRect( const QString& text, const QFont& font, const QFont& smallfont );
+		static QRect	boundingRect( const QString& text, const QFont& font, const QFont& smallfont );
 
-		// Helper: set up CD+G fonts
-		void	setCDGfonts( const Project * prj );
+		// Autodetects the largest font size to fit all lyrics into a specific image size.
+		static int	autodetectFontSize( const QSize& size, const Lyrics& lyrics, const QFont& font );
 
 	private:
 		void	init();

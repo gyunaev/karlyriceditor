@@ -283,6 +283,38 @@ QString TextRenderer::lyricForTime( qint64 tickmark )
 	return block;
 }
 
+int	TextRenderer::autodetectFontSize( const QSize& size, const Lyrics& lyrics, const QFont& font )
+{
+	QFont normalfont = font;
+	QFont smallfont = font;
+
+	// Start with 8
+	int lastfontsize = 8;
+
+	while ( 1 )
+	{
+		// Initialize the fonts
+		normalfont.setPixelSize( lastfontsize );
+		smallfont.setPixelSize( lastfontsize - 2 );
+
+		// Test all lyrics whether it fits
+		for ( int bl = 0; bl < lyrics.totalBlockInfoBlocks(); bl++ )
+		{
+			QString text = lyrics.getBlockText( bl );
+			QRect rect = boundingRect( text, normalfont, smallfont );
+
+			// Still fit?
+			if ( rect.width() >= size.width() || rect.height() >= size.height() )
+			{
+				// Not fit, use a previous font size
+				return lastfontsize - 1;
+			}
+		}
+
+		lastfontsize++;
+	}
+}
+
 QRect TextRenderer::boundingRect( const QString& text )
 {
 	return boundingRect( text, m_renderFont, m_smallFont );
