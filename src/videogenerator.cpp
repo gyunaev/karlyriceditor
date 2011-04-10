@@ -7,6 +7,9 @@
 #include "textrenderer.h"
 #include "videoexportoptions.h"
 #include "ffmpegvideoencoder.h"
+#include "editor.h"
+
+#include "ui_dialog_videoencprogress.h"
 
 
 VideoGenerator::VideoGenerator( Project * prj )
@@ -75,29 +78,45 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	}
 
 	// Pop up progress dialog
-	QProgressDialog progressdlg ("Rendering video lyrics",
-						 QString::null,
-						 0,
-						 99 );
+	QDialog progressdlg;
+	Ui::DialogVideoEncodingProgress ui;
+	ui.setupUi( &progressdlg );
 
-	progressdlg.setValue( 0 );
+	ui.progressBar->setMaximum( 99 );
+	ui.progressBar->setMinimum( -1 );
+	ui.progressBar->setValue( -1 );
+
+	ui.lblFrames->setText( "0" );
+	ui.lblOutput->setText( "0 Mb" );
+	ui.lblTime->setText( "0:00.00" );
+
 	progressdlg.show();
 
 	qint64 dialog_step = total_length / 100;
 	qint64 time_step = (1000 * num) / den;
 
+	int frames = 0, size = 0;
+
 	// Rendering
 	for ( qint64 time = 0; time < total_length; time += time_step )
 	{
-		// Should we show the next step?
-		if ( time / dialog_step > progressdlg.value() )
+		frames++;
+		lyricrenderer.update( time );
+		QImage image = lyricrenderer.image();
+		size += encoder.encodeImage( image );
+
+		// Should we update the progress dialog?
+		if ( time / dialog_step > ui.progressBar->value() )
 		{
-			progressdlg.setValue( time / dialog_step );
+			ui.progressBar->setValue( time / dialog_step );
+
+			ui.lblFrames->setText( QString::number( frames ) );
+			ui.lblOutput->setText( QString( "%1 Mb" ) .arg( size / (1024*1024) ) );
+			ui.lblTime->setText( markToTime( time ) );
+			ui.image->setPixmap( QPixmap::fromImage( image ).scaled( ui.image->size() ) );
+
 			qApp->processEvents( QEventLoop::ExcludeUserInputEvents );
 		}
-
-		lyricrenderer.update( time );
-		encoder.encodeImage( lyricrenderer.image() );
 	}
 
 	encoder.close();

@@ -30,12 +30,32 @@
 class Project;
 class BackgroundEvents;
 
+
+static inline QString markToTime( qint64 mark )
+{
+	int min = mark / 60000;
+	int sec = (mark - min * 60000) / 1000;
+	int msec = mark - (min * 60000 + sec * 1000 );
+
+	return QString().sprintf( "%02d:%02d.%02d", min, sec, msec / 10 );
+}
+
+static inline qint64 timeToMark( QString data )
+{
+	QRegExp rxtime( "^(\\d+):(\\d+)\\.(\\d+)$");
+
+	if ( data.indexOf( rxtime ) == -1 )
+		return -1;
+
+	return rxtime.cap( 1 ).toInt() * 60000 + rxtime.cap( 2 ).toInt() * 1000 + rxtime.cap( 3 ).toInt() * 10;
+}
+
+
 //
 // Architecturally only editor is responsible for formats, and know everything about
 // any specific lyrics format. This is done here and not in Project to provide syntax
 // highlighting.
 //
-
 class Editor : public QTextEdit
 {
 	Q_OBJECT

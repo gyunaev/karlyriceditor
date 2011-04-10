@@ -389,7 +389,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img )
 			if ( ret < 0 )
 				return -1;
 
-			outsize += ret;
+			outsize += pkt.size;
 
 			// Recalculate audio_pts
 			audio_pts = (double)pAudioStream->pts.val * pAudioStream->time_base.num / pAudioStream->time_base.den;
@@ -420,7 +420,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img )
 		if ( ret < 0 )
 			return -1;
 
-		outsize += ret;
+		outsize += pkt.size;
 	}
 
 	return outsize;
