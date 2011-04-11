@@ -20,7 +20,6 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
-#include "dialog_renderpreview.h"
 #include "textrenderer.h"
 #include "export_params.h"
 #include "playerwidget.h"
