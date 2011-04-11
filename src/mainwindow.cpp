@@ -671,8 +671,7 @@ void MainWindow::act_projectTest()
 	m_testWindow->setLyricWidget( lw );
 	m_testWindow->show();
 
-	if ( m_player->currentTime() == 0 )
-		m_player->btn_playerPlayPause();
+	m_player->startPlaying();
 }
 
 void MainWindow::testWindowClosed()
@@ -716,8 +715,7 @@ void MainWindow::act_projectTestCDG()
 	m_testWindow->setLyricWidget( lw );
 	m_testWindow->show();
 
-	if ( m_player->currentTime() == 0 )
-		m_player->btn_playerPlayPause();
+	m_player->startPlaying();
 }
 
 

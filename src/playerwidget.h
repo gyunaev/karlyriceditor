@@ -51,6 +51,7 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 		void	tick( qint64 tickvalue );
 
 	public slots:
+		void	startPlaying();
 		void	btn_playerStop();
 		void	btn_playerPlayPause();
 		void	btn_playerSeekForward();

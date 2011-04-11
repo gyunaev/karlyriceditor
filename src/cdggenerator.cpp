@@ -298,6 +298,9 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	// Preamble
 	lyricrenderer.setPreambleData( 4, 5000, 8 );
 
+	// CD+G prefetching
+	lyricrenderer.setPrefetch( 1000 );
+
 	// CD+G fonts
 	lyricrenderer.forceCDGmode();
 

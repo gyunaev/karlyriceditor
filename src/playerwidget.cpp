@@ -158,12 +158,26 @@ void PlayerWidget::btn_playerPlayPause()
 
 void PlayerWidget::btn_playerSeekForward()
 {
-	pAudioPlayer->seekTo( pAudioPlayer->currentTime() + 5000 );
+	if ( pAudioPlayer->isPlaying() )
+		pAudioPlayer->seekTo( pAudioPlayer->currentTime() + 5000 );
 }
 
 void PlayerWidget::btn_playerSeekBackward()
 {
-	pAudioPlayer->seekTo( pAudioPlayer->currentTime() - 5000 );
+	if ( pAudioPlayer->isPlaying() )
+		pAudioPlayer->seekTo( pAudioPlayer->currentTime() - 5000 );
+}
+
+void PlayerWidget::startPlaying()
+{
+	if ( pAudioPlayer->isPlaying() )
+	{
+		pAudioPlayer->stop();
+		pAudioPlayer->reset();
+	}
+
+	pAudioPlayer->play();
+	updatePlayerState( Audio_PlayingState );
 }
 
 qint64 PlayerWidget::currentTime() const
