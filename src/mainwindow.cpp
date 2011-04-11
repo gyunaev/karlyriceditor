@@ -657,11 +657,12 @@ void MainWindow::act_projectTest()
 	if ( !m_testWindow )
 	{
 		m_testWindow = new TestWindow( this );
+		connect( m_player, SIGNAL(tick(qint64)), m_testWindow, SLOT(tick(qint64)) );
 		connect( m_testWindow, SIGNAL(closed()), this, SLOT( testWindowClosed() ) );
 	}
 
 	LyricsWidget * lw = new LyricsWidget( m_testWindow );
-	connect( m_player, SIGNAL(tick(qint64)), lw, SLOT(updateLyrics(qint64)) );
+
 
 	lw->setLyrics( lyrics,
 					 m_project->tag( Project::Tag_Artist ),
@@ -684,7 +685,6 @@ void MainWindow::testWindowClosed()
 
 void MainWindow::act_projectTestCDG()
 {
-/*
 	QString fileName = QFileDialog::getOpenFileName( this,
 			tr("Open a CD+G file"),
 			".",
@@ -699,9 +699,6 @@ void MainWindow::act_projectTestCDG()
 		return;
 
 	QByteArray cdgdata = f.readAll();
-*/
-
-/*	QByteArray cdgdata = m_project->exportLyricsAsCDG();
 
 	if ( cdgdata.isEmpty() )
 		return;
@@ -709,11 +706,11 @@ void MainWindow::act_projectTestCDG()
 	if ( !m_testWindow )
 	{
 		m_testWindow = new TestWindow( this );
+		connect( m_player, SIGNAL(tick(qint64)), m_testWindow, SLOT(tick(qint64)) );
 		connect( m_testWindow, SIGNAL(closed()), this, SLOT( testWindowClosed() ) );
 	}
 
 	LyricsWidget * lw = new LyricsWidget( m_testWindow );
-	connect( m_player, SIGNAL(tick(qint64)), lw, SLOT(updateLyrics(qint64)) );
 	lw->setCDGdata( cdgdata );
 
 	m_testWindow->setLyricWidget( lw );
@@ -721,7 +718,6 @@ void MainWindow::act_projectTestCDG()
 
 	if ( m_player->currentTime() == 0 )
 		m_player->btn_playerPlayPause();
-		*/
 }
 
 

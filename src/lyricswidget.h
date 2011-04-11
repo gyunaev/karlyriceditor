@@ -46,6 +46,7 @@ class LyricsWidget : public QWidget
 	protected:
 		void	paintEvent( QPaintEvent * );
 		QSize	sizeHint () const;
+		QSizePolicy	sizePolicy () const;
 		QSize	minimumSizeHint() const;
 
 	private:

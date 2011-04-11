@@ -19,12 +19,16 @@
 
 #include "testwindow.h"
 #include "lyricswidget.h"
+#include "audioplayer.h"
+#include "playerwidget.h"
 
 TestWindow::TestWindow( QWidget *parent )
-	: QDialog(parent)
+	: QDialog(parent), Ui::DialogTestWindow()
 {
-	m_layout = new QVBoxLayout( this );
+	setupUi( this );
 
+	m_widget = 0;
+	m_layout = new QVBoxLayout( frame );
 	setLayout( m_layout );
 }
 
@@ -34,6 +38,7 @@ void TestWindow::setLyricWidget( LyricsWidget * lw )
 	QWidget *child = (QWidget*) m_layout->takeAt(0);
 	delete child;
 
+	m_widget = lw;
 	m_layout->addWidget( lw );
 	update();
 }
@@ -43,4 +48,19 @@ void TestWindow::closeEvent( QCloseEvent * event )
 	emit closed();
 
 	QDialog::closeEvent( event );
+}
+
+void TestWindow::tick( qint64 value )
+{
+	m_widget->updateLyrics( value );
+
+	qint64 reminder = pAudioPlayer->totalTime() - value;
+
+	lblCurrent->setText( PlayerWidget::tickToString( value ) );
+	lblTotal->setText( PlayerWidget::tickToString( reminder ) );
+
+	int pval = value * progressBar->maximum() / pAudioPlayer->totalTime();
+
+	if ( progressBar->value() != pval )
+		progressBar->setValue( pval );
 }

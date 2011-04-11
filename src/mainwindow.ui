@@ -92,10 +92,10 @@
     <addaction name="actionTest_lyric_file"/>
     <addaction name="actionExport_lyric_file"/>
     <addaction name="separator"/>
-    <addaction name="actionExport_video_file"/>
-    <addaction name="separator"/>
-    <addaction name="actionTest_CDG_lyrics"/>
     <addaction name="actionExport_CD_G_file"/>
+    <addaction name="actionTest_CDG_lyrics"/>
+    <addaction name="separator"/>
+    <addaction name="actionExport_video_file"/>
     <addaction name="separator"/>
     <addaction name="actionEdit_header_data"/>
     <addaction name="actionProject_settings"/>
@@ -455,7 +455,7 @@ Note that for formats which support blocks nothing will be shown until it's less
      <normaloff>:/images/dryicons_computer.png</normaloff>:/images/dryicons_computer.png</iconset>
    </property>
    <property name="text">
-    <string>Test lyrics as CD+G</string>
+    <string>Test CD+G file...</string>
    </property>
    <property name="toolTip">
     <string>Test the lyrics if you gonna export them as CD+G</string>

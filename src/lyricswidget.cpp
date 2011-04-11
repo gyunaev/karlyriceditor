@@ -46,6 +46,11 @@ QSize LyricsWidget::sizeHint () const
 	return minimumSizeHint();
 }
 
+QSizePolicy	LyricsWidget::sizePolicy() const
+{
+	return QSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );
+}
+
 QSize LyricsWidget::minimumSizeHint() const
 {
 	return QSize( m_lastImage.width() + 2 * PADDING_X, m_lastImage.height() + 2 * PADDING_Y );

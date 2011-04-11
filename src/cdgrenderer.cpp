@@ -17,53 +17,56 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#include <QDebug>
 #include <QPainter>
 #include "cdgrenderer.h"
+
 
 CDGRenderer::CDGRenderer()
 	: LyricsRenderer()
 {
-	m_image = QImage( 100, 100, QImage::Format_ARGB32 );
-	m_cdgimage = QImage( CDG_FULL_WIDTH, CDG_FULL_HEIGHT, QImage::Format_Indexed8 );
+	m_streamIdx = -1;
+	m_hOffset = 0;
+	m_vOffset = 0;
+	m_borderColor = 0;
+	m_bgColor = 0;
+
+	memset( m_cdgScreen, 0, sizeof(m_cdgScreen) );
+
+	for ( int i = 0; i < 16; i++ )
+		m_colorTable[i] = 0;
 }
 
-void CDGRenderer::setCDGdata( const QByteArray& cdgdata )
+CDGRenderer::~CDGRenderer()
 {
-	m_packet = 0;
+}
 
-	m_cdgimage.fill( 0 );
-	m_stream.clear();
-	m_stream.reserve( cdgdata.size() / sizeof( SubCode ) );
+quint8 CDGRenderer::getPixel( int x, int y )
+{
+	unsigned int offset = x + y * CDG_FULL_WIDTH;
 
-	for ( int offset = 0; offset < cdgdata.size(); offset += sizeof( SubCode ) )
+	if ( x >= (int) CDG_FULL_WIDTH || y >= (int) CDG_FULL_HEIGHT )
+		return m_borderColor;
+
+	if ( x < 0 || y < 0 || offset > CDG_FULL_HEIGHT * CDG_FULL_WIDTH )
 	{
-		SubCode * sc = (SubCode *) (cdgdata.data() + offset);
-
-		if ( ( sc->command & CDG_MASK) == CDG_COMMAND )
-		{
-			// Validate the command and instruction
-			switch ( sc->instruction & CDG_MASK )
-			{
-				case CDG_INST_MEMORY_PRESET:
-				case CDG_INST_BORDER_PRESET:
-				case CDG_INST_LOAD_COL_TBL_0_7:
-				case CDG_INST_LOAD_COL_TBL_8_15:
-				case CDG_INST_TILE_BLOCK_XOR:
-					break;
-
-				// We do not support those commands, as we do not generate them
-				//case CDG_INST_SCROLL_PRESET:
-				//case CDG_INST_SCROLL_COPY:
-				//case CDG_INST_DEF_TRANSP_COL:
-				//case CDG_INST_TILE_BLOCK:
-				default:
-					qFatal("Unsupported CD+G instruction: %d", sc->instruction & CDG_MASK );
-			}
-		}
-
-		m_stream.push_back( *sc );
+		qWarning( "CDG renderer: requested pixel (%d,%d) is out of boundary", x, y );
+		return 0;
 	}
+
+	return m_cdgScreen[offset];
+}
+
+void CDGRenderer::setPixel( int x, int y, quint8 color )
+{
+	unsigned int offset = x + y * CDG_FULL_WIDTH;
+
+	if ( x < 0 || y < 0 || offset > CDG_FULL_HEIGHT * CDG_FULL_WIDTH )
+	{
+		qWarning( "CDG renderer: set pixel (%d,%d) is out of boundary", x, y );
+		return;
+	}
+
+	m_cdgScreen[offset] = color;
 }
 
 void CDGRenderer::cmdMemoryPreset( const char * data )
@@ -73,27 +76,25 @@ void CDGRenderer::cmdMemoryPreset( const char * data )
 	if ( preset->repeat & 0x0F )
 		return;  // No need for multiple clearings
 
-	quint32 bgColor = preset->color & 0x0F;
+	m_bgColor = preset->color & 0x0F;
 
 	for ( unsigned int i = CDG_BORDER_WIDTH; i < CDG_FULL_WIDTH - CDG_BORDER_WIDTH; i++ )
 		for ( unsigned int  j = CDG_BORDER_HEIGHT; j < CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT; j++ )
-			m_cdgimage.setPixel( i, j, bgColor );
-
-//	qDebug( "MemPreset: filling memory with color %d (%08X)", preset->color & 0x0F, bgColor );
+			setPixel( i, j, m_bgColor );
 }
 
 void CDGRenderer::cmdBorderPreset( const char * data )
 {
 	CDG_BorderPreset* preset = (CDG_BorderPreset*) data;
 
-	quint32 borderColor = preset->color & 0x0F;
+	m_borderColor = preset->color & 0x0F;
 
 	for ( unsigned int i = 0; i < CDG_BORDER_WIDTH; i++ )
 	{
 		for ( unsigned int j = 0; j < CDG_FULL_HEIGHT; j++ )
 		{
-			m_cdgimage.setPixel( i, j, borderColor );
-			m_cdgimage.setPixel( CDG_FULL_WIDTH - i - 1, j, borderColor );
+			setPixel( i, j, m_borderColor );
+			setPixel( CDG_FULL_WIDTH - i - 1, j, m_borderColor );
 		}
 	}
 
@@ -101,23 +102,27 @@ void CDGRenderer::cmdBorderPreset( const char * data )
 	{
 		for ( unsigned int j = 0; j < CDG_BORDER_HEIGHT; j++ )
 		{
-			m_cdgimage.setPixel( i, j, borderColor );
-			m_cdgimage.setPixel( i, CDG_FULL_HEIGHT - j - 1, borderColor );
+			setPixel( i, j, m_borderColor );
+			setPixel( i, CDG_FULL_HEIGHT - j - 1, m_borderColor );
 		}
 	}
 
-//	qDebug( "BorderPreset: filling border with color %d (%08X)", preset->color & 0x0F, borderColor );
+	//CLog::Log( LOGDEBUG, "CDG: border color set to %d", borderColor );
+}
+
+void CDGRenderer::cmdTransparentColor( const char * data )
+{
+	int index = data[0] & 0x0F;
+	m_colorTable[index] = 0xFFFFFFFF;
 }
 
 void CDGRenderer::cmdLoadColorTable( const char * data, int index )
 {
 	CDG_LoadColorTable* table = (CDG_LoadColorTable*) data;
 
-//	qDebug( "LoadColors: filling color table %d", index / 8 );
-
 	for ( int i = 0; i < 8; i++ )
 	{
-		quint32 colourEntry = ((table->colorSpec[2 * i] & CDG_MASK) << 8);
+		unsigned int colourEntry = ((table->colorSpec[2 * i] & CDG_MASK) << 8);
 		colourEntry = colourEntry + (table->colorSpec[(2 * i) + 1] & CDG_MASK);
 		colourEntry = ((colourEntry & 0x3F00) >> 2) | (colourEntry & 0x003F);
 
@@ -125,20 +130,19 @@ void CDGRenderer::cmdLoadColorTable( const char * data, int index )
 		quint8 green = ((colourEntry & 0x00F0) >> 4) * 17;
 		quint8 blue = ((colourEntry & 0x000F)) * 17;
 
-		quint32 color = qRgba( red, green, blue, 0xFF );
-		m_cdgimage.setColor( index+ i, color );
+		m_colorTable[index+i] = (red << 16) | (green << 8) | blue;
 
-//		qDebug( "LoadColors: color %d -> %02X %02X %02X (%08X)", index + i, red, green, blue, color );
+		//CLog::Log( LOGDEBUG, "CDG: loadColors: color %d -> %02X %02X %02X (%08X)", index + i, red, green, blue, m_colorTable[index+i] );
 	}
 }
 
-void CDGRenderer::cmdTileBlockXor( const char * data )
+void CDGRenderer::cmdTileBlock( const char * data )
 {
 	CDG_Tile* tile = (CDG_Tile*) data;
-	quint32 offset_y = (tile->row & 0x1F) * 12;
-	quint32 offset_x = (tile->column & 0x3F) * 6;
+	unsigned int offset_y = (tile->row & 0x1F) * 12;
+	unsigned int offset_x = (tile->column & 0x3F) * 6;
 
-//	qDebug( "TileBlockXor: %d, %d", offset_x, offset_y );
+	//CLog::Log( LOGERROR, "TileBlockXor: %d, %d", offset_x, offset_y );
 
 	if ( offset_x + 6 >= CDG_FULL_WIDTH || offset_y + 12 >= CDG_FULL_HEIGHT )
 		return;
@@ -158,40 +162,246 @@ void CDGRenderer::cmdTileBlockXor( const char * data )
 
 		for ( int j = 0; j < 6; j++ )
 		{
-			QPoint p( offset_x + j, offset_y + i );
-
-			// Find the original color index
-			quint8 origindex = m_cdgimage.pixelIndex( p );
-
-			if ( bTemp & mask[j] )  //pixel xored with color1
-				m_cdgimage.setPixel( p, origindex ^ color_1 );
+			if ( bTemp & mask[j] )
+				setPixel( offset_x + j, offset_y + i, color_1 );
 			else
-				m_cdgimage.setPixel( p, origindex ^ color_0 );
+				setPixel( offset_x + j, offset_y + i, color_0 );
 		}
 	}
 }
 
-int CDGRenderer::update( qint64 tickmark )
+void CDGRenderer::cmdTileBlockXor( const char * data )
+{
+	CDG_Tile* tile = (CDG_Tile*) data;
+	unsigned int offset_y = (tile->row & 0x1F) * 12;
+	unsigned int offset_x = (tile->column & 0x3F) * 6;
+
+	//CLog::Log( LOGERROR, "TileBlockXor: %d, %d", offset_x, offset_y );
+
+	if ( offset_x + 6 >= CDG_FULL_WIDTH || offset_y + 12 >= CDG_FULL_HEIGHT )
+		return;
+
+	// In the XOR variant, the color values are combined with the color values that are
+	// already onscreen using the XOR operator.  Since CD+G only allows a maximum of 16
+	// colors, we are XORing the pixel values (0-15) themselves, which correspond to
+	// indexes into a color lookup table.  We are not XORing the actual R,G,B values.
+	quint8 color_0 = tile->color0 & 0x0F;
+	quint8 color_1 = tile->color1 & 0x0F;
+
+	quint8 mask[6] = { 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
+
+	for ( int i = 0; i < 12; i++ )
+	{
+		quint8 bTemp = tile->tilePixels[i] & 0x3F;
+
+		for ( int j = 0; j < 6; j++ )
+		{
+			// Find the original color index
+			quint8 origindex = getPixel( offset_x + j, offset_y + i );
+
+			if ( bTemp & mask[j] )  //pixel xored with color1
+				setPixel( offset_x + j, offset_y + i, origindex ^ color_1 );
+			else
+				setPixel( offset_x + j, offset_y + i, origindex ^ color_0 );
+		}
+	}
+}
+
+// Based on http://cdg2video.googlecode.com/svn/trunk/cdgfile.cpp
+void CDGRenderer::cmdScroll( const char * data, bool copy )
+{
+	int colour, hScroll, vScroll;
+	int hSCmd, hOffset, vSCmd, vOffset;
+	int vScrollPixels, hScrollPixels;
+
+	// Decode the scroll command parameters
+	colour  = data[0] & 0x0F;
+	hScroll = data[1] & 0x3F;
+	vScroll = data[2] & 0x3F;
+
+	hSCmd = (hScroll & 0x30) >> 4;
+	hOffset = (hScroll & 0x07);
+	vSCmd = (vScroll & 0x30) >> 4;
+	vOffset = (vScroll & 0x0F);
+
+	m_hOffset = hOffset < 5 ? hOffset : 5;
+	m_vOffset = vOffset < 11 ? vOffset : 11;
+
+	// Scroll Vertical - Calculate number of pixels
+	vScrollPixels = 0;
+
+	if (vSCmd == 2)
+	{
+		vScrollPixels = - 12;
+	}
+	else  if (vSCmd == 1)
+	{
+		vScrollPixels = 12;
+	}
+
+	// Scroll Horizontal- Calculate number of pixels
+	hScrollPixels = 0;
+
+	if (hSCmd == 2)
+	{
+		hScrollPixels = - 6;
+	}
+	else if (hSCmd == 1)
+	{
+		hScrollPixels = 6;
+	}
+
+	if (hScrollPixels == 0 && vScrollPixels == 0)
+	{
+		return;
+	}
+
+	// Perform the actual scroll.
+	unsigned char temp[CDG_FULL_HEIGHT][CDG_FULL_WIDTH];
+	int vInc = vScrollPixels + CDG_FULL_HEIGHT;
+	int hInc = hScrollPixels + CDG_FULL_WIDTH;
+	unsigned int ri; // row index
+	unsigned int ci; // column index
+
+	for (ri = 0; ri < CDG_FULL_HEIGHT; ++ri)
+	{
+		for (ci = 0; ci < CDG_FULL_WIDTH; ++ci)
+		{
+			temp[(ri + vInc) % CDG_FULL_HEIGHT][(ci + hInc) % CDG_FULL_WIDTH] = getPixel( ci, ri );
+		}
+	}
+
+	// if copy is false, we were supposed to fill in the new pixels
+	// with a new colour. Go back and do that now.
+
+	if (!copy)
+	{
+		if (vScrollPixels > 0)
+		{
+			for (ci = 0; ci < CDG_FULL_WIDTH; ++ci)
+			{
+				for (ri = 0; ri < (unsigned int)vScrollPixels; ++ri) {
+					temp[ri][ci] = colour;
+				}
+			}
+		}
+		else if (vScrollPixels < 0)
+		{
+			for (ci = 0; ci < CDG_FULL_WIDTH; ++ci)
+			{
+				for (ri = CDG_FULL_HEIGHT + vScrollPixels; ri < CDG_FULL_HEIGHT; ++ri) {
+					temp[ri][ci] = colour;
+				}
+			}
+		}
+
+		if (hScrollPixels > 0)
+		{
+			for (ci = 0; ci < (unsigned int)hScrollPixels; ++ci)
+			{
+				for (ri = 0; ri < CDG_FULL_HEIGHT; ++ri) {
+					temp[ri][ci] = colour;
+				}
+			}
+		}
+		else if (hScrollPixels < 0)
+		{
+			for (ci = CDG_FULL_WIDTH + hScrollPixels; ci < CDG_FULL_WIDTH; ++ci)
+			{
+				for (ri = 0; ri < CDG_FULL_HEIGHT; ++ri) {
+					temp[ri][ci] = colour;
+				}
+			}
+		}
+	}
+
+	// Now copy the temporary buffer back to our array
+	for (ri = 0; ri < CDG_FULL_HEIGHT; ++ri)
+	{
+		for (ci = 0; ci < CDG_FULL_WIDTH; ++ci)
+		{
+			setPixel( ci, ri, temp[ri][ci] );
+		}
+	}
+}
+
+void CDGRenderer::setCDGdata( const QByteArray& cdgdata )
+{
+	// Parse the CD+G stream
+	int buggy_commands = 0;
+
+	m_cdgStream.clear();
+	m_cdgStream.reserve( cdgdata.size() / sizeof( SubCode ) );
+
+	for ( int offset = 0; offset < cdgdata.size(); offset += sizeof( SubCode ) )
+	{
+		SubCode * sc = (SubCode *) (cdgdata.data() + offset);
+
+		if ( ( sc->command & CDG_MASK) == CDG_COMMAND )
+		{
+			CDGPacket packet;
+
+			// Validate the command and instruction
+			switch ( sc->instruction & CDG_MASK )
+			{
+				case CDG_INST_MEMORY_PRESET:
+				case CDG_INST_BORDER_PRESET:
+				case CDG_INST_LOAD_COL_TBL_0_7:
+				case CDG_INST_LOAD_COL_TBL_8_15:
+				case CDG_INST_TILE_BLOCK_XOR:
+				case CDG_INST_TILE_BLOCK:
+				case CDG_INST_DEF_TRANSP_COL:
+				case CDG_INST_SCROLL_PRESET:
+				case CDG_INST_SCROLL_COPY:
+					memcpy( &packet.subcode, sc, sizeof(SubCode) );
+					packet.packetnum = offset / sizeof( SubCode );
+					m_cdgStream.push_back( packet );
+					break;
+
+				default:
+					buggy_commands++;
+					break;
+			}
+		}
+	}
+
+	// Init the screen
+	memset( m_cdgScreen, 0, sizeof(m_cdgScreen) );
+
+	// Init color table
+	for ( int i = 0; i < 16; i++ )
+		m_colorTable[i] = 0;
+
+	m_streamIdx = 0;
+	m_borderColor = 0;
+	m_bgColor = 0;
+	m_hOffset = 0;
+	m_vOffset = 0;
+
+	if ( buggy_commands > 0 )
+		qDebug( "CDG loader: CDG file was damaged, %d errors ignored", buggy_commands );
+}
+
+int CDGRenderer::UpdateBuffer( unsigned int packets_due )
 {
 	int status = UPDATE_NOCHANGE;
 
-	unsigned int packets_due = tickmark * 300 / 1000;
+	// Are we done?
+	if ( m_streamIdx == -1 )
+		return status;
 
 	// Was the stream position reversed? In this case we have to "replay" the whole stream
 	// as the screen is a state machine, and "clear" may not be there.
-	if ( m_packet > packets_due - 1 )
+	if ( m_streamIdx > 0 && m_cdgStream[ m_streamIdx-1 ].packetnum > packets_due )
 	{
-		qDebug( "CDGRenderer: packet number changed backward (%d played, %d asked", m_packet, packets_due );
-		m_cdgimage.fill( Qt::black );
-		m_packet = 0;
+		qDebug( "CDG renderer: packet number changed backward (%d played, %d asked", m_cdgStream[ m_streamIdx-1 ].packetnum, packets_due );
+		m_streamIdx = 0;
 	}
 
 	// Process all packets already due
-	for ( ; m_packet < packets_due; m_packet++ )
+	while ( m_cdgStream[ m_streamIdx ].packetnum <= packets_due )
 	{
-		SubCode& sc = m_stream[m_packet];
-		if ( (sc.command & CDG_MASK) != CDG_COMMAND )
-			continue;
+		SubCode& sc = m_cdgStream[ m_streamIdx ].subcode;
 
 		// Execute the instruction
 		switch ( sc.instruction & CDG_MASK )
@@ -214,23 +424,89 @@ int CDGRenderer::update( qint64 tickmark )
 				cmdLoadColorTable( sc.data, 8 );
 				break;
 
+			case CDG_INST_DEF_TRANSP_COL:
+				cmdTransparentColor( sc.data );
+				break;
+
+			case CDG_INST_TILE_BLOCK:
+				cmdTileBlock( sc.data );
+				status = UPDATE_COLORCHANGE;
+				break;
+
 			case CDG_INST_TILE_BLOCK_XOR:
 				cmdTileBlockXor( sc.data );
 				status = UPDATE_COLORCHANGE;
 				break;
 
-			default:
-				qFatal("Unsupported CD+G instruction: %d", m_stream[m_packet].instruction & CDG_MASK );
+			case CDG_INST_SCROLL_PRESET:
+				cmdScroll( sc.data, false );
+				status = UPDATE_COLORCHANGE;
+				break;
+
+			case CDG_INST_SCROLL_COPY:
+				cmdScroll( sc.data, true );
+				status = UPDATE_COLORCHANGE;
+				break;
+
+			default: // this shouldn't happen as we validated the stream in Load()
+				break;
+		}
+
+		m_streamIdx++;
+
+		if ( m_streamIdx >= (int) m_cdgStream.size() )
+		{
+			m_streamIdx = -1;
+			break;
 		}
 	}
 
+	return status;;
+}
+
+
+int CDGRenderer::update( qint64 songTime )
+{
+	int status;
+
 	// Make the generic image twice larger
-	if ( m_image.width() < 2 * CDG_FULL_WIDTH )
+	if ( m_image.width() < (int) (2 * CDG_FULL_WIDTH) )
 	{
 		m_image = QImage( 2 * CDG_FULL_WIDTH, 2 * CDG_FULL_HEIGHT, QImage::Format_ARGB32 );
 		status = UPDATE_RESIZED;
 	}
 
-	m_image = m_cdgimage.scaled( m_image.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation );
+	// Time to update?
+	unsigned int packets_due = songTime * 300 / 1000;
+
+	if ( status == UPDATE_RESIZED || (status = UpdateBuffer( packets_due )) != UPDATE_NOCHANGE )
+	{
+		QImage img( QSize( CDG_FULL_WIDTH, CDG_FULL_HEIGHT ), QImage::Format_ARGB32 );
+
+		// Update the image
+		for ( unsigned int y = 0; y < CDG_FULL_HEIGHT; y++ )
+		{
+			for ( unsigned int x = 0; x < CDG_FULL_WIDTH; x++ )
+			{
+				quint8 colorindex = getPixel( x + m_hOffset, y + m_vOffset );
+				quint32 TexColor = m_colorTable[ colorindex ];
+
+				// Is it transparent color?
+				if ( TexColor != 0xFFFFFFFF )
+				{
+					// Uncomment this to make background colors transparent
+					//if ( colorindex != m_bgColor )
+					TexColor |= 0xFF000000; // color table has 0x00 alpha
+				}
+				else
+					TexColor = 0x00000000;
+
+				img.setPixel( x, y, TexColor );
+			}
+		}
+
+		m_image = img.scaled( m_image.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation );
+	}
+
 	return status;
 }

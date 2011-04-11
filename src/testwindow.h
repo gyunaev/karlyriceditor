@@ -21,12 +21,12 @@
 #define TESTWINDOW_H
 
 #include <QDialog>
-#include <QVBoxLayout>
+#include "ui_dialog_testwindow.h"
 
 class LyricsWidget;
 
 
-class TestWindow : public QDialog
+class TestWindow : public QDialog, public Ui::DialogTestWindow
 {
     Q_OBJECT
 
@@ -38,11 +38,15 @@ class TestWindow : public QDialog
 	signals:
 		void closed();
 
+	public slots:
+		void tick( qint64 value );
+
 	protected:
 		void	closeEvent( QCloseEvent * event );
 
 	private:
 		QVBoxLayout * m_layout;
+		LyricsWidget* m_widget;
 };
 
 

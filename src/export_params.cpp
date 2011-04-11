@@ -82,6 +82,7 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 		cbVideoPreamble->setChecked( m_project->tag( Project::Tag_CDG_preamble).toInt() );
 
 		setWindowTitle( tr("Specify CDG parameters") );
+		lblOutput->setText( tr("Write CD+G data to file:") );
 
 		// resize as we hid the video part
 		resize( width(), 1 );
@@ -120,10 +121,8 @@ void DialogExportOptions::autodetectFontSize()
 	if ( !m_videomode )
 		font.setStyleStrategy( QFont::NoAntialias );
 
-	QSize size = getVideoSize() - QSize( 2, 2 );
-
 	// Ask the renderer
-	int fsize = TextRenderer::autodetectFontSize( size, m_lyrics, font );
+	int fsize = TextRenderer::autodetectFontSize( getVideoSize(), m_lyrics, font );
 
 	fontVideoSize->setValue( fsize );
 }

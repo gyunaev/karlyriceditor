@@ -17,9 +17,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
+#include <QFile>
 #include <QPainter>
 #include <QMessageBox>
-#include <QProgressDialog>
 #include <QApplication>
 
 #include "editor.h"
@@ -408,5 +408,16 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 			*p &= 0x3F;
 	}
 
-	// TODO: save
+	QFile file( dlg.m_outputVideo );
+	if ( !file.open( QIODevice::WriteOnly | QIODevice::Truncate ) )
+	{
+		QMessageBox::critical( 0,
+							   QObject::tr("Cannot write CD+G file"),
+							   QObject::tr("Cannot write CD+G file %1: %2")
+									.arg( dlg.m_outputVideo)
+									.arg(file.errorString()) );
+		return;
+	}
+
+	file.write( stream() );
 }
