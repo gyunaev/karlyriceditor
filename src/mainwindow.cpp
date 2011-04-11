@@ -42,6 +42,7 @@
 #include "lyricswidget.h"
 #include "ui_dialog_about.h"
 #include "videogenerator.h"
+#include "cdggenerator.h"
 
 
 MainWindow * pMainWindow;
@@ -748,6 +749,6 @@ void MainWindow::act_projectExportCDGFile()
 	if ( !editor->exportLyrics( &lyrics ) )
 		return;
 
-//	VideoGenerator videogen( m_project );
-//	videogen.generate( lyrics, m_player->totalTime() );
+	CDGGenerator gen( m_project );
+	gen.generate( lyrics, m_player->totalTime() );
 }

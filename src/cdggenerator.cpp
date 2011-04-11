@@ -22,15 +22,18 @@
 #include <QProgressDialog>
 #include <QApplication>
 
+#include "editor.h"
 #include "cdggenerator.h"
+#include "export_params.h"
+#include "ui_dialog_videoencprogress.h"
 
 
 // Color code indexes
 static int COLOR_IDX_BACKGROUND = 0;	// background
 
-CDGGenerator::CDGGenerator( const Project * proj )
-	: m_project( proj )
+CDGGenerator::CDGGenerator( Project * proj )
 {
+	m_project = proj;
 }
 
 void CDGGenerator::init()
@@ -268,9 +271,17 @@ void CDGGenerator::applyTileChanges( const QImage& orig,const QImage& newimg )
 
 void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 {
+	// Show the dialog with video options
+	DialogExportOptions dlg( m_project, lyrics, false );
+
+	if ( dlg.exec() != QDialog::Accepted )
+		return;
+
 	// Prepare the renderer
 	TextRenderer lyricrenderer( CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT );
+
 	lyricrenderer.setData( lyrics );
+	lyricrenderer.setRenderFont( QFont( m_project->tag(Project::Tag_CDG_font), m_project->tag(Project::Tag_CDG_fontsize).toInt()) );
 
 	// Initialize colors from m_project
 	m_colorBackground = m_project->tag( Project::Tag_CDG_bgcolor );
@@ -288,20 +299,29 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	lyricrenderer.setPreambleData( 4, 5000, 8 );
 
 	// CD+G fonts
-	lyricrenderer.setCDGfonts( m_project );
+	lyricrenderer.forceCDGmode();
 
 	// Prepare images
 	QImage lastImage( CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT, QImage::Format_ARGB32 );
 	lastImage.fill( m_colorBackground.rgb() );
 
 	// Pop up progress dialog
-	QProgressDialog dlg ("Rendering CD+G lyrics",
-						 QString::null,
-						 0,
-						 99 );
+	QDialog progressDialog;
+	Ui::DialogVideoEncodingProgress progressUi;
+	progressUi.setupUi( &progressDialog );
 
-	dlg.setMinimumDuration( 2000 );
-	dlg.setValue( 0 );
+	progressUi.groupBox->setTitle( "CD+G output statistics");
+	progressUi.txtFrames->setText("CD+G packets:");
+
+	progressUi.progressBar->setMaximum( 99 );
+	progressUi.progressBar->setMinimum( -1 );
+	progressUi.progressBar->setValue( -1 );
+
+	progressUi.lblFrames->setText( "0" );
+	progressUi.lblOutput->setText( "0 Mb" );
+	progressUi.lblTime->setText( "0:00.00" );
+
+	progressDialog.show();
 
 	qint64 dialog_step = total_length / 100;
 
@@ -318,9 +338,16 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 		qint64 timing = m_stream.size() * 1000 / 300 + 250;
 
 		// Should we show the next step?
-		if ( timing / dialog_step > dlg.value() )
+		if ( timing / dialog_step > progressUi.progressBar->value() )
 		{
-			dlg.setValue( timing / dialog_step );
+			progressUi.progressBar->setValue( timing / dialog_step );
+
+			progressUi.lblFrames->setText( QString::number( m_stream.size() ) );
+			progressUi.lblOutput->setText( QString( "%1 Kb" ) .arg( m_stream.size() * 24 / 1024 ) );
+			progressUi.lblTime->setText( markToTime( timing ) );
+
+			progressUi.image->setPixmap( QPixmap::fromImage( lastImage ) );
+
 			qApp->processEvents( QEventLoop::ExcludeUserInputEvents );
 		}
 

@@ -33,7 +33,7 @@
 class CDGGenerator
 {
 	public:
-		CDGGenerator( const Project * project );
+		CDGGenerator( Project * project );
 
 		// Initializes the stream, fills up the color tables and clears screen
 		void	init();
@@ -58,11 +58,11 @@ class CDGGenerator
 		void	checkTile( int offset_x, int offset_y, const QImage& orig,const QImage& newimg );
 
 	private:
-		QVector< SubCode >		m_stream;		// CD+G stream
+		QVector< SubCode >		m_stream;			// CD+G stream
 		QColor					m_colorBackground;
-		QVector< QColor >		m_colors;		// 16 colors used in CD+G
+		QVector< QColor >		m_colors;			// 16 colors used in CD+G
 		int						m_streamColorIndex; // Reserved space for colors
-		const Project*			m_project;
+		Project		*			m_project;
 };
 
 

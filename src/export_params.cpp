@@ -281,6 +281,10 @@ void DialogExportOptions::activateTab( int index )
 	m_renderer.setColorSang( btnVideoColorInactive->color() );
 	m_renderer.setColorToSing( btnVideoColorActive->color() );
 
+	// CD+G?
+	if ( !m_videomode )
+		m_renderer.forceCDGmode();
+
 	// Title
 	m_renderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
 								 m_project->tag( Project::Tag_Title ),
@@ -299,6 +303,14 @@ void DialogExportOptions::previewUpdateImage()
 	// Update the image
 	m_renderer.update( m_time );
 	QImage img = m_renderer.image();
+
+	// For CD+G mode we enlarge the image as it is too small
+	if ( !m_videomode )
+	{
+		QSize scaledsize( 2 * CDG_FULL_WIDTH - CDG_BORDER_WIDTH, 2 * CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT );
+		img = img.scaled( scaledsize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation );
+	}
+
 	lblImage->setPixmap( QPixmap::fromImage( img ) );
 
 	// Update the timings

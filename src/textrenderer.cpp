@@ -152,17 +152,11 @@ void TextRenderer::setPreambleData( unsigned int height, unsigned int timems, un
 	m_forceRedraw = true;
 }
 
-void TextRenderer::setCDGfonts( const Project * prj )
+void TextRenderer::forceCDGmode()
 {
-	// Disable anti-aliasing for fonts
-	QFont renderFont = QFont( prj->tag( Project::Tag_CDG_font ), prj->tag( Project::Tag_CDG_fontsize ).toInt() );
-	renderFont.setStyleStrategy( QFont::NoAntialias );
-	renderFont.setWeight( QFont::Bold );
-	setRenderFont( renderFont );
-
-	QFont smallFont = QFont( prj->tag( Project::Tag_CDG_font ), prj->tag( Project::Tag_CDG_fontsize ).toInt() - 2 );
-	smallFont.setStyleStrategy( QFont::NoAntialias );
-	setRenderSmallFont( smallFont );
+	// Disable anti-aliasing for set fonts
+	m_renderFont.setStyleStrategy( QFont::NoAntialias );
+	m_smallFont.setStyleStrategy( QFont::NoAntialias );
 
 	m_forceRedraw = true;
 }

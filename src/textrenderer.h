@@ -48,6 +48,9 @@ class TextRenderer : public LyricsRenderer
 		void	setTitlePageData( const QString& artist, const QString& title, unsigned int msec ); // duration = 0 - no title, default
 		void	setColorAlpha( int alpha ); // 0 - 255
 
+		// Force CD+G rendering mode (no anti-aliasing)
+		void	forceCDGmode();
+
 		// Typically lyrics are shown a little before they are being sung, and kept after they end.
 		// This function overrides default before (5000ms) and after (1000ms) lengths
 		void	setDurations( unsigned int before, unsigned int after );
@@ -61,9 +64,6 @@ class TextRenderer : public LyricsRenderer
 
 		// Draw a new lyrics image
 		virtual int	update( qint64 timing );
-
-		// Helper: set up CD+G fonts
-		void	setCDGfonts( const Project * prj );
 
 		// Returns the lyrics bounding box for a line or for paragraph using the font specified,
 		// or the default font if not specified
