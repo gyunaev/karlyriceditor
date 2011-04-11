@@ -383,8 +383,14 @@ void MainWindow::setCurrentProject( Project * proj )
 
 	statusBar()->showMessage( tr("Loading the music file %1") .arg(m_project->musicFile()), 2000);
 
-	// Set the music file into player; it will call updateState()
-	m_player->openMusicFile( m_project );
+	// Set the music file into player
+	if ( m_player->openMusicFile( m_project ) )
+	{
+		qint64 totaltime = m_player->totalTime();
+
+		if ( totaltime > 0 )
+			m_project->setSongLength( totaltime );
+	}
 }
 
 void MainWindow::act_editInsertTag()
@@ -588,11 +594,6 @@ void MainWindow::updateState()
 
 	if ( project_ready )
 	{
-		qint64 totaltime = m_player->totalTime();
-
-		if ( totaltime > 0 )
-			m_project->setSongLength( totaltime );
-
 		if ( m_project->isModified() )
 		{
 			actionValidate_lyrics->setIcon( m_validatorIconRegular );

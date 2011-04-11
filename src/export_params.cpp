@@ -20,26 +20,32 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
+#include "dialog_renderpreview.h"
 #include "textrenderer.h"
 #include "export_params.h"
+#include "playerwidget.h"
 #include "cdg.h"
 
-#define CDG_VIDEO_SIZE	QSize( CDG_FULL_WIDTH - 2*CDG_BORDER_WIDTH, CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT )
 
 DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyrics,  bool video, QWidget *parent )
-	: QDialog(parent), Ui::DialogExportParams()
+	: QDialog(parent), Ui::DialogExportParams(), m_renderer(0, 0)
 {
 	m_videomode = video;
 	m_project = project;
 	m_lyrics = lyrics;
+	m_time = 0;
 
 	// UIC stuff
 	setupUi( this );
 
 	// Buttons
 	connect( btnDetectSize, SIGNAL(clicked()), this, SLOT(autodetectFontSize()) );
-	connect( btnPreview, SIGNAL(clicked()), this, SLOT(showPreview()) );
+	connect( btnTestSize, SIGNAL(clicked()), this, SLOT(testFontSize()) );
 	connect( btnBrowse, SIGNAL(clicked()), this, SLOT(browseOutputFile()) );
+
+	// Tabs
+	connect( tabWidget, SIGNAL(currentChanged(int)), this, SLOT(activateTab(int)) );
+	connect( seekSlider, SIGNAL(valueChanged(int)), this, SLOT(previewSliderMoved(int)) );
 
 	if ( video )
 	{
@@ -85,6 +91,10 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 	fontVideo->setFontFilters( QFontComboBox::ScalableFonts | QFontComboBox::MonospacedFonts | QFontComboBox::ProportionalFonts );
 }
 
+DialogExportOptions::~DialogExportOptions()
+{
+}
+
 void DialogExportOptions::setBoxIndex( Project::Tag tag, QComboBox * box )
 {
 	QString val = m_project->tag( tag );
@@ -106,27 +116,18 @@ void DialogExportOptions::setBoxIndex( Project::Tag tag, QComboBox * box )
 
 void DialogExportOptions::autodetectFontSize()
 {
-	QSize videosize = m_videomode ? getVideoSize( m_project ) : CDG_VIDEO_SIZE;
-
 	// Ask the renderer
-	int size = TextRenderer::autodetectFontSize( videosize, m_lyrics, fontVideo->currentFont() );
+	int size = TextRenderer::autodetectFontSize( getVideoSize(), m_lyrics, fontVideo->currentFont() );
 
 	fontVideoSize->setValue( size );
 }
 
-void DialogExportOptions::btnTestFontSize()
-{
-	testFontSize();
-}
-
 bool DialogExportOptions::testFontSize()
 {
-	QSize videosize = m_videomode ? getVideoSize( m_project ) : CDG_VIDEO_SIZE;
-
 	QFont font = fontVideo->currentFont();
 	font.setPixelSize( fontVideoSize->value() );
 
-	if ( !TextRenderer::verifyFontSize( videosize, m_lyrics, font ) )
+	if ( !TextRenderer::verifyFontSize( getVideoSize(), m_lyrics, font ) )
 	{
 		QMessageBox::critical( 0,
 							  tr("Font size too large"),
@@ -137,11 +138,6 @@ bool DialogExportOptions::testFontSize()
 	return true;
 }
 
-
-void DialogExportOptions::showPreview()
-{
-
-}
 
 void DialogExportOptions::browseOutputFile()
 {
@@ -208,10 +204,17 @@ void DialogExportOptions::accept()
 	QDialog::accept();
 }
 
-QSize DialogExportOptions::getVideoSize( Project * project )
+QSize DialogExportOptions::getVideoSize()
 {
+	if ( !m_videomode )
+	{
+		// CD+G size is predefined
+		return QSize( CDG_FULL_WIDTH - 2*CDG_BORDER_WIDTH, CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT );
+	}
+
+	// Get the current value as it is used in this module as well
 	QRegExp re( "^(\\d+)x(\\d+)");
-	QString val = project->tag( Project::Tag_Video_ImgSizeIndex );
+	QString val = boxImageSize->currentText();
 
 	if ( val.indexOf( re ) == -1 )
 		return QSize();
@@ -219,10 +222,10 @@ QSize DialogExportOptions::getVideoSize( Project * project )
 	return QSize( re.cap(1).toInt(), re.cap(2).toInt() );
 }
 
-void DialogExportOptions::getFPS( Project * project, unsigned int * num, unsigned int * den )
+void DialogExportOptions::getFPS(  unsigned int * num, unsigned int * den )
 {
 	QRegExp re( "^([0-9.]+) FPS");
-	QString val = project->tag( Project::Tag_Video_FpsIndex);
+	QString val = m_project->tag( Project::Tag_Video_FpsIndex);
 
 	*num = 0;
 	*den = 0;
@@ -249,12 +252,65 @@ void DialogExportOptions::getFPS( Project * project, unsigned int * num, unsigne
 	}
 }
 
-QString	DialogExportOptions::getEncoding( Project * project )
+QString	DialogExportOptions::getEncoding()
 {
-	return project->tag( Project::Tag_Video_EncodingIndex ).toLower();
+	return m_project->tag( Project::Tag_Video_EncodingIndex ).toLower();
 }
 
-QString	DialogExportOptions::getContainer( Project * project )
+QString	DialogExportOptions::getContainer()
 {
-	return project->tag( Project::Tag_Video_ContainerIndex ).toLower();
+	return m_project->tag( Project::Tag_Video_ContainerIndex ).toLower();
+}
+
+void DialogExportOptions::activateTab( int index )
+{
+	// We're only interested in Preview tab
+	if ( index != 1 )
+		return;
+
+	// Prepare the text renderer using current params
+	QFont font = fontVideo->currentFont();
+	font.setPixelSize( fontVideoSize->value() );
+
+	m_renderer = TextRenderer( getVideoSize().width(), getVideoSize().height() );
+
+	// Initialize colors from m_project
+	m_renderer.setData( m_lyrics );
+	m_renderer.setRenderFont( font );
+	m_renderer.setColorBackground( btnVideoColorBg->color() );
+	m_renderer.setColorTitle( btnVideoColorInfo->color() );
+	m_renderer.setColorSang( btnVideoColorInactive->color() );
+	m_renderer.setColorToSing( btnVideoColorActive->color() );
+
+	// Title
+	m_renderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
+								 m_project->tag( Project::Tag_Title ),
+								 titleVideoMin->value() * 1000 );
+
+	// Preamble
+	if ( cbVideoPreamble->isChecked() )
+		m_renderer.setPreambleData( 4, 5000, 8 );
+
+	// Update the image
+	previewUpdateImage();
+}
+
+void DialogExportOptions::previewUpdateImage()
+{
+	// Update the image
+	m_renderer.update( m_time );
+	QImage img = m_renderer.image();
+	lblImage->setPixmap( QPixmap::fromImage( img ) );
+
+	// Update the timings
+	qint64 reminder = m_project->getSongLength() - m_time;
+
+	lblCurrent->setText( PlayerWidget::tickToString( m_time ) );
+	lblTotal->setText( PlayerWidget::tickToString( reminder ) );
+}
+
+void DialogExportOptions::previewSliderMoved( int newvalue )
+{
+	m_time = newvalue * m_project->getSongLength() / seekSlider->maximum();
+	previewUpdateImage();
 }

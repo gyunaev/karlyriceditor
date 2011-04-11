@@ -1097,6 +1097,10 @@ void Project::setSongLength( qint64 length )
 	m_totalSongLength = length;
 }
 
+qint64 Project::getSongLength() const
+{
+	return m_totalSongLength;
+}
 
 /*
 QByteArray Project::exportLyricsAsCDG()

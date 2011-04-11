@@ -17,7 +17,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-
 #ifndef WIZARD_NEWPROJECT_H
 #define WIZARD_NEWPROJECT_H
 

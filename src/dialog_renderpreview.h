@@ -21,21 +21,30 @@
 #define DIALOG_RENDERPREVIEW_H
 
 #include <QDialog>
+#include "ui_dialog_renderpreview.h"
 
-namespace Ui {
-    class DialogRenderPreview;
-}
+class Project;
+class TextRenderer;
 
-class DialogRenderPreview : public QDialog
+class DialogRenderPreview : public QDialog, public Ui::DialogRenderPreview
 {
     Q_OBJECT
 
-public:
-    explicit DialogRenderPreview(QWidget *parent = 0);
-    ~DialogRenderPreview();
+	public:
+		DialogRenderPreview( QWidget *parent = 0 );
 
-private:
-    Ui::DialogRenderPreview *ui;
+	public slots:
+		void	updateParams( TextRenderer * renderer, Project * project );
+		void	lyricsUpdated();
+
+	private slots:
+		void	updateImage();
+		void	seekSliderMoved( int newvalue );
+
+	private:
+		TextRenderer * m_renderer;
+		Project		 * m_project;
+		qint64		   m_time;
 };
 
 #endif // DIALOG_RENDERPREVIEW_H

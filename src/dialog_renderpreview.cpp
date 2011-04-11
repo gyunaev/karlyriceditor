@@ -17,17 +17,44 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
+#include "project.h"
+#include "textrenderer.h"
 #include "dialog_renderpreview.h"
 #include "ui_dialog_renderpreview.h"
 
-DialogRenderPreview::DialogRenderPreview(QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::DialogRenderPreview)
+
+DialogRenderPreview::DialogRenderPreview( QWidget *parent )
+	: QDialog(parent), Ui::DialogRenderPreview()
 {
-    ui->setupUi(this);
+	setupUi( this );
+
+	m_renderer = 0;
+	m_project = 0;
+	m_time = 0;
 }
 
-DialogRenderPreview::~DialogRenderPreview()
+void DialogRenderPreview::updateParams( TextRenderer * renderer, Project * project )
 {
-    delete ui;
+	// We own the renderer object, so we must delete the old one
+	delete m_renderer;
+	m_renderer = renderer;
+
+	// We do not own the project though
+	m_project = project;
+
+	updateImage();
+}
+
+void DialogRenderPreview::lyricsUpdated()
+{
+}
+
+void DialogRenderPreview::seekSliderMoved( int newvalue )
+{
+
+}
+
+void DialogRenderPreview::updateImage()
+{
+
 }

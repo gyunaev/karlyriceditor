@@ -21,8 +21,9 @@
 #define VIDEOEXPORTOPTIONS_H
 
 #include <QDialog>
-
 #include "ui_dialog_export_params.h"
+
+#include "textrenderer.h"
 #include "lyrics.h"
 #include "project.h"
 
@@ -33,31 +34,40 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 
 	public:
 		DialogExportOptions( Project * project, const Lyrics& lyrics, bool video = true, QWidget *parent = 0 );
+		~DialogExportOptions();
 
-		// For video mode
-		static QSize	getVideoSize( Project * project );
-		static void		getFPS( Project * project, unsigned int * num, unsigned int * den );
-		static QString	getEncoding( Project * project );
-		static QString	getContainer( Project * project );
+		// For both CD+G and video modes
+		QSize	getVideoSize();
+
+		// For video mode only
+		void	getFPS( unsigned int * num, unsigned int * den );
+		QString	getEncoding();
+		QString	getContainer();
 
 	public slots:
+		void	activateTab( int index );
 		void	autodetectFontSize();
-		void	showPreview();
 		void	browseOutputFile();
-		void	btnTestFontSize();
+		bool	testFontSize();
+		void	previewUpdateImage();
+		void	previewSliderMoved( int newvalue );
 		void	accept();
 
 	public:
 		QString	m_outputVideo;
 
 	private:
-		bool	testFontSize();
 		void	setBoxIndex( Project::Tag tag, QComboBox * box );
 
 	private:
 		bool		m_videomode;
 		Project*	m_project;
 		Lyrics		m_lyrics;
+
+		// For preview
+		TextRenderer	m_renderer;
+		qint64			m_time;
+
 };
 
 #endif // VIDEOEXPORTOPTIONS_H

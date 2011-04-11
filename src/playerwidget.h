@@ -45,6 +45,8 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 		qint64	currentTime() const;
 		qint64	totalTime() const;
 
+		static QString tickToString( qint64 tick );
+
 	signals:
 		void	tick( qint64 tickvalue );
 
@@ -61,7 +63,6 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 		void	seekSliderDown();
 
 	private:
-		QString tickToString( qint64 tick );
 		void	updatePlayerState( int state );
 
 	private:

@@ -113,7 +113,9 @@ class Project
 		// Clear the project
 		void	clear();
 
+		// Set/access the song length
 		void	setSongLength( qint64 length );
+		qint64	getSongLength() const;
 
 		// Split the time mark
 		static void splitTimeMark( qint64 mark, int * min, int * sec, int * msec );

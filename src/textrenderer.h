@@ -20,6 +20,9 @@
 #ifndef TEXTRENDERER_H
 #define TEXTRENDERER_H
 
+#include <QFont>
+#include <QColor>
+
 #include "lyricsrenderer.h"
 #include "lyricsevents.h"
 #include "lyrics.h"

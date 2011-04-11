@@ -47,8 +47,8 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 
 	// Validate params
 	unsigned int num, den;
-	QSize videosize = dlg.getVideoSize( m_project );
-	dlg.getFPS( m_project, &num, &den );
+	QSize videosize = dlg.getVideoSize();
+	dlg.getFPS( &num, &den );
 
 	if ( videosize.isEmpty() || num == 0 || den == 0 )
 	{
@@ -80,7 +80,7 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	FFMpegVideoEncoder encoder;
 
 	QString errmsg = encoder.createFile( dlg.m_outputVideo,
-										dlg.getContainer( m_project ),
+										dlg.getContainer(),
 										videosize,
 										2000000,
 										num, den,
