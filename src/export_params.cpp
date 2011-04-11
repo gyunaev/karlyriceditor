@@ -115,16 +115,26 @@ void DialogExportOptions::setBoxIndex( Project::Tag tag, QComboBox * box )
 
 void DialogExportOptions::autodetectFontSize()
 {
-	// Ask the renderer
-	int size = TextRenderer::autodetectFontSize( getVideoSize(), m_lyrics, fontVideo->currentFont() );
+	QFont font = fontVideo->currentFont();
 
-	fontVideoSize->setValue( size );
+	if ( !m_videomode )
+		font.setStyleStrategy( QFont::NoAntialias );
+
+	QSize size = getVideoSize() - QSize( 2, 2 );
+
+	// Ask the renderer
+	int fsize = TextRenderer::autodetectFontSize( size, m_lyrics, font );
+
+	fontVideoSize->setValue( fsize );
 }
 
 bool DialogExportOptions::testFontSize()
 {
 	QFont font = fontVideo->currentFont();
-	font.setPixelSize( fontVideoSize->value() );
+	font.setPointSize( fontVideoSize->value() );
+
+	if ( !m_videomode )
+		font.setStyleStrategy( QFont::NoAntialias );
 
 	if ( !TextRenderer::verifyFontSize( getVideoSize(), m_lyrics, font ) )
 	{
@@ -208,7 +218,7 @@ QSize DialogExportOptions::getVideoSize()
 	if ( !m_videomode )
 	{
 		// CD+G size is predefined
-		return QSize( CDG_FULL_WIDTH - 2*CDG_BORDER_WIDTH, CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT );
+		return QSize( CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT );
 	}
 
 	// Get the current value as it is used in this module as well
@@ -269,7 +279,7 @@ void DialogExportOptions::activateTab( int index )
 
 	// Prepare the text renderer using current params
 	QFont font = fontVideo->currentFont();
-	font.setPixelSize( fontVideoSize->value() );
+	font.setPointSize( fontVideoSize->value() );
 
 	m_renderer = TextRenderer( getVideoSize().width(), getVideoSize().height() );
 
@@ -307,7 +317,7 @@ void DialogExportOptions::previewUpdateImage()
 	// For CD+G mode we enlarge the image as it is too small
 	if ( !m_videomode )
 	{
-		QSize scaledsize( 2 * CDG_FULL_WIDTH - CDG_BORDER_WIDTH, 2 * CDG_FULL_HEIGHT - CDG_BORDER_HEIGHT );
+		QSize scaledsize( 2 * CDG_DRAW_WIDTH, 2 * CDG_DRAW_HEIGHT );
 		img = img.scaled( scaledsize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation );
 	}
 

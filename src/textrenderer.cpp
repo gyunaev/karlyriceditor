@@ -44,6 +44,8 @@ static const QString actionSetSmallFont = QString(actionChar) + actionSmallFont;
 static const int PREAMBLE_SQUARE = 500; // 500ms for each square
 static const int PREAMBLE_MIN_PAUSE = 5000; // 5000ms minimum pause between verses for the preamble to appear
 
+// Font size difference
+static const int SMALL_FONT_DIFF = 4; // 4px less
 
 TextRenderer::TextRenderer( int width, int height )
 	: LyricsRenderer()
@@ -65,14 +67,8 @@ void TextRenderer::setRenderFont( const QFont& font )
 {
 	m_renderFont = font;
 	m_smallFont = font;
-	m_smallFont.setPixelSize( font.pointSize() - 2 );
+	m_smallFont.setPointSize( font.pointSize() - SMALL_FONT_DIFF );
 
-	m_forceRedraw = true;
-}
-
-void TextRenderer::setRenderSmallFont( const QFont& font )
-{
-	m_smallFont = font;
 	m_forceRedraw = true;
 }
 
@@ -282,14 +278,12 @@ bool TextRenderer::verifyFontSize( const QSize& size, const Lyrics& lyrics, cons
 {
 	// Initialize the fonts
 	QFont normalfont = font;
-	QFont smallfont = font;
-	smallfont.setPixelSize( font.pointSize() - 2 );
 
 	// Test all lyrics whether it fits
 	for ( int bl = 0; bl < lyrics.totalBlockInfoBlocks(); bl++ )
 	{
 		QString text = lyrics.getBlockText( bl );
-		QRect rect = boundingRect( text, normalfont, smallfont );
+		QRect rect = boundingRect( text, normalfont );
 
 		// Still fit?
 		if ( rect.width() >= size.width() || rect.height() >= size.height() )
@@ -311,7 +305,7 @@ int	TextRenderer::autodetectFontSize( const QSize& size, const Lyrics& lyrics, c
 
 	while ( 1 )
 	{
-		normalfont.setPixelSize( fontsize );
+		normalfont.setPointSize( fontsize );
 
 		if ( !verifyFontSize( size, lyrics, normalfont ) )
 			return fontsize - 1;
@@ -322,11 +316,14 @@ int	TextRenderer::autodetectFontSize( const QSize& size, const Lyrics& lyrics, c
 
 QRect TextRenderer::boundingRect( const QString& text )
 {
-	return boundingRect( text, m_renderFont, m_smallFont );
+	return boundingRect( text, m_renderFont );
 }
 
-QRect TextRenderer::boundingRect( const QString& text, const QFont& font, const QFont& smallfont )
+QRect TextRenderer::boundingRect( const QString& text, const QFont& font )
 {
+	QFont smallfont = font;
+	smallfont.setPointSize( font.pointSize() - SMALL_FONT_DIFF );
+
 	QStringList lines = text.split( "\n" );
 
 	// Calculate the height
@@ -541,7 +538,7 @@ int TextRenderer::update( qint64 timing )
 	}
 
 	// Do the new lyrics fit into the image without resizing?
-	QRect imgrect = boundingRect( lyricstext, m_renderFont, m_smallFont );
+	QRect imgrect = boundingRect( lyricstext, m_renderFont );
 
 	if ( imgrect.width() > m_image.width() || imgrect.height() > m_image.height() )
 	{

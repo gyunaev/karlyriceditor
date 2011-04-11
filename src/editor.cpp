@@ -319,11 +319,8 @@ void Editor::validate( QList<ValidatorError>& errors, const QFont * font, const 
 			if ( font && fitsize )
 			{
 				// Check if we exceed the screen height
-				QFont normalfont = *font;
-				QFont smallfont = *font;
-				smallfont.setPixelSize( normalfont.pointSize() - 2 );
-
-				QRect r = TextRenderer::boundingRect( paragraphtext, normalfont, smallfont );
+				QFont nfont = *font;
+				QRect r = TextRenderer::boundingRect( paragraphtext, nfont );
 
 				if ( r.height() >= fitsize->width() )
 				{
@@ -507,11 +504,8 @@ cont_paragraph:
 		if ( font && fitsize )
 		{
 			// Check if we exceed the screen height
-			QFont normalfont = *font;
-			QFont smallfont = *font;
-			smallfont.setPixelSize( normalfont.pointSize() - 2 );
-
-			QRect r = TextRenderer::boundingRect( linetext, normalfont, smallfont );
+			QFont nfont = *font;
+			QRect r = TextRenderer::boundingRect( linetext, nfont );
 
 			if ( r.width() >= fitsize->width() )
 			{

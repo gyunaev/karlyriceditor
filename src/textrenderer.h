@@ -39,7 +39,6 @@ class TextRenderer : public LyricsRenderer
 
 		// Lyrics data to render, overrides defaults from settings
 		void	setRenderFont( const QFont& font ); // this also resets SmallFont
-		void	setRenderSmallFont( const QFont& font ); // for titles, etc
 		void	setColorBackground( const QColor& color );
 		void	setColorTitle( const QColor& color );
 		void	setColorToSing( const QColor& color );
@@ -68,7 +67,7 @@ class TextRenderer : public LyricsRenderer
 		// Returns the lyrics bounding box for a line or for paragraph using the font specified,
 		// or the default font if not specified
 		QRect	boundingRect( const QString& text );
-		static QRect	boundingRect( const QString& text, const QFont& font, const QFont& smallfont );
+		static QRect	boundingRect( const QString& text, const QFont& font );
 
 		// Autodetects the largest font size to fit all lyrics into a specific image size.
 		static int	autodetectFontSize( const QSize& size, const Lyrics& lyrics, const QFont& font );

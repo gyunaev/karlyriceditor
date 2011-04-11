@@ -359,7 +359,17 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 
 		if ( status == LyricsRenderer::UPDATE_RESIZED )
 		{
-			QMessageBox::critical( 0, "Invalid lyrics", QString("Lyrics out of boundary at %1") .arg( timing ) );
+			QImage errimg = lyricrenderer.image();
+			errimg.save( "error", "bmp" );
+
+			QMessageBox::critical( 0,
+								  "Invalid lyrics",
+								  QString("Lyrics out of boundary at %1, screen requested: %2x%3")
+									.arg( markToTime( timing ) )
+									.arg( errimg.width() )
+									.arg( errimg.height() )
+								  );
+
 			m_stream.clear();
 			return ;
 		}
@@ -397,4 +407,6 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 		if ( *p & 0xC0 )
 			*p &= 0x3F;
 	}
+
+	// TODO: save
 }

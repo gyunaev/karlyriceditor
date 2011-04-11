@@ -86,7 +86,7 @@ FORMS += mainwindow.ui \
     dialog_selectencoding.ui \
     gentlemessagebox.ui \
 	dialog_export_params.ui \
-    dialog_videoencprogress.ui
+	dialog_encodingprogress.ui
 win32-g++-*::LIBS += -lwsock32
 LIBS += -lavformat \
     -lavcodec \
