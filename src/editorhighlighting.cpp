@@ -51,41 +51,52 @@ void EditorHighlighting::highlightBlock ( const QString & line )
 
 	// from Editor::validate
 	int time_tag_start = 0;
-	int time_tag_special_start = -1;
+	int special_tag_start = 0;
 	bool in_time_tag = false;
+	bool in_special_tag = false;
 	bool errors_in_time_tag = false;
+	bool errors_in_special_tag = false;
 
 	for ( int col = 0; col < line.size(); col++ )
 	{
-		if ( in_time_tag )
+		if ( in_special_tag )
 		{
-			// Time tag ends?
-			if ( line[col] == ']' )
+			// Special tag ends?
+			if ( line[col] == '}' )
 			{
-				if ( !errors_in_time_tag )
+				if ( !errors_in_special_tag )
 				{
-					QString time, special;
-
-					if ( time_tag_special_start != -1 )
-					{
-						special = line.mid( time_tag_special_start, col - time_tag_special_start ).trimmed();
-						time = line.mid( time_tag_start, time_tag_special_start - time_tag_start );
-					}
-					else
-						time = line.mid( time_tag_start, col - time_tag_start );
+					QString special = line.mid( special_tag_start, col - special_tag_start );
 
 					if ( !special.isEmpty() )
 					{
 						QString errmsg = LyricsEvents::validateEvent( special );
 
 						if ( !errmsg.isEmpty() )
-							setFormat( time_tag_special_start, special.length() + 2, m_hlInvalidTiming );
+							setFormat( special_tag_start - 1, special.length() + 2, m_hlInvalidTiming );
 						else
-							setFormat( time_tag_special_start, special.length() + 2, m_hlValidSpecial );
+							setFormat( special_tag_start - 1, special.length() + 2, m_hlValidSpecial );
 					}
+					else
+						setFormat( special_tag_start - 1, 2, m_hlInvalidTiming );
+				}
+
+				in_special_tag = false;
+				errors_in_special_tag = false;
+				continue;
+			}
+		}
+		else if ( in_time_tag )
+		{
+			// Time tag ends?
+			if ( line[col] == ']' )
+			{
+				if ( !errors_in_time_tag )
+				{
+					QString time = line.mid( time_tag_start, col - time_tag_start );
 
 					// If Special is not empty, it hovers the last bracket (extra char)
-					int time_len = special.isEmpty() ? time.length() + 2 : time.length() + 1;
+					int time_len = time.length() + 2;
 
 					if ( time == Editor::PLACEHOLDER_VALUE )
 						setFormat( time_tag_start - 1, time_len, m_hlPlaceholder );
@@ -106,25 +117,25 @@ void EditorHighlighting::highlightBlock ( const QString & line )
 			}
 
 			// Only accept those characters
-			if ( time_tag_special_start == -1 && !line[col].isDigit() && line[col] != ':' && line[col] != '.' && line[col] != '-' )
+			if ( !line[col].isDigit() && line[col] != ':' && line[col] != '.'  )
 			{
-				if ( line[col] == ' ' )
-					time_tag_special_start = col;
-				else
-				{
-					setFormat( col, 1, m_hlInvalidTiming );
-					errors_in_time_tag = true;
-				}
+				setFormat( col, 1, m_hlInvalidTiming );
+				errors_in_time_tag = true;
 			}
 		}
 		else if ( line[col] == '[' )
 		{
-			time_tag_special_start = -1;
 			in_time_tag = true;
 			time_tag_start = col + 1;
 			continue;
 		}
-		else if ( line[col] == ']' )
+		else if ( line[col] == '{' )
+		{
+			in_special_tag = true;
+			special_tag_start = col + 1;
+			continue;
+		}
+		else if ( line[col] == ']' || line[col] == '}' )
 			setFormat( col, 1, m_hlInvalidTiming );
 	}
 }

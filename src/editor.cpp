@@ -160,33 +160,63 @@ bool Editor::exportLyrics( Lyrics * lyrics )
 			continue;
 		}
 
-		QStringList parts = line.split( '[' );
+		QString lyrictext, timing, special;
+		bool in_time_tag = false;
+		bool in_special_tag = false;
 
-		// First part must be empty
-		if ( !parts[0].isEmpty() )
-			return false;
-
-		parts.removeAt( 0 );
-
-		foreach ( QString part, parts )
+		for ( int col = 0; col < line.size(); col++ )
 		{
-			int timeoff = part.indexOf( ']' );
-
-			QString timing = part.left( timeoff );
-			QString text = part.mid( timeoff + 1 );
-
-			// Does timing contain special?
-			timeoff = timing.indexOf( ' ' );
-
-			if ( timeoff != -1 )
+			if ( in_special_tag )
 			{
-				QString special = timing.mid( timeoff ).trimmed();
-				timing = timing.left( timeoff );
-				lyrics->addBackgroundEvent( timeToMark( timing ), special );
+				// Special tag ends?
+				if ( line[col] == '}' )
+					in_special_tag = false;
+				else
+					special.append( line[col] );
 			}
+			else if ( in_time_tag )
+			{
+				// Time tag ends?
+				if ( line[col] == ']' )
+					in_time_tag = false;
+				else
+					timing.append( line[col] );
+			}
+			else if ( line[col] == '{' )
+			{
+				in_special_tag = true;
+			}
+			else if ( line[col] == '[' )
+			{
+				// If we already have the text, add the lyric
+				if ( !timing.isEmpty() )
+				{
+					if ( !special.isEmpty() )
+						lyrics->addBackgroundEvent( timeToMark( timing ), special );
+
+					lyrics->curLyricSetTime( timeToMark( timing ) );
+					lyrics->curLyricAppendText( lyrictext );
+					lyrics->curLyricAdd();
+
+					lyrictext.clear();
+					special.clear();
+					timing.clear();
+				}
+
+				in_time_tag = true;
+			}
+			else
+				lyrictext.append( line[col] );
+		}
+
+		// There may be lyrics at the end of line
+		if ( !timing.isEmpty() )
+		{
+			if ( !special.isEmpty() )
+				lyrics->addBackgroundEvent( timeToMark( timing ), special );
 
 			lyrics->curLyricSetTime( timeToMark( timing ) );
-			lyrics->curLyricAppendText( text );
+			lyrics->curLyricAppendText( lyrictext );
 			lyrics->curLyricAdd();
 		}
 
@@ -376,27 +406,20 @@ cont_paragraph:
 
 		// Go through the line, and verify all time tags
 		int time_tag_start = 0;
-		int time_tag_special_start = -1;
 		bool in_time_tag = false;
+		int special_tag_start = 0;
+		bool in_special_tag = false;
 		QString linetext;
 
 		for ( int col = 0; col < line.size(); col++ )
 		{
-			if ( in_time_tag )
+			if ( in_special_tag )
 			{
-				// Time tag ends?
-				if ( line[col] == ']' )
+				// Special tag ends?
+				if ( line[col] == '}' )
 				{
 					// Get the time and special part, if any
-					QString time, special;
-
-					if ( time_tag_special_start != -1 )
-					{
-						special = line.mid( time_tag_special_start, col - time_tag_special_start ).trimmed();
-						time = line.mid( time_tag_start, time_tag_special_start - time_tag_start );
-					}
-					else
-						time = line.mid( time_tag_start, col - time_tag_start );
+					QString special = line.mid( special_tag_start, col - special_tag_start );
 
 					if ( !special.isEmpty() )
 					{
@@ -411,6 +434,18 @@ cont_paragraph:
 											tr("Invalid special tag. %1") .arg( errmsg ) ) );
 						}
 					}
+
+					in_special_tag = false;
+					continue;
+				}
+			}
+			else if ( in_time_tag )
+			{
+				// Time tag ends?
+				if ( line[col] == ']' )
+				{
+					// Get the time and special part, if any
+					QString time = line.mid( time_tag_start, col - time_tag_start );
 
 					// Now validate the time
 					if ( time == PLACEHOLDER_VALUE )
@@ -464,28 +499,28 @@ cont_paragraph:
 				}
 
 				// Only accept those characters
-				if ( time_tag_special_start == -1 && !line[col].isDigit() && line[col] != ':' && line[col] != '.' && line[col] != '-' )
+				if ( !line[col].isDigit() && line[col] != ':' && line[col] != '.' )
 				{
-					if ( line[col] == ' ' )
-						time_tag_special_start = col;
-					else
-					{
-						errors.push_back(
-								ValidatorError(
-										linenumber,
-										col,
-										tr("Invalid character in the time tag. Time tag must be in format [mm:ss.ms] where mm is minutes, ss is seconds and ms is milliseconds * 10") ) );
+					errors.push_back(
+							ValidatorError(
+									linenumber,
+									col,
+									tr("Invalid character in the time tag. Time tag must be in format [mm:ss.ms] where mm is minutes, ss is seconds and ms is milliseconds * 10") ) );
 
-						in_time_tag = false;
-						break; // done with this line
-					}
+					in_time_tag = false;
+					break; // done with this line
 				}
 			}
 			else if ( line[col] == '[' )
 			{
 				in_time_tag = true;
 				time_tag_start = col + 1;
-				time_tag_special_start = -1;
+				continue;
+			}
+			else if ( line[col] == '{' )
+			{
+				in_special_tag = true;
+				special_tag_start = col + 1;
 				continue;
 			}
 			else if ( line[col] == ']' )
@@ -495,6 +530,14 @@ cont_paragraph:
 								linenumber,
 								col,
 								tr("Invalid closing bracket usage outside the time block") ) );
+			}
+			else if ( line[col] == '}' )
+			{
+				errors.push_back(
+						ValidatorError(
+								linenumber,
+								col,
+								tr("Invalid closing bracket usage outside the special block") ) );
 			}
 			else
 				linetext += line[col];
