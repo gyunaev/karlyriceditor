@@ -42,6 +42,9 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 		// Is music file ready to play?
 		bool	isReady() const { return m_ready; }
 
+		// Is playing?
+		bool	isPlaying() const;
+
 		qint64	currentTime() const;
 		qint64	totalTime() const;
 

@@ -257,3 +257,8 @@ void PlayerWidget::seekSliderMoved( int newvalue )
 {
 	pAudioPlayer->seekTo( newvalue * totalTime() / seekSlider->maximum() );
 }
+
+bool PlayerWidget::isPlaying() const
+{
+	return pAudioPlayer->isPlaying();
+}

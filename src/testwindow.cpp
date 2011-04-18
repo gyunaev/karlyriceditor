@@ -29,7 +29,6 @@ TestWindow::TestWindow( QWidget *parent )
 
 	m_widget = 0;
 	m_layout = new QVBoxLayout( frame );
-	setLayout( m_layout );
 }
 
 void TestWindow::setLyricWidget( LyricsWidget * lw )

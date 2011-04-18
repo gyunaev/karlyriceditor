@@ -1,9 +1,7 @@
 #!/bin/sh
 
 # Path to (cross-platform) mingw compiler
-#MINGWPATH=/home/tim/bin/mingw/bin
-#QTPATH=/home/tim/bin/qt-4.6.0/qt/
-MINGWPATH=/usr/toolchains/windows-x86-mingw-qt46-phonon/bin
+MINGWPATH=/usr/toolchains/windows-x86-mingw-qtsdl/bin
 QMAKE=i686-pc-mingw32-qmake
 
 BUILDDIR="build.win32"
