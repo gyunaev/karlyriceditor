@@ -25,7 +25,7 @@
 #include "editor.h"
 #include "cdggenerator.h"
 #include "export_params.h"
-#include "ui_dialog_videoencprogress.h"
+#include "ui_dialog_encodingprogress.h"
 
 
 // Color code indexes
@@ -310,7 +310,7 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 
 	// Pop up progress dialog
 	QDialog progressDialog;
-	Ui::DialogVideoEncodingProgress progressUi;
+	Ui::DialogEncodingProgress progressUi;
 	progressUi.setupUi( &progressDialog );
 
 	progressUi.groupBox->setTitle( "CD+G output statistics");

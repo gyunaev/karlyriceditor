@@ -28,7 +28,7 @@
 #include "ffmpegvideoencoder.h"
 #include "editor.h"
 
-#include "ui_dialog_videoencprogress.h"
+#include "ui_dialog_encodingprogress.h"
 
 
 VideoGenerator::VideoGenerator( Project * prj )
@@ -97,7 +97,7 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 
 	// Pop up progress dialog
 	QDialog progressdlg;
-	Ui::DialogVideoEncodingProgress ui;
+	Ui::DialogEncodingProgress ui;
 	ui.setupUi( &progressdlg );
 
 	ui.progressBar->setMaximum( 99 );
