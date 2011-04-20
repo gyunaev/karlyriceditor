@@ -67,29 +67,7 @@
 		SetOutPath "$INSTDIR"
 		
 		; Our files
-		CreateDirectory "$INSTDIR\imageformats"
-		CreateDirectory "$INSTDIR\codecs"
-		CreateDirectory "$INSTDIR\iconengines"
-		CreateDirectory "$INSTDIR\mediaservices"
-		CreateDirectory "$INSTDIR\phonon_backend"
-		
-		File /oname=$INSTDIR\imageformats\qgif4.dll qgif4.dll
-		File /oname=$INSTDIR\imageformats\qico4.dll qico4.dll
-		File /oname=$INSTDIR\imageformats\qjpeg4.dll qjpeg4.dll
-		File /oname=$INSTDIR\imageformats\qsvg4.dll qsvg4.dll
-		File /oname=$INSTDIR\imageformats\qtiff4.dll qtiff4.dll
-		File /oname=$INSTDIR\iconengines\qsvgicon4.dll qsvgicon4.dll
-		File /oname=$INSTDIR\codecs\qcncodecs4.dll qcncodecs4.dll
-		File /oname=$INSTDIR\codecs\qjpcodecs4.dll qjpcodecs4.dll
-		File /oname=$INSTDIR\codecs\qkrcodecs4.dll qkrcodecs4.dll
-		File /oname=$INSTDIR\codecs\qtwcodecs4.dll qtwcodecs4.dll
-		File /oname=$INSTDIR\mediaservices\qdsengine4.dll qdsengine4.dll
-		File /oname=$INSTDIR\phonon_backend\phonon_ds94.dll phonon_ds94.dll
-		
 		File karlyriceditor.exe
-		File QtGui4.dll  
-		File QtCore4.dll
-		File phonon4.dll
 		File karlyriceditor.exe.manifest
 
 		;Store installation folder
@@ -113,33 +91,9 @@
 	Section "Uninstall"
 
 		; Our files
-		Delete "$INSTDIR\imageformats\qgif4.dll"
-		Delete "$INSTDIR\imageformats\qico4.dll"
-		Delete "$INSTDIR\imageformats\qjpeg4.dll"
-		Delete "$INSTDIR\imageformats\qmng4.dll"
-		Delete "$INSTDIR\imageformats\qsvg4.dll"
-		Delete "$INSTDIR\imageformats\qtiff4.dll"
-		Delete "$INSTDIR\iconengines\qsvgicon4.dll"
-		Delete "$INSTDIR\codecs\qcncodecs4.dll"
-		Delete "$INSTDIR\codecs\qjpcodecs4.dll"
-		Delete "$INSTDIR\codecs\qkrcodecs4.dll"
-		Delete "$INSTDIR\codecs\qtwcodecs4.dll"
-		Delete "$INSTDIR\mediaservices\qdsengine4.dll"
-		Delete "$INSTDIR\phonon_backend\phonon_ds94.dll"
-		
 		Delete "$INSTDIR\karlyriceditor.exe"
-		Delete "$INSTDIR\QtGui4.dll"
-		Delete "$INSTDIR\QtCore4.dll"
-		Delete "$INSTDIR\phonon4.dll"
 		Delete "$INSTDIR\karlyriceditor.exe.manifest"
-		
 		Delete "$INSTDIR\uninst.exe"
-
-		RMDir "$INSTDIR\imageformats"
-		RMDir "$INSTDIR\iconengines"
-		RMDir "$INSTDIR\codecs"
-		RMDir "$INSTDIR\mediaservices"
-		RMDir "$INSTDIR\phonon_backend"
 		RMDir "$INSTDIR"
 
 		!insertmacro MUI_STARTMENU_GETFOLDER Application $MUI_TEMP

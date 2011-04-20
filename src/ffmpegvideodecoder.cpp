@@ -84,7 +84,7 @@ bool FFMpegVideoDecoder::openFile( const QString& filename )
 	close();
 
 	// Open video file
-	if ( av_open_input_file( &d->pFormatCtx, filename.toUtf8(), NULL, 0, NULL ) != 0 )
+	if ( av_open_input_file( &d->pFormatCtx, FFMPEG_FILENAME( filename ), NULL, 0, NULL ) != 0 )
 	{
 		d->m_errorMsg = "Could not open video file";
 		return false;

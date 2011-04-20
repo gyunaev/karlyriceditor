@@ -38,4 +38,6 @@ extern "C"
 
 void ffmpeg_init_once();
 
+#define FFMPEG_FILENAME(string)	( qPrintable(string) )
+
 #endif // FFMPEG_HEADERS_H

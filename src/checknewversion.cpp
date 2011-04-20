@@ -321,7 +321,7 @@ void CheckNewVersion::run()
 	contentMap.remove( "Signature" );
 
 	// Do we need to call the callback?
-	if ( m_currentversion.isEmpty() || contentMap["Version"] != m_currentversion )
+	if ( m_currentversion.isEmpty() || contentMap["Version"].toDouble() > m_currentversion.toDouble() )
 		emit newVersionAvailable( contentMap );
 
 	reportStatus( Status_Finished );

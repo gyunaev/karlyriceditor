@@ -30,5 +30,3 @@ void ffmpeg_init_once()
 		av_register_all();
 	}
 }
-
-

@@ -95,11 +95,33 @@ void PageMusicFile::browse()
 	if ( filename.isEmpty() )
 		return;
 
-	// Try to open it
+	// We cannot handle MIDI/KAR files
+	if ( filename.endsWith( ".mid" ) || filename.endsWith( ".kar" ) )
+	{
+		if ( QMessageBox::question( 0,
+						   tr("Trying to open a MIDI file?"),
+						   tr("It looks like you are trying to open the MIDI file.\n"
+							  "MIDI file contains the lyrics embedded into the file in a special format. "
+							  "Karaoke Lyric Editor cannot edit regular MIDI files, it is recommended to use RoseGarden instead.\n\n"
+							  "Are you sure you still want to try to open this file?"),
+								   QMessageBox::Yes | QMessageBox::No, QMessageBox::No )
+				== QMessageBox::No )
+		{
+			return;
+		}
+	}
+
+	// Try to open itQMessageBox::Yes
 	if ( pAudioPlayer->open( filename ) )
 	{
 		leSongFile->setText( filename );
 		pAudioPlayer->close();
+	}
+	else
+	{
+		QMessageBox::critical( 0,
+							   tr("Cannot open the music file"),
+							   tr("Cannot open the music file.\n\n%1") .arg(pAudioPlayer->errorMsg()) );
 	}
 }
 

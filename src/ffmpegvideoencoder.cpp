@@ -112,8 +112,8 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 		return false;
 
 	// Allocate output format
-	//pOutputFormat = av_guess_format( outformat.toUtf8().data(), fileName.toUtf8().data(), 0 );
-	pOutputFormat = av_guess_format( 0, fileName.toUtf8().data(), 0 );
+	//pOutputFormat = av_guess_format( FFMPEG_FILENAME( outformat ), FFMPEG_FILENAME( fileName ), 0 );
+	pOutputFormat = av_guess_format( 0, FFMPEG_FILENAME( fileName ), 0 );
 
 	if ( !pOutputFormat )
 	{
@@ -130,7 +130,7 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 	}
 
 	pOutputCtx->oformat = pOutputFormat;
-	strncpy( pOutputCtx->filename, fileName.toUtf8().data(), sizeof(pOutputCtx->filename) );
+	strncpy( pOutputCtx->filename, FFMPEG_FILENAME( fileName ), sizeof(pOutputCtx->filename) );
 
 	// Add the video stream, index 0
 	pVideoStream = av_new_stream( pOutputCtx, 0 );
@@ -256,7 +256,7 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 	// Setup the planes
 	avpicture_fill( (AVPicture *)ppicture, picture_buf,pVideoCodecCtx->pix_fmt, pVideoCodecCtx->width, pVideoCodecCtx->height );
 
-	if ( url_fopen( &pOutputCtx->pb, fileName.toUtf8().data(), URL_WRONLY) < 0 )
+	if ( url_fopen( &pOutputCtx->pb, FFMPEG_FILENAME( fileName ), URL_WRONLY) < 0 )
 	{
 		m_errorMsg = "Could not create the video file";
 		goto cleanup;

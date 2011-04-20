@@ -120,7 +120,7 @@ bool AudioPlayerPrivate::open( const QString& filename )
 	QMutexLocker m( &m_mutex );
 
 	// Open the file
-	if ( av_open_input_file( &pFormatCtx, filename.toUtf8(), NULL, 0, NULL ) != 0 )
+	if ( av_open_input_file( &pFormatCtx, FFMPEG_FILENAME( filename ), NULL, 0, NULL ) != 0 )
 	{
 		m_errorMsg = "Could not open the audio file";
 		return false;
