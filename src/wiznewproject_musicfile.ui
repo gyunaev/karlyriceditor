@@ -58,7 +58,7 @@
         <property name="text">
          <string>If available, the editor obtained the information from the music file.
 Please check the information is correct, and if not, correct or fill it.
-Title is required, but all other fields can be empty.</string>
+Title and artist is required, but all other fields can be empty.</string>
         </property>
         <property name="wordWrap">
          <bool>false</bool>
@@ -103,13 +103,6 @@ Title is required, but all other fields can be empty.</string>
       </item>
       <item row="3" column="1">
        <widget class="QLineEdit" name="leAlbum"/>
-      </item>
-      <item row="3" column="2">
-       <widget class="QLabel" name="lblPicture">
-        <property name="text">
-         <string>Pic</string>
-        </property>
-       </widget>
       </item>
      </layout>
     </widget>

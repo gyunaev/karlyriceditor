@@ -86,7 +86,6 @@ SOURCES += mainwindow.cpp \
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \
     wiznewproject_lyrictype.ui \
-    wiznewproject_lyrics.ui \
     wiznewproject_intro.ui \
     wiznewproject_finish.ui \
     wiznewproject_musicfile.ui \
@@ -100,4 +99,3 @@ FORMS += mainwindow.ui \
 	dialog_export_params.ui \
 	dialog_encodingprogress.ui \
     dialog_testwindow.ui
-

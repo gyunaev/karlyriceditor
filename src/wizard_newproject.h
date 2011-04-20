@@ -23,7 +23,6 @@
 #include <QWizardPage>
 
 #include "ui_wiznewproject_musicfile.h"
-#include "ui_wiznewproject_lyrics.h"
 #include "ui_wiznewproject_intro.h"
 #include "ui_wiznewproject_finish.h"
 #include "ui_wiznewproject_lyrictype.h"
@@ -86,25 +85,6 @@ class PageMusicFile : public QWizardPage, public Ui::WizNewProject_MusicFile
 		QString		m_lastMusicFile;
 };
 
-
-// "Choose lyrics" page
-class PageLyrics : public QWizardPage, public Ui::WizNewProject_Lyrics
-{
-	Q_OBJECT
-
-	public:
-		PageLyrics( Project * project, QWidget *parent = 0 );
-
-		// overriden
-		void initializePage();
-		bool validatePage();
-
-	public slots:
-		void	browse();
-
-	private:
-		Project *	m_project;
-};
 
 // "Finish" page
 class PageFinish : public QWizardPage, public Ui::WizNewProject_Finish

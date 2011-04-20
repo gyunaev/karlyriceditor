@@ -78,8 +78,6 @@ PageMusicFile::PageMusicFile( Project * project, QWidget *parent )
 	setupUi( this );
 
 	m_project = project;
-	lblPicture->setPixmap( QPixmap( ":/images/nocover.png" ) );
-
 	connect( btnBrowse, SIGNAL( clicked() ), this, SLOT( browse() ) );
 }
 
@@ -165,59 +163,6 @@ bool PageMusicFile::validatePage()
 }
 
 
-//
-// "Choose lyrics" page
-//
-PageLyrics::PageLyrics( Project * project, QWidget *parent )
-	: QWizardPage( parent ), Ui::WizNewProject_Lyrics()
-{
-	setupUi( this );
-
-	connect( btnBrowse, SIGNAL( clicked() ), this, SLOT( browse() ) );
-
-	m_project = project;
-}
-
-void PageLyrics::initializePage()
-{
-	// Reading embedded lyrics is not supported by Phonon yet
-	rbnEmbeddedLyrics->setEnabled( false );
-}
-
-void PageLyrics::browse()
-{
-	QString fileName = QFileDialog::getOpenFileName( this,
-			tr("Open a lyric file"),
-			".",
-			tr("LRC files (*.lrc);;UltraStar files (*.txt)") );
-
-	if ( fileName.isEmpty() )
-		return;
-
-	leFileName->setText( fileName );
-}
-
-bool PageLyrics::validatePage()
-{
-	// If lyrics file is selected, it must exist and be valid
-	if ( rbnLoadFromFile->isChecked() )
-	{
-		if ( !QFile::exists( leFileName->text() ) )
-		{
-			QMessageBox::critical( 0,
-				tr("Lyrics file not found"),
-				tr("Selected lyrics file is not found.") );
-
-			return false;
-		}
-
-		if ( !m_project->importLyrics( leFileName->text(), leFileName->text().endsWith( "txt" ) ? Project::LyricType_UStar : Project::LyricType_LRC2 ) )
-			return false;
-	}
-
-	return true;
-}
-
 
 Wizard::Wizard( Project * project, QWidget *parent )
 	: QWizard( parent )
@@ -225,7 +170,6 @@ Wizard::Wizard( Project * project, QWidget *parent )
 	addPage( new PageIntro( project, this ) );
 	addPage( new PageLyricType( project, this ) );
 	addPage( new PageMusicFile( project, this ) );
-	addPage( new PageLyrics( project, this ) );
 	addPage( new PageFinish( project, this ) );
 
 #ifndef Q_WS_MAC
