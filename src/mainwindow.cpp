@@ -44,6 +44,10 @@
 #include "videogenerator.h"
 #include "cdggenerator.h"
 
+#if defined (USE_LICENSING)
+	#include "licensing.h"
+	#include "ui_dialog_registration.h"
+#endif
 
 MainWindow * pMainWindow;
 
@@ -179,6 +183,13 @@ void MainWindow::connectActions()
 	// Text editor
 	connect( actionUndo, SIGNAL( triggered()), editor, SLOT( undo()) );
 	connect( actionRedo, SIGNAL( triggered()), editor, SLOT( redo()) );
+
+	// Registration
+	connect( actionRegistration, SIGNAL( triggered()), this, SLOT( act_helpRegistration()) );
+
+#if !defined (USE_LICENSING)
+	actionRegistration->setVisible( false );
+#endif
 }
 
 void MainWindow::createToolbars()
@@ -748,4 +759,66 @@ void MainWindow::act_projectExportCDGFile()
 
 	CDGGenerator gen( m_project );
 	gen.generate( lyrics, m_player->totalTime() );
+}
+
+
+void MainWindow::act_helpRegistration()
+{
+#if defined (USE_LICENSING)
+	Licensing lic;
+
+	if ( !lic.init() )
+		return;
+
+	QString key = QSettings().value( "general/registrationkey", "" ).toString();
+
+	if ( key.isEmpty() || !lic.validate( key ) )
+	{
+		while ( 1 )
+		{
+			// Prepare the dialog
+			QDialog dlg( this );
+			Ui::DialogRegistration ui;
+			ui.setupUi( &dlg );
+
+			// Hide the registration info form and shrink the dialog
+			ui.groupShowInfo->hide();
+			dlg.resize( dlg.width(), dlg.minimumHeight() );
+
+			if ( dlg.exec() != QDialog::Accepted )
+				return;
+
+			QString key = ui.leKey->toPlainText();
+
+			if ( lic.validate( key ) )
+			{
+				QSettings().setValue( "general/registrationkey", key );
+				break;
+			}
+
+			QMessageBox::critical( 0,
+								  tr("Registration failed"),
+								  tr("Registration failed: %1") .arg( lic.errMsg() ) );
+			continue;
+		}
+	}
+
+	// Show the registration info dialog
+	QDialog dlg( this );
+	Ui::DialogRegistration ui;
+	ui.setupUi( &dlg );
+
+	// Set the data
+	ui.lblExpires->setText( lic.expires().toString() );
+	ui.lblSubject->setText( lic.subject() );
+
+	// Remove the "cancel" button from the button box
+	ui.buttonBox->removeButton( ui.buttonBox->button(QDialogButtonBox::Cancel ));
+
+	// Hide the "enter key" form and shrink the dialog
+	ui.groupEnterKey->hide();
+	dlg.resize( dlg.width(), dlg.minimumHeight() );
+
+	dlg.exec();
+#endif
 }

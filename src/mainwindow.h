@@ -73,6 +73,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	act_settingsShowPlayer( bool checked );
 
 		void	act_helpAbout();
+		void	act_helpRegistration();
 
 		void	openRecentFile( const QString& file );
 

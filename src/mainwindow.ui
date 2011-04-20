@@ -79,6 +79,7 @@
     <property name="title">
      <string>Help</string>
     </property>
+    <addaction name="actionRegistration"/>
     <addaction name="actionAbout"/>
    </widget>
    <widget class="QMenu" name="menuProject">
@@ -505,6 +506,11 @@ Note that for formats which support blocks nothing will be shown until it's less
    </property>
    <property name="text">
     <string>Export CD+G file...</string>
+   </property>
+  </action>
+  <action name="actionRegistration">
+   <property name="text">
+    <string>Registration...</string>
    </property>
   </action>
  </widget>

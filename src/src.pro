@@ -1,8 +1,9 @@
 TEMPLATE = app
 TARGET = ../bin/karlyriceditor
 DEPENDPATH += .
-LIBS += -lavformat -lavcodec -lswscale -lavutil -lSDL
-    
+LIBS += -lavformat -lavcodec -lswscale -lavutil -lSDL -lcrypto
+DEFINES += USE_LICENSING
+
 win32-g++-cross: {
 	LIBS += -lwsock32 -lvorbis -lvorbisenc -ltheora -lmp3lame -logg -lx264 -lxvidcore -lbz2 -ldxguid
 }
@@ -50,7 +51,8 @@ HEADERS += mainwindow.h \
     audioplayer.h \
     ffmpeg_headers.h \
     audioplayerprivate.h \
-	export_params.h
+	export_params.h \
+    licensing.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -82,7 +84,8 @@ SOURCES += mainwindow.cpp \
     audioplayer.cpp \
     audioplayerprivate.cpp \
     ffmpeg_headers.cpp \
-	export_params.cpp
+	export_params.cpp \
+    licensing.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \
     wiznewproject_lyrictype.ui \
@@ -98,4 +101,5 @@ FORMS += mainwindow.ui \
     gentlemessagebox.ui \
 	dialog_export_params.ui \
 	dialog_encodingprogress.ui \
-    dialog_testwindow.ui
+    dialog_testwindow.ui \
+    dialog_registration.ui
