@@ -1,8 +1,20 @@
 TEMPLATE = app
 TARGET = ../bin/karlyriceditor
 DEPENDPATH += .
-INCLUDEPATH += /usr/local/ffmpeg/include
-LIBPATH += /usr/local/ffmpeg/lib
+LIBS += -lavformat -lavcodec -lswscale -lavutil -lSDL
+    
+win32-g++-cross: {
+	LIBS += -lwsock32 -lvorbis -lvorbisenc -ltheora -lmp3lame -logg -lx264 -lxvidcore -lbz2 -ldxguid
+}
+
+!win32-g++-cross: {
+	INCLUDEPATH += /usr/local/ffmpeg/include
+	LIBPATH += /usr/local/ffmpeg/lib
+	LIBS += -lmp3lame \
+	    -lx264 \
+	    -lxvidcore \
+	    -lbz2
+}
 
 # Input
 HEADERS += mainwindow.h \
@@ -88,13 +100,4 @@ FORMS += mainwindow.ui \
 	dialog_export_params.ui \
 	dialog_encodingprogress.ui \
     dialog_testwindow.ui
-win32-g++-*::LIBS += -lwsock32
-LIBS += -lavformat \
-    -lavcodec \
-    -lswscale \
-    -lavutil \
-    -lmp3lame \
-    -lx264 \
-    -lxvidcore \
-	-lSDL \
-    -lbz2
+
