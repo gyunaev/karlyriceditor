@@ -379,14 +379,14 @@ void Project::setTag( Tag tag, const QString& value )
 		update( tagid, value );
 }
 
-QString Project::tag( Tag itag ) const
+QString Project::tag( Tag itag, const QString& defvalue ) const
 {
 	int tagid = tagToId( itag );
 
-	if ( tagid != -1 )
+	if ( tagid != -1 && m_projectData.contains( tagid ) )
 		return m_projectData[ tagid ];
 
-	return QString::null;
+	return defvalue;
 }
 
 Project::LyricType Project::type() const

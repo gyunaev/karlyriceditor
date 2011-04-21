@@ -250,7 +250,8 @@ void LyricsEvents::draw( qint64 timing, QImage& image )
 		m_nextUpdate = bg->doDraw( m_cachedImage, timing - m_eventTiming );
 
 	QPainter p( &image );
-	p.drawImage( 0, 0, m_cachedImage.scaled( image.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
+	QImage scaled = m_cachedImage.scaled( image.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation );
+	p.drawImage( (image.width() - scaled.width()) / 2, (image.height() - scaled.height()) / 2, scaled );
 
 	// Adjust nextUpdate as there may be more events
 	if ( m_nextUpdate == -1 )

@@ -61,16 +61,16 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	lyricrenderer.setData( lyrics );
 
 	// Initialize colors from m_project
-	lyricrenderer.setRenderFont( QFont( m_project->tag(Project::Tag_Video_font), m_project->tag(Project::Tag_Video_fontsize).toInt()) );
-	lyricrenderer.setColorBackground( m_project->tag( Project::Tag_Video_bgcolor ) );
-	lyricrenderer.setColorTitle( m_project->tag( Project::Tag_Video_infocolor ) );
-	lyricrenderer.setColorSang( m_project->tag( Project::Tag_Video_inactivecolor ) );
-	lyricrenderer.setColorToSing( m_project->tag( Project::Tag_Video_activecolor ) );
+	lyricrenderer.setRenderFont( QFont( m_project->tag(Project::Tag_Video_font, "arial"), m_project->tag(Project::Tag_Video_fontsize, "8").toInt()) );
+	lyricrenderer.setColorBackground( m_project->tag( Project::Tag_Video_bgcolor, "black" ) );
+	lyricrenderer.setColorTitle( m_project->tag( Project::Tag_Video_infocolor, "white" ) );
+	lyricrenderer.setColorSang( m_project->tag( Project::Tag_Video_inactivecolor, "blue" ) );
+	lyricrenderer.setColorToSing( m_project->tag( Project::Tag_Video_activecolor, "green" ) );
 
 	// Title
 	lyricrenderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
 								 m_project->tag( Project::Tag_Title ),
-								 m_project->tag( Project::Tag_Video_titletime ).toInt() * 1000 );
+								 m_project->tag( Project::Tag_Video_titletime, "5" ).toInt() * 1000 );
 
 	// Preamble
 	if ( m_project->tag( Project::Tag_Video_preamble).toInt() != 0 )

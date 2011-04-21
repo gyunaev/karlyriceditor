@@ -95,7 +95,7 @@ class Project
 
 		// Set the music tag fields
 		void	setTag( Tag tag, const QString& value );
-		QString tag( Tag tagid ) const;
+		QString tag( Tag tagid, const QString& defvalue = QString::null ) const;
 
 		// Is project modified?
 		bool	isModified() const { return m_modified; }

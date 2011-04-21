@@ -284,16 +284,16 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	lyricrenderer.setRenderFont( QFont( m_project->tag(Project::Tag_CDG_font), m_project->tag(Project::Tag_CDG_fontsize).toInt()) );
 
 	// Initialize colors from m_project
-	m_colorBackground = m_project->tag( Project::Tag_CDG_bgcolor );
+	m_colorBackground = m_project->tag( Project::Tag_CDG_bgcolor, "black" );
 	lyricrenderer.setColorBackground( m_colorBackground );
-	lyricrenderer.setColorTitle( m_project->tag( Project::Tag_CDG_infocolor ) );
-	lyricrenderer.setColorSang( m_project->tag( Project::Tag_CDG_inactivecolor ) );
-	lyricrenderer.setColorToSing( m_project->tag( Project::Tag_CDG_activecolor ) );
+	lyricrenderer.setColorTitle( m_project->tag( Project::Tag_CDG_infocolor, "white" ) );
+	lyricrenderer.setColorSang( m_project->tag( Project::Tag_CDG_inactivecolor, "blue" ) );
+	lyricrenderer.setColorToSing( m_project->tag( Project::Tag_CDG_activecolor, "green" ) );
 
 	// Title
 	lyricrenderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
 								 m_project->tag( Project::Tag_Title ),
-								 m_project->tag( Project::Tag_CDG_titletime ).toInt() * 1000 );
+								 m_project->tag( Project::Tag_CDG_titletime, "5" ).toInt() * 1000 );
 
 	// Preamble
 	lyricrenderer.setPreambleData( 4, 5000, 8 );

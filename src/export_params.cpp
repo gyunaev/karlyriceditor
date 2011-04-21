@@ -56,14 +56,14 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 		cbAllKeyframes->setChecked( m_project->tag( Project::Tag_Video_AllKeyframes).toInt() );
 		cbExportNoAudio->setChecked( m_project->tag( Project::Tag_Video_ExportNoAudio).toInt() );
 
-		btnVideoColorActive->setColor( m_project->tag( Project::Tag_Video_activecolor ) );
-		btnVideoColorBg->setColor( m_project->tag( Project::Tag_Video_bgcolor ) );
-		btnVideoColorInactive->setColor( m_project->tag( Project::Tag_Video_inactivecolor ) );
-		btnVideoColorInfo->setColor( m_project->tag( Project::Tag_Video_infocolor ) );
-		fontVideo->setCurrentFont( QFont( m_project->tag( Project::Tag_Video_font ) ) );
-		fontVideoSize->setValue( m_project->tag( Project::Tag_Video_fontsize).toInt() );
-		titleVideoMin->setValue( m_project->tag( Project::Tag_Video_titletime).toInt() );
-		cbVideoPreamble->setChecked( m_project->tag( Project::Tag_Video_preamble).toInt() );
+		btnVideoColorActive->setColor( m_project->tag( Project::Tag_Video_activecolor, "blue" ) );
+		btnVideoColorBg->setColor( m_project->tag( Project::Tag_Video_bgcolor, "black" ) );
+		btnVideoColorInactive->setColor( m_project->tag( Project::Tag_Video_inactivecolor, "green" ) );
+		btnVideoColorInfo->setColor( m_project->tag( Project::Tag_Video_infocolor, "white" ) );
+		fontVideo->setCurrentFont( QFont( m_project->tag( Project::Tag_Video_font, "arial" ) ) );
+		fontVideoSize->setValue( m_project->tag( Project::Tag_Video_fontsize, "8" ).toInt() );
+		titleVideoMin->setValue( m_project->tag( Project::Tag_Video_titletime, "5" ).toInt() );
+		cbVideoPreamble->setChecked( m_project->tag( Project::Tag_Video_preamble, "1" ).toInt() );
 
 		setWindowTitle( tr("Specify video parameters") );
 	}
@@ -72,14 +72,14 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 		// Hide video part
 		groupVideo->hide();
 
-		btnVideoColorActive->setColor( m_project->tag( Project::Tag_CDG_activecolor ) );
-		btnVideoColorBg->setColor( m_project->tag( Project::Tag_CDG_bgcolor ) );
-		btnVideoColorInactive->setColor( m_project->tag( Project::Tag_CDG_inactivecolor ) );
-		btnVideoColorInfo->setColor( m_project->tag( Project::Tag_CDG_infocolor ) );
-		fontVideo->setCurrentFont( QFont( m_project->tag( Project::Tag_CDG_font ) ) );
-		fontVideoSize->setValue( m_project->tag( Project::Tag_CDG_fontsize).toInt() );
-		titleVideoMin->setValue( m_project->tag( Project::Tag_CDG_titletime).toInt() );
-		cbVideoPreamble->setChecked( m_project->tag( Project::Tag_CDG_preamble).toInt() );
+		btnVideoColorActive->setColor( m_project->tag( Project::Tag_CDG_activecolor, "blue" ) );
+		btnVideoColorBg->setColor( m_project->tag( Project::Tag_CDG_bgcolor, "black" ) );
+		btnVideoColorInactive->setColor( m_project->tag( Project::Tag_CDG_inactivecolor, "green" ) );
+		btnVideoColorInfo->setColor( m_project->tag( Project::Tag_CDG_infocolor, "white" ) );
+		fontVideo->setCurrentFont( QFont( m_project->tag( Project::Tag_CDG_font, "arial" ) ) );
+		fontVideoSize->setValue( m_project->tag( Project::Tag_CDG_fontsize, "8").toInt() );
+		titleVideoMin->setValue( m_project->tag( Project::Tag_CDG_titletime, "5").toInt() );
+		cbVideoPreamble->setChecked( m_project->tag( Project::Tag_CDG_preamble, "1").toInt() );
 
 		setWindowTitle( tr("Specify CDG parameters") );
 		lblOutput->setText( tr("Write CD+G data to file:") );
