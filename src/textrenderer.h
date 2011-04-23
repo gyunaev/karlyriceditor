@@ -77,6 +77,7 @@ class TextRenderer : public LyricsRenderer
 
 	private:
 		void	init();
+		void	prepareEvents();
 		QString lyricForTime( qint64 tick );
 		void	drawLyrics( const QString& paragraph, const QRect& boundingRect );
 		void	drawPreamble();

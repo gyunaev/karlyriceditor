@@ -276,8 +276,14 @@ int	Lyrics::totalBlockInfoBlocks() const
 	return m_playBlocks.size();
 }
 
-QString	Lyrics::getBlockText( int block ) const
+QString	Lyrics::getBlockText( int block, qint64 * start, qint64 * end ) const
 {
+	if ( start )
+		*start = m_playBlocks[block].blockstart;
+
+	if ( end )
+		*end = m_playBlocks[block].blockend;
+
 	return m_playBlocks[block].text;
 }
 

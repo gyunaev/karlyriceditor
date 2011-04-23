@@ -198,6 +198,17 @@ bool LyricsEvents::prepare( QString * errmsg )
 	return true;
 }
 
+void LyricsEvents::adjustTime( qint64 timing, qint64 newtiming )
+{
+	QMap< qint64, Background* >::iterator it = m_preparedEvents.find( timing );
+
+	if ( it != m_preparedEvents.end())
+	{
+		m_preparedEvents[ newtiming ] = m_preparedEvents[timing];
+		m_preparedEvents.erase( it );
+	}
+}
+
 bool LyricsEvents::updated( qint64 timing ) const
 {
 	if ( m_nextUpdate == -1 )
@@ -213,7 +224,7 @@ void LyricsEvents::draw( qint64 timing, QImage& image )
 {
 	// Do we have precompiled events?
 	if ( !m_events.isEmpty() && m_preparedEvents.isEmpty() )
-		prepare();
+		return;
 
 	bool cache_changed = false;
 

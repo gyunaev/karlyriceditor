@@ -43,6 +43,7 @@ class LyricsEvents
 
 		// When playing
 		bool prepare( QString * errmsg = 0 );
+		void adjustTime( qint64 timing, qint64 newtiming );
 		bool updated( qint64 timing ) const;
 		void draw( qint64 timing, QImage& image );
 

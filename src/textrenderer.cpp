@@ -62,7 +62,7 @@ void TextRenderer::setData( const Lyrics& lyrics )
 
 	m_lyrics = lyrics;
 	m_lyricEvents = lyrics.events();
-	m_lyricEvents.prepare();
+	prepareEvents();
 }
 
 void TextRenderer::setRenderFont( const QFont& font )
@@ -580,3 +580,36 @@ int TextRenderer::update( qint64 timing )
 	return result;
 }
 
+
+void TextRenderer::prepareEvents()
+{
+	m_lyricEvents.prepare();
+
+	// Events need to be adjusted for the following:
+	// - Those at the start of the block may move;
+	qint64 start, end, lastend = 0;
+
+	for ( int i = 0; i < m_lyrics.totalBlockInfoBlocks(); i++ )
+	{
+		m_lyrics.getBlockText( i, &start, &end );
+
+		// Should the next block be shown earlier than expected via prefetch?
+		if ( start - lastend > m_beforeDuration )
+		{
+			// Adjust by m_beforeDuration
+			m_lyricEvents.adjustTime( start, start - m_beforeDuration );
+		}
+		else if ( m_prefetchDuration > 0 )
+		{
+			// Adjust by m_prefetchDuration
+			m_lyricEvents.adjustTime( start, start - m_prefetchDuration );
+		}
+		else if ( start > lastend )
+		{
+			// Adjust by start - lastend
+			m_lyricEvents.adjustTime( start, start - (start - lastend) );
+		}
+
+		lastend = end;
+	}
+}

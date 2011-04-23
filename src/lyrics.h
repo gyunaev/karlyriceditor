@@ -104,7 +104,7 @@ class Lyrics
 
 		// Accessing blockinfo
 		int		totalBlockInfoBlocks() const;
-		QString	getBlockText( int block ) const;
+		QString	getBlockText( int block, qint64 * start = 0, qint64 * end = 0 ) const;
 
 		// For playing
 		bool	blockForTime( qint64 timing, QString& block, int& position, qint64& nexttiming ) const;
