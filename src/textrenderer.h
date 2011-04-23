@@ -104,6 +104,7 @@ class TextRenderer : public LyricsRenderer
 		unsigned int			m_preambleCount;	// how many preamble squares to draw for m_preambleLengthMs
 		QString					m_titleArtist;
 		QString					m_titleSong;
+		QString					m_createdBy;
 
 		unsigned int			m_requestedTitleDuration;
 		unsigned int			m_beforeDuration;

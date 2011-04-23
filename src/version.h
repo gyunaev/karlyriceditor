@@ -20,6 +20,8 @@
 #ifndef INCLUDE_VERSION_H
 #define INCLUDE_VERSION_H
 
+#define APP_NAME			"Karaoke Lyric Editor"
+
 #define APP_VERSION_MAJOR	1
 #define APP_VERSION_MINOR	3
 

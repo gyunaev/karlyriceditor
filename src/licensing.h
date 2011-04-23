@@ -20,6 +20,8 @@
 #ifndef LICENSING_H
 #define LICENSING_H
 
+#include <QString>
+
 class LicensingPrivate;
 
 //
@@ -36,6 +38,7 @@ class Licensing
 		Licensing();
 		virtual ~Licensing();
 
+		bool	isEnabled() const;
 		bool	init();
 		bool	validate( const QString& cert );
 		QString errMsg() const;
@@ -49,5 +52,7 @@ class Licensing
 	private:
 		LicensingPrivate * d;
 };
+
+extern Licensing * pLicensing;
 
 #endif // LICENSING_H

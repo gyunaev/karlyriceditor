@@ -19,11 +19,17 @@
 
 #include <QDate>
 #include <QString>
+#include <QSettings>
 
-#include <ssl/x509.h>
-#include <ssl/x509_vfy.h>
+#if defined (USE_LICENSING)
+	#include <ssl/x509.h>
+	#include <ssl/x509_vfy.h>
+#endif
 
 #include "licensing.h"
+
+Licensing * pLicensing;
+
 
 static const char * CA_DER_CERT = "MIICkDCCAfmgAwIBAgIJAJvgo443LFCmMA0GCSqGSIb3DQEBBQUAMIGAMTEwLwYD"
 									"VQQDDChrYXJseXJpY2VkaXRvci5jb20uY2VydGlmaWNhdGUuYXV0aG9yaXR5MRMw"
@@ -65,6 +71,16 @@ Licensing::~Licensing()
 	delete d;
 }
 
+bool Licensing::isEnabled() const
+{
+#if defined (USE_LICENSING)
+	return true;
+#else
+	return false;
+#endif
+}
+
+
 QString	Licensing::subject() const
 {
 	return d->m_valid ? d->m_subject : QString();
@@ -77,13 +93,18 @@ QDate Licensing::expires() const
 
 bool Licensing::init()
 {
+#if defined (USE_LICENSING)
 	OpenSSL_add_all_algorithms();
 	return true;
+#else
+	return false;
+#endif
 }
 
 
 bool Licensing::validate( const QString& license )
 {
+#if defined (USE_LICENSING)
 	char subject[1024];
 	ASN1_TIME *naft;
 	X509 * cert = 0;
@@ -257,6 +278,10 @@ cleanup:
 		X509_STORE_free( certStore );
 
 	return d->m_valid;
+
+#else
+	return false;
+#endif
 }
 
 bool Licensing::isValid() const

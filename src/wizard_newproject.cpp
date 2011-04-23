@@ -24,6 +24,7 @@
 
 #include "audioplayer.h"
 #include "project.h"
+#include "version.h"
 #include "wizard_newproject.h"
 
 namespace WizardNewProject
@@ -100,8 +101,8 @@ void PageMusicFile::browse()
 						   tr("Trying to open a MIDI file?"),
 						   tr("It looks like you are trying to open the MIDI file.\n"
 							  "MIDI file contains the lyrics embedded into the file in a special format. "
-							  "Karaoke Lyric Editor cannot edit regular MIDI files, it is recommended to use RoseGarden instead.\n\n"
-							  "Are you sure you still want to try to open this file?"),
+							  "%1 cannot edit regular MIDI files, it is recommended to use RoseGarden instead.\n\n"
+							  "Are you sure you still want to try to open this file?") .arg( APP_NAME ),
 								   QMessageBox::Yes | QMessageBox::No, QMessageBox::No )
 				== QMessageBox::No )
 		{

@@ -109,7 +109,7 @@ void Project::clear()
 	m_projectData[ PD_SIGNATURE ] = "BONIFACI";
 	m_projectData[ PD_VERSION ] = 1;
 	m_projectData[ PD_TAG_OFFSET ] = QString::number( pSettings->m_phononSoundDelay );
-	m_projectData[ PD_TAG_APPLICATION ] = "Karaoke Lyric Editor";
+	m_projectData[ PD_TAG_APPLICATION ] = APP_NAME;
 	m_projectData[ PD_TAG_APPVERSION ] = QString("%1.%2").arg( APP_VERSION_MAJOR ).arg( APP_VERSION_MINOR );
 
 	// Init CD+G data
