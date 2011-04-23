@@ -253,9 +253,30 @@ void LyricsEvents::draw( qint64 timing, QImage& image )
 	}
 
 	QPainter p( &image );
-	QImage scaled = m_cachedImage.scaled( image.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation );
 
-	p.drawImage( (image.width() - scaled.width()) / 2, (image.height() - scaled.height()) / 2, scaled );
+	// Stretch the image to fit the window.
+	// We cannot use Qt::KeepAspectRatioByExpanding as it takes the left top of the image, while we would
+	// center it
+	//QImage scaled = m_cachedImage.scaled( image.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation );
+	//p.drawImage( (image.width() - scaled.width()) / 2, (image.height() - scaled.height()) / 2, scaled );
+
+	// Calculate which way to scale/shrink the image
+	double width_ratio = (double) m_cachedImage.width() / (double) image.width();
+	double height_ratio = (double) m_cachedImage.height() / (double) image.height();
+
+	// Use the smallest ratio
+	double ratio = qMin( width_ratio, height_ratio );
+
+//	qDebug("using ratio %g, %dx%d -> %gx%g", ratio, m_cachedImage.width(), m_cachedImage.height(), m_cachedImage.width() / ratio, m_cachedImage.height() / ratio );
+
+	// Get the scaled image
+	QImage scaled = m_cachedImage.scaled( m_cachedImage.width() / ratio, m_cachedImage.height() / ratio, Qt::KeepAspectRatio, Qt::SmoothTransformation );
+
+	// Draw the part of scaled image
+	p.drawImage( 0, 0, scaled,
+				(scaled.width() - image.width()) / 2,
+				(scaled.height() - image.height()) / 2,
+				image.width(), image.height() );
 
 	// Adjust nextUpdate as there may be more events
 	if ( m_nextUpdate == -1 )

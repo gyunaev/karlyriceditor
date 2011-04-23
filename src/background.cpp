@@ -78,11 +78,7 @@ qint64 BackgroundVideo::doDraw( QImage& image, qint64 timing )
 	if ( videoframe.isNull() )
 		return 0;
 
-	if ( image.isNull() )
-		image = QImage( videoframe.size(), videoframe.format() );
-
-	QPainter p( &image );
-	p.drawImage( QPoint(0,0), videoframe );
+	image = videoframe;
 
 	// We use our own cache
 	return 0;
