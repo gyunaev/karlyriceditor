@@ -43,11 +43,8 @@
 #include "ui_dialog_about.h"
 #include "videogenerator.h"
 #include "cdggenerator.h"
-
-#if defined (USE_LICENSING)
-	#include "licensing.h"
-	#include "ui_dialog_registration.h"
-#endif
+#include "licensing.h"
+#include "ui_dialog_registration.h"
 
 MainWindow * pMainWindow;
 
@@ -67,6 +64,15 @@ MainWindow::MainWindow()
 	// Initialize stuff
 	m_project = 0;
 	m_testWindow = 0;
+
+	// Licensing
+	pLicensing = new Licensing();
+
+	if ( pLicensing->init() )
+	{
+		QString key = QSettings().value( "general/registrationkey", "" ).toString();
+		pLicensing->validate( key );
+	}
 
 	// Create dock widgets
 	m_player = new PlayerWidget( this );
@@ -187,9 +193,8 @@ void MainWindow::connectActions()
 	// Registration
 	connect( actionRegistration, SIGNAL( triggered()), this, SLOT( act_helpRegistration()) );
 
-#if !defined (USE_LICENSING)
-	actionRegistration->setVisible( false );
-#endif
+	if ( !pLicensing->isEnabled() )
+		actionRegistration->setVisible( false );
 }
 
 void MainWindow::createToolbars()
@@ -743,6 +748,9 @@ void MainWindow::act_projectExportVideoFile()
 	if ( !editor->exportLyrics( &lyrics ) )
 		return;
 
+	// Stop the player if playing
+	m_player->btn_playerStop();
+
 	VideoGenerator videogen( m_project );
 	videogen.generate( lyrics, m_player->totalTime() );
 }
@@ -757,6 +765,9 @@ void MainWindow::act_projectExportCDGFile()
 	if ( !editor->exportLyrics( &lyrics ) )
 		return;
 
+	// Stop the player if playing
+	m_player->btn_playerStop();
+
 	CDGGenerator gen( m_project );
 	gen.generate( lyrics, m_player->totalTime() );
 }
@@ -764,15 +775,10 @@ void MainWindow::act_projectExportCDGFile()
 
 void MainWindow::act_helpRegistration()
 {
-#if defined (USE_LICENSING)
-	Licensing lic;
-
-	if ( !lic.init() )
+	if ( !pLicensing->isEnabled() )
 		return;
 
-	QString key = QSettings().value( "general/registrationkey", "" ).toString();
-
-	if ( key.isEmpty() || !lic.validate( key ) )
+	if ( !pLicensing->isValid() )
 	{
 		while ( 1 )
 		{
@@ -790,7 +796,7 @@ void MainWindow::act_helpRegistration()
 
 			QString key = ui.leKey->toPlainText();
 
-			if ( lic.validate( key ) )
+			if ( pLicensing->validate( key ) )
 			{
 				QSettings().setValue( "general/registrationkey", key );
 				break;
@@ -798,7 +804,7 @@ void MainWindow::act_helpRegistration()
 
 			QMessageBox::critical( 0,
 								  tr("Registration failed"),
-								  tr("Registration failed: %1") .arg( lic.errMsg() ) );
+								  tr("Registration failed: %1") .arg( pLicensing->errMsg() ) );
 			continue;
 		}
 	}
@@ -809,8 +815,8 @@ void MainWindow::act_helpRegistration()
 	ui.setupUi( &dlg );
 
 	// Set the data
-	ui.lblExpires->setText( lic.expires().toString() );
-	ui.lblSubject->setText( lic.subject() );
+	ui.lblExpires->setText( pLicensing->expires().toString() );
+	ui.lblSubject->setText( pLicensing->subject() );
 
 	// Remove the "cancel" button from the button box
 	ui.buttonBox->removeButton( ui.buttonBox->button(QDialogButtonBox::Cancel ));
@@ -820,5 +826,4 @@ void MainWindow::act_helpRegistration()
 	dlg.resize( dlg.width(), dlg.minimumHeight() );
 
 	dlg.exec();
-#endif
 }
