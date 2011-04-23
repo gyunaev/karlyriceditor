@@ -344,6 +344,7 @@ bool MainWindow::act_fileSaveProjectAs()
 		return false;
 
 	m_projectFile = fileName;
+	setWindowTitle( tr("%1[*] - Lyric Editor") .arg( m_projectFile ) );
 
 	// Change the current dir
 	QFileInfo finfo( fileName );
