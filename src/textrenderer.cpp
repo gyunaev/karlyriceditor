@@ -23,6 +23,8 @@
 #include "textrenderer.h"
 #include "settings.h"
 #include "project.h"
+#include "version.h"
+#include "licensing.h"
 
 
 // active - not sang, inactive - sang
@@ -137,6 +139,11 @@ void TextRenderer::init()
 	m_prefetchDuration = 0;
 
 	m_lastLyricsText.clear();
+
+	if ( pLicensing->isEnabled() && pLicensing->isValid() )
+		m_createdBy = pLicensing->subject();
+	else
+		m_createdBy = APP_NAME;
 }
 
 void TextRenderer::setPreambleData( unsigned int height, unsigned int timems, unsigned int count )
@@ -502,11 +509,12 @@ int TextRenderer::update( qint64 timing )
 	&& timing < m_requestedTitleDuration
 	&& timing < (m_lyrics.firstLyric() - 1000) )
 	{
-		lyricstext = QString("%1%2\n\n%3\n\n%4Created by Karaoke Lyric Editor\n%5http://www.karlyriceditor.com/\n")
+		lyricstext = QString("%1%2\n\n%3\n\n%4Created by %5\n%6http://www.karlyriceditor.com/\n")
 						.arg( actionSetColorTitle )
 						.arg( m_titleArtist )
 						.arg( m_titleSong )
 						.arg( actionSetSmallFont )
+						.arg( m_createdBy )
 						.arg( actionSetColorToSing );
 	}
 	else
