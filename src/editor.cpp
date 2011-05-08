@@ -163,6 +163,7 @@ bool Editor::exportLyrics( Lyrics * lyrics )
 		QString lyrictext, timing, special;
 		bool in_time_tag = false;
 		bool in_special_tag = false;
+		int added_lyrics = 0;
 
 		for ( int col = 0; col < line.size(); col++ )
 		{
@@ -194,9 +195,14 @@ bool Editor::exportLyrics( Lyrics * lyrics )
 					if ( !special.isEmpty() )
 						lyrics->addBackgroundEvent( timeToMark( timing ), special );
 
-					lyrics->curLyricSetTime( timeToMark( timing ) );
-					lyrics->curLyricAppendText( lyrictext );
-					lyrics->curLyricAdd();
+					// The first lyric should not be empty
+					if ( added_lyrics > 0 || !lyrictext.isEmpty() )
+					{
+						lyrics->curLyricSetTime( timeToMark( timing ) );
+						lyrics->curLyricAppendText( lyrictext );
+						lyrics->curLyricAdd();
+						added_lyrics++;
+					}
 
 					lyrictext.clear();
 					special.clear();
