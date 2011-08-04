@@ -22,8 +22,8 @@
 #include <QSettings>
 
 #if defined (USE_LICENSING)
-	#include <ssl/x509.h>
-	#include <ssl/x509_vfy.h>
+	#include <openssl/x509.h>
+	#include <openssl/x509_vfy.h>
 #endif
 
 #include "licensing.h"
