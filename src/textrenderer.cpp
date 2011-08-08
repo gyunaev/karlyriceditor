@@ -109,7 +109,7 @@ void TextRenderer::setLyrics( const Lyrics& lyrics )
 
 		m_lyricBlocks.push_back( binfo );
 	}
-/*
+
 	// Dump the result
 	qDebug("Block dump, %d blocks\n", m_lyricBlocks.size() );
 	for ( int bl = 0; bl < m_lyricBlocks.size(); bl++ )
@@ -128,7 +128,7 @@ void TextRenderer::setLyrics( const Lyrics& lyrics )
 				   qPrintable( m_lyricBlocks[bl].text.mid( pos + 1 ) ) );
 		}
 	}
-*/
+
 	m_lyricEvents = lyrics.events();
 	prepareEvents();
 }
@@ -150,18 +150,10 @@ void TextRenderer::compileLine( const QString& line, qint64 starttime, qint64 en
 		// Parse the special sequences
 		if ( lchar == '@' )
 		{
-			// Title start
-			if ( ch + 1 < line.length() && line[ch+1] == '{' )
+			// Title start/end
+			if ( ch + 1 < line.length() && line[ch+1] == '$' )
 			{
-				*intitle = true;
-				ch++;
-				continue;
-			}
-
-			// Title end
-			if ( ch + 1 < line.length() && line[ch+1] == '}' )
-			{
-				*intitle = false;
+				*intitle = !*intitle;
 				ch++;
 				continue;
 			}
@@ -177,15 +169,15 @@ void TextRenderer::compileLine( const QString& line, qint64 starttime, qint64 en
 			}
 
 			// Font size change down
-			if ( ch + 1 < line.length() && line[ch+1] == '/' )
+			if ( ch + 1 < line.length() && line[ch+1] == '<' )
 			{
 				binfo->fonts[ blocktextstart + drawntext.length() ] = -SMALL_FONT_DIFF; // make the font smaller
 				ch += 1;
 				continue;
 			}
 
-			// Font size change down
-			if ( ch + 1 < line.length() && line[ch+1] == '\\' )
+			// Font size change up
+			if ( ch + 1 < line.length() && line[ch+1] == '>' )
 			{
 				binfo->fonts[ blocktextstart + drawntext.length() ] = SMALL_FONT_DIFF; // make the font larger
 				ch += 1;
@@ -201,10 +193,13 @@ void TextRenderer::compileLine( const QString& line, qint64 starttime, qint64 en
 	}
 
 	// Now we know the total number of characters, and can calc the time step
-	int timestep = qMax( 1, (int) ((endtime - starttime) / drawntext.length() ) );
+	if ( !timedcharacters.isEmpty() )
+	{
+		int timestep = qMax( 1, (int) ((endtime - starttime) / timedcharacters.size() ) );
 
-	for ( int ch = 0; ch < timedcharacters.size(); ch++ )
-		binfo->offsets [ starttime + timedcharacters[ch] * timestep ] = blocktextstart + timedcharacters[ch];
+		for ( int ch = 0; ch < timedcharacters.size(); ch++ )
+			binfo->offsets [ starttime + ch * timestep ] = blocktextstart + timedcharacters[ch];
+	}
 
 	binfo->text += drawntext;
 }
@@ -258,7 +253,7 @@ void TextRenderer::setTitlePageData( const QString& artist, const QString& title
 		createdBy = pLicensing->subject();
 
 	// Block 0 is reserved for us; fill it up
-	QString titletext = QString("@%1%2\n\n%3\n\n@/Created by %4\n@%5http://www.karlyriceditor.com/\n")
+	QString titletext = QString("@%1%2\n\n%3\n\n@<Created by %4\n@%5http://www.karlyriceditor.com/\n")
 							.arg( m_colorTitle.name() )
 							.arg( artist )
 							.arg( title )
@@ -545,6 +540,7 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
 	// Used in calculations only
 	QFont curFont( m_renderFont );
 	QFontMetrics metrics( curFont );
+	QColor fallbackColor = m_colorToSing;
 
 	if ( pos == -1 )
 		painter.setPen( m_colorToSing );
@@ -578,20 +574,20 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
 					painter.setFont( QFont(painter.font().family(), painter.font().pointSize() + fontchange.value() ) );
 
 				// Handle the color change events if pos doesn't cover them
-				if ( i > pos )
-				{
-					QMap< unsigned int, QString >::const_iterator colchange = m_lyricBlocks[blockid].colors.find( i );
+				QMap< unsigned int, QString >::const_iterator colchange = m_lyricBlocks[blockid].colors.find( i );
 
-					if ( colchange != m_lyricBlocks[blockid].colors.end() )
-					{
-						QColor newcolor( colchange.value() );
+				if ( colchange != m_lyricBlocks[blockid].colors.end() )
+				{
+					QColor newcolor( colchange.value() );
+					fallbackColor = newcolor;
+
+					if ( i > pos )
 						painter.setPen( newcolor );
-					}
 				}
 
 				if ( pos != -1 && i >= pos )
 				{
-					painter.setPen( m_colorToSing );
+					painter.setPen( fallbackColor );
 				}
 
 				// Outline

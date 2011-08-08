@@ -185,6 +185,7 @@ void MainWindow::connectActions()
 	connect( actionShow_Player_dock_wingow, SIGNAL(triggered(bool)), this, SLOT(act_settingsShowPlayer(bool)) );
 	connect( actionInsert_picture, SIGNAL(triggered(bool)), this, SLOT(act_editInsertPicture() ) );
 	connect( actionInsert_video, SIGNAL(triggered(bool)), this, SLOT(act_editInsertVideo() ) );
+	connect( actionInsert_color_change, SIGNAL(triggered(bool)), this, SLOT(act_editInsertColorChange() ) );
 
 	// docks
 	connect( m_player,SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPlayer(bool)) );
