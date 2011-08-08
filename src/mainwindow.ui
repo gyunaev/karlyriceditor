@@ -64,8 +64,13 @@
     <addaction name="separator"/>
     <addaction name="actionRemove_all_tags"/>
     <addaction name="separator"/>
+    <addaction name="actionInsert_picture"/>
+    <addaction name="actionInsert_color_change"/>
+    <addaction name="actionInsert_video"/>
+    <addaction name="separator"/>
     <addaction name="actionClear_text"/>
     <addaction name="actionTrimspaces"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuSettings">
     <property name="title">
@@ -511,6 +516,33 @@ Note that for formats which support blocks nothing will be shown until it's less
   <action name="actionRegistration">
    <property name="text">
     <string>Registration...</string>
+   </property>
+  </action>
+  <action name="actionInsert_picture">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/images/dryicons_application_add.png</normaloff>:/images/dryicons_application_add.png</iconset>
+   </property>
+   <property name="text">
+    <string>Insert picture...</string>
+   </property>
+  </action>
+  <action name="actionInsert_video">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/images/dryicons_open_folder.png</normaloff>:/images/dryicons_open_folder.png</iconset>
+   </property>
+   <property name="text">
+    <string>Insert video...</string>
+   </property>
+  </action>
+  <action name="actionInsert_color_change">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/images/saveas.png</normaloff>:/images/saveas.png</iconset>
+   </property>
+   <property name="text">
+    <string>Insert color change...</string>
    </property>
   </action>
  </widget>

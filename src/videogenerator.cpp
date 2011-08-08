@@ -58,7 +58,7 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 
 	// Prepare the renderer
 	TextRenderer lyricrenderer( videosize.width(), videosize.height() );
-	lyricrenderer.setData( lyrics );
+	lyricrenderer.setLyrics( lyrics );
 
 	// Initialize colors from m_project
 	lyricrenderer.setRenderFont( QFont( m_project->tag(Project::Tag_Video_font, "arial"), m_project->tag(Project::Tag_Video_fontsize, "8").toInt()) );

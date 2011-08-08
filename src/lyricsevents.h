@@ -46,6 +46,7 @@ class LyricsEvents
 		void adjustTime( qint64 timing, qint64 newtiming );
 		bool updated( qint64 timing ) const;
 		void draw( qint64 timing, QImage& image );
+		const QColor * iColor( qint64 timing ) const;
 
 		static QString validateEvent( const QString& text );
 
@@ -63,6 +64,9 @@ class LyricsEvents
 
 		// Event storage which is copied
 		QMap< qint64, Event > m_events;
+
+		// Color change storage
+		QMap< qint64, QColor > m_colors;
 
 		// Prepared event storage which is NOT copied
 		QMap< qint64, Background* > m_preparedEvents;

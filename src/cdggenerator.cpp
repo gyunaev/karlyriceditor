@@ -280,7 +280,7 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	// Prepare the renderer
 	TextRenderer lyricrenderer( CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT );
 
-	lyricrenderer.setData( lyrics );
+	lyricrenderer.setLyrics( lyrics );
 	lyricrenderer.setRenderFont( QFont( m_project->tag(Project::Tag_CDG_font), m_project->tag(Project::Tag_CDG_fontsize).toInt()) );
 
 	// Initialize colors from m_project

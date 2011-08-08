@@ -356,9 +356,8 @@ void Editor::validate( QList<ValidatorError>& errors, const QFont * font, const 
 			{
 				// Check if we exceed the screen height
 				QFont nfont = *font;
-				QRect r = TextRenderer::boundingRect( paragraphtext, nfont );
 
-				if ( r.height() >= fitsize->width() )
+				if ( !TextRenderer::checkFit( *fitsize, nfont, paragraphtext ) )
 				{
 					errors.push_back(
 							ValidatorError(
@@ -554,9 +553,8 @@ cont_paragraph:
 		{
 			// Check if we exceed the screen height
 			QFont nfont = *font;
-			QRect r = TextRenderer::boundingRect( linetext, nfont );
 
-			if ( r.width() >= fitsize->width() )
+			if ( !TextRenderer::checkFit( *fitsize, nfont, paragraphtext ) )
 			{
 				errors.push_back(
 						ValidatorError(
@@ -914,4 +912,28 @@ bool Editor::event ( QEvent * event )
 	}
 
 	return QTextEdit::event( event );
+}
+
+void Editor::insertImageTag( const QString& file )
+{
+	QTextCursor cur = textCursor();
+	cur.beginEditBlock();
+	cur.insertText( "{ IMAGE=" + file + " }" );
+	cur.endEditBlock();
+}
+
+void Editor::insertVideoTag( const QString& file )
+{
+	QTextCursor cur = textCursor();
+	cur.beginEditBlock();
+	cur.insertText( "{ VIDEO=" + file + " }" );
+	cur.endEditBlock();
+}
+
+void Editor::insertColorChangeTag( const QString& name )
+{
+	QTextCursor cur = textCursor();
+	cur.beginEditBlock();
+	cur.insertText( "@@" + name );
+	cur.endEditBlock();
 }

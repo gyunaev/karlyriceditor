@@ -17,6 +17,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
+#include <QVector>
 #include <QPainter>
 #include <QMessageBox>
 
@@ -27,27 +28,13 @@
 #include "licensing.h"
 
 
-// active - not sang, inactive - sang
-
-// Formatting characters
-static const QChar actionChar = QChar( 0x2016 );
-static const QChar actionColorTitle = 'T';
-static const QChar actionColorToSing = 'A';
-static const QChar actionColorSang = 'I';
-static const QChar actionSmallFont = 'S';
-
-// Convenience strings
-static const QString actionSetColorTitle = QString(actionChar) + actionColorTitle;
-static const QString actionSetColorToSing  = QString(actionChar) + actionColorToSing;
-static const QString actionSetColorSang  = QString(actionChar) + actionColorSang;
-static const QString actionSetSmallFont = QString(actionChar) + actionSmallFont;
-
 // Some preamble constants
 static const int PREAMBLE_SQUARE = 500; // 500ms for each square
 static const int PREAMBLE_MIN_PAUSE = 5000; // 5000ms minimum pause between verses for the preamble to appear
 
 // Font size difference
 static const int SMALL_FONT_DIFF = 4; // 4px less
+
 
 TextRenderer::TextRenderer( int width, int height )
 	: LyricsRenderer()
@@ -56,21 +43,175 @@ TextRenderer::TextRenderer( int width, int height )
 	init();
 }
 
-void TextRenderer::setData( const Lyrics& lyrics )
+void TextRenderer::setLyrics( const Lyrics& lyrics )
 {
 	init();
 
-	m_lyrics = lyrics;
+	// Store the empty block at position 0 which will serve as future title placeholder
+	LyricBlockInfo titleblock;
+	titleblock.timestart = 0;
+	titleblock.timeend = 0;
+	m_lyricBlocks.push_back( titleblock );
+
+	// Compile the lyrics
+	for ( int bl = 0; bl < lyrics.totalBlocks(); bl++ )
+	{
+		const Lyrics::Block& block = lyrics.block( bl );
+
+		if ( block.size() == 0 )
+			continue;
+
+		bool intitle = false;
+		LyricBlockInfo binfo;
+		binfo.timestart = block.first().first().timing;
+		binfo.timeend = block.last().last().timing;
+
+		for ( int ln = 0; ln < block.size(); ln++ )
+		{
+			const Lyrics::Line& line = block[ln];
+
+			// Calculate the time the line ends
+			qint64 endlinetime = line.last().timing;
+
+			// If the last timing tag for this line is empty, this is the end.
+			// We prefer it, but if it is not the case, we'll find something else.
+			if ( !line.last().text.isEmpty() )
+			{
+				qint64 calcenlinetime;
+
+				if ( ln + 1 < block.size() )	// Beginning of next line in this block
+					calcenlinetime = block[ln].first().timing;
+				else if ( bl + 1 < lyrics.totalBlocks() ) // Beginning of next block
+					calcenlinetime = block[ln+1].first().timing;
+				else // last line in last block
+					calcenlinetime = endlinetime + 2000; // 2 sec
+
+				endlinetime = qMin( calcenlinetime, endlinetime + 2000 );
+			}
+
+			// Last item must be empty, so it is ok
+			for ( int pos = 0; pos < line.size(); pos++ )
+			{
+				Lyrics::Syllable lentry = line[pos];
+
+				if ( lentry.text.trimmed().isEmpty() )
+					continue;
+
+				qint64 starttime = line[pos].timing;
+				qint64 endtime = (pos + 1 == line.size()) ? endlinetime : line[pos+1].timing;
+
+				compileLine( lentry.text, starttime, endtime, &binfo, &intitle );
+			}
+
+			binfo.text += "\n";
+			binfo.offsets [ endlinetime ] = binfo.text.size() - 1;
+		}
+
+		m_lyricBlocks.push_back( binfo );
+	}
+/*
+	// Dump the result
+	qDebug("Block dump, %d blocks\n", m_lyricBlocks.size() );
+	for ( int bl = 0; bl < m_lyricBlocks.size(); bl++ )
+	{
+		qDebug("Block %d: (%d-%d)\n", bl, (int) m_lyricBlocks[bl].timestart,
+			   (int) m_lyricBlocks[bl].timeend );
+
+		for ( QMap< qint64, unsigned int >::const_iterator it = m_lyricBlocks[bl].offsets.begin();
+				it != m_lyricBlocks[bl].offsets.end(); ++it )
+		{
+			int pos = it.value();
+
+			qDebug("\tTiming %d, pos %d\n%s|%s",
+				   (int) it.key(), pos,
+				   qPrintable( m_lyricBlocks[bl].text.left( pos + 1 ) ),
+				   qPrintable( m_lyricBlocks[bl].text.mid( pos + 1 ) ) );
+		}
+	}
+*/
 	m_lyricEvents = lyrics.events();
 	prepareEvents();
+}
+
+void TextRenderer::compileLine( const QString& line, qint64 starttime, qint64 endtime, LyricBlockInfo * binfo, bool *intitle )
+{
+	// Drawn text string
+	QString drawntext;
+
+	// Stores the character offsets which change their color with time
+	QVector<int> timedcharacters;
+
+	int blocktextstart = binfo->text.size();
+
+	for ( int ch = 0; ch < line.length(); ch++ )
+	{
+		QChar lchar = line[ch];
+
+		// Parse the special sequences
+		if ( lchar == '@' )
+		{
+			// Title start
+			if ( ch + 1 < line.length() && line[ch+1] == '{' )
+			{
+				*intitle = true;
+				ch++;
+				continue;
+			}
+
+			// Title end
+			if ( ch + 1 < line.length() && line[ch+1] == '}' )
+			{
+				*intitle = false;
+				ch++;
+				continue;
+			}
+
+			// Color change
+			if ( ch + 7 < line.length() && line[ch+1] == '#' )
+			{
+				// Store the new 'unsung' color for this position
+				QString colorname = line.mid( ch + 1, 7 );
+				binfo->colors[ blocktextstart + drawntext.length() ] = colorname;
+				ch += 7;
+				continue;
+			}
+
+			// Font size change down
+			if ( ch + 1 < line.length() && line[ch+1] == '/' )
+			{
+				binfo->fonts[ blocktextstart + drawntext.length() ] = -SMALL_FONT_DIFF; // make the font smaller
+				ch += 1;
+				continue;
+			}
+
+			// Font size change down
+			if ( ch + 1 < line.length() && line[ch+1] == '\\' )
+			{
+				binfo->fonts[ blocktextstart + drawntext.length() ] = SMALL_FONT_DIFF; // make the font larger
+				ch += 1;
+				continue;
+			}
+		}
+
+		// Nothing changes the color in title mode; also skip non-letters
+		if ( !*intitle && lchar.isLetterOrNumber() )
+			timedcharacters.push_back( drawntext.length() );
+
+		drawntext.push_back( lchar );
+	}
+
+	// Now we know the total number of characters, and can calc the time step
+	int timestep = qMax( 1, (int) ((endtime - starttime) / drawntext.length() ) );
+
+	for ( int ch = 0; ch < timedcharacters.size(); ch++ )
+		binfo->offsets [ starttime + timedcharacters[ch] * timestep ] = blocktextstart + timedcharacters[ch];
+
+	binfo->text += drawntext;
 }
 
 void TextRenderer::setRenderFont( const QFont& font )
 {
 	m_renderFont = font;
-	m_smallFont = font;
-	m_smallFont.setPointSize( font.pointSize() - SMALL_FONT_DIFF );
-
 	m_forceRedraw = true;
 }
 
@@ -107,9 +248,33 @@ void TextRenderer::setColorAlpha( int alpha )
 
 void TextRenderer::setTitlePageData( const QString& artist, const QString& title, unsigned int msec )
 {
-	m_titleArtist = artist;
-	m_titleSong = title;
-	m_requestedTitleDuration = msec;
+	// setLyrics should be called before setTitlePageData
+	if ( m_lyricBlocks.size() < 2 )
+		abort();
+
+	QString createdBy = APP_NAME;
+
+	if ( pLicensing->isEnabled() && pLicensing->isValid() )
+		createdBy = pLicensing->subject();
+
+	// Block 0 is reserved for us; fill it up
+	QString titletext = QString("@%1%2\n\n%3\n\n@/Created by %4\n@%5http://www.karlyriceditor.com/\n")
+							.arg( m_colorTitle.name() )
+							.arg( artist )
+							.arg( title )
+							.arg( createdBy )
+							.arg( m_colorToSing.name() );
+
+	// Do we have at least 500ms to show the title?
+	if ( m_lyricBlocks[1].timestart < 500 && !m_lyricBlocks[1].offsets.isEmpty() )
+		return;
+
+	m_lyricBlocks[0].timestart = 0;
+	m_lyricBlocks[0].timeend = qMin( (qint64) msec, m_lyricBlocks[1].timestart );
+
+	// Compile the line, replacing the spec characters
+	bool intitle = true;
+	compileLine( titletext, m_lyricBlocks[0].timestart, m_lyricBlocks[0].timeend, &m_lyricBlocks[0], &intitle );
 
 	m_forceRedraw = true;
 }
@@ -124,7 +289,6 @@ void TextRenderer::init()
 	m_colorSang = pSettings->m_previewTextInactive;
 	setRenderFont( QFont( pSettings->m_previewFontFamily, pSettings->m_previewFontSize ) );
 
-	m_requestedTitleDuration = 0;
 	m_preambleHeight = 0;
 	m_preambleLengthMs = 0;
 	m_preambleCount = 0;
@@ -133,17 +297,14 @@ void TextRenderer::init()
 	m_lastDrawnPreamble = 0;
 	m_lastSungTime = 0;
 	m_drawPreamble = false;
+	m_lastBlockPlayed = -2;
+	m_lastPosition = -2;
 
 	m_beforeDuration = 5000;
 	m_afterDuration = 1000;
 	m_prefetchDuration = 0;
 
-	m_lastLyricsText.clear();
-
-	if ( pLicensing->isEnabled() && pLicensing->isValid() )
-		m_createdBy = pLicensing->subject();
-	else
-		m_createdBy = APP_NAME;
+	m_lyricBlocks.clear();
 }
 
 void TextRenderer::setPreambleData( unsigned int height, unsigned int timems, unsigned int count )
@@ -159,8 +320,6 @@ void TextRenderer::forceCDGmode()
 {
 	// Disable anti-aliasing for set fonts
 	m_renderFont.setStyleStrategy( QFont::NoAntialias );
-	m_smallFont.setStyleStrategy( QFont::NoAntialias );
-
 	m_forceRedraw = true;
 }
 
@@ -178,119 +337,108 @@ void TextRenderer::setPrefetch( unsigned int prefetch )
 	m_forceRedraw = true;
 }
 
-static inline QString stripActionSequences( const QString& line )
+int TextRenderer::lyricForTime( qint64 tickmark, int * sungpos )
 {
-	QString stripped;
-	stripped.reserve( line.length() );
+	int nextblk = -1;
 
-	for ( int ch = 0; ch < line.length(); ch++ )
+	// Find the next playable lyric block
+	for ( int bl = 0; bl < m_lyricBlocks.size(); bl++ )
 	{
-		if ( line[ch] == actionChar )
+		if ( tickmark < m_lyricBlocks[bl].timestart )
 		{
-			ch++;
-
-			// If next char is actionChar, allow it alone - it is escape
-			if ( ch >= line.length() || line[ch] != actionChar )
-				continue;
+			nextblk = bl;
+			break;
 		}
-
-		stripped.append( line[ch] );
 	}
 
-	return stripped;
-}
-
-static inline void fixActionSequences( QString& block )
-{
-	if ( block.startsWith( "@@" ) )
-	{
-		block.remove( "@@" );
-		block = QString(actionChar) + "T" + block;
-	}
-}
-
-QString TextRenderer::lyricForTime( qint64 tickmark )
-{
-	QString block;
-	int pos;
-	qint64 nexttime;
-
-	// If there is a block within the prefetch timing, show it.
-	if ( m_prefetchDuration > 0 && m_lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= m_prefetchDuration )
+	// If there is a block within the prefetch timing, show it even if it overwrites the currently played block
+	// (this is why this check is on top)
+	if ( m_prefetchDuration > 0 && nextblk != -1 && m_lyricBlocks[nextblk].timestart - tickmark <= m_prefetchDuration )
 	{
 		// We update the timing, but the preamble show/noshow does not change here
-		m_preambleTimeLeft = qMax( 0, (int) (nexttime - tickmark) );
-
-		fixActionSequences( block );
-		return block;
+		m_preambleTimeLeft = qMax( 0, (int) (m_lyricBlocks[nextblk].timestart - tickmark) );
+		*sungpos = -1;
+		return nextblk;
 	}
 
-	if ( !m_lyrics.blockForTime( tickmark, block, pos, nexttime ) )
+	// Find the block which should be currently played, if any.
+	int curblk = -1;
+	int pos = -1;
+	qint64 nexttiming = -1;
+
+	for ( int bl = 0; bl < m_lyricBlocks.size(); bl++ )
+	{
+		if ( tickmark < m_lyricBlocks[bl].timestart || tickmark > m_lyricBlocks[bl].timeend )
+			continue;
+
+		curblk = bl;
+
+		QMap< qint64, unsigned int >::const_iterator it = m_lyricBlocks[bl].offsets.find( tickmark );
+
+		if ( it == m_lyricBlocks[bl].offsets.end() )
+			it = m_lyricBlocks[bl].offsets.lowerBound( tickmark );
+
+		if ( it == m_lyricBlocks[bl].offsets.end() )
+		{
+			// This may happen if the whole block is title
+			break;
+		}
+
+		pos = it.value();
+
+		++it;
+
+		if ( it != m_lyricBlocks[bl].offsets.end() )
+			nexttiming = it.key();
+
+		break;
+	}
+
+	// Anything to play right now?
+	if ( curblk == -1 )
 	{
 		// Nothing active to show, so if there is a block within next five seconds, show it.
-		if ( m_lyrics.nextBlock( tickmark, nexttime, block ) && nexttime - tickmark <= m_beforeDuration )
+		if ( nextblk != -1 && m_lyricBlocks[nextblk].timestart - tickmark <= m_beforeDuration )
 		{
-			m_preambleTimeLeft = qMax( 0, (int) (nexttime - tickmark) );
+			m_preambleTimeLeft = qMax( 0, (int) (m_lyricBlocks[nextblk].timestart - tickmark) );
 
 			// We show preamble if there was silence over PREAMBLE_MIN_PAUSE and the block
-			// does not contain any title stuff
-			if ( tickmark - m_lastSungTime > PREAMBLE_MIN_PAUSE && !block.contains( "@@" ) )
+			// actually contains any time changes
+			if ( tickmark - m_lastSungTime > PREAMBLE_MIN_PAUSE && !m_lyricBlocks[nextblk].offsets.isEmpty() )
 			{
 				// m_preambleHeight == 0 disables the preamble
 				if ( m_preambleHeight > 0 )
 					m_drawPreamble = true;
 			}
 
-			fixActionSequences( block );
-			return block;
+			*sungpos = -1;
+			return nextblk;
 		}
 
 		// No next block or too far away yet
 		m_drawPreamble = false;
-		return QString();
+		return -1;
 	}
 
 	m_drawPreamble = false;
-	int endidx;
 
-	if ( block.startsWith("@@") && (endidx = block.indexOf( "@@", 2 )) != -1 )
-	{
-		// The whole part between @@...@@ is considered title, and not affected by pos.
-		QString title = block.mid( 2, endidx - 2 );
-
-		if ( pos < endidx + 2 )
-			pos = endidx + 2;
-
-		// At least part of the block is outside the title tag
-		QString inactive = block.mid( endidx + 2, pos - (endidx + 2) );
-		QString active = block.mid( pos );
-
-		block = QString(actionChar) + "T" + title + QString(actionChar) + "I" + inactive + actionChar + "A" + active;
-	}
-	else
-	{
-		QString inactive = block.left( pos );
-		QString active = block.mid( pos );
-
-		block = QString(actionChar) + "I" + inactive + actionChar + "A" + active;
-
-		// Should be unaffected by titles
+	// If we're singing something (i.e. pos > 0), remember the timing
+	if ( pos >= 0 )
 		m_lastSungTime = tickmark;
-	}
 
-	return block;
+	*sungpos = pos;
+	return curblk;
 }
 
-bool TextRenderer::verifyFontSize( const QSize& size, const Lyrics& lyrics, const QFont& font )
+bool TextRenderer::verifyFontSize( const QSize& size, const QFont& font )
 {
 	// Initialize the fonts
 	QFont normalfont = font;
 
 	// Test all lyrics whether it fits
-	for ( int bl = 0; bl < lyrics.totalBlockInfoBlocks(); bl++ )
+	for ( int bl = 0; bl < m_lyricBlocks.size(); bl++ )
 	{
-		QString text = lyrics.getBlockText( bl );
-		QRect rect = boundingRect( text, normalfont );
+		QRect rect = boundingRect( bl, normalfont );
 
 		// Still fit?
 		if ( rect.width() >= size.width() || rect.height() >= size.height() )
@@ -303,7 +451,7 @@ bool TextRenderer::verifyFontSize( const QSize& size, const Lyrics& lyrics, cons
 	return true;
 }
 
-int	TextRenderer::autodetectFontSize( const QSize& size, const Lyrics& lyrics, const QFont& font )
+int	TextRenderer::autodetectFontSize( const QSize& size, const QFont& font )
 {
 	QFont normalfont = font;
 
@@ -314,147 +462,174 @@ int	TextRenderer::autodetectFontSize( const QSize& size, const Lyrics& lyrics, c
 	{
 		normalfont.setPointSize( fontsize );
 
-		if ( !verifyFontSize( size, lyrics, normalfont ) )
+		if ( !verifyFontSize( size, normalfont ) )
 			return fontsize - 1;
 
 		fontsize++;
 	}
 }
 
-QRect TextRenderer::boundingRect( const QString& text )
+bool TextRenderer::checkFit( const QSize& imagesize, const QFont& font, const QString& text )
 {
-	return boundingRect( text, m_renderFont );
+	TextRenderer renderer(10,10);
+	renderer.init();
+
+	LyricBlockInfo testblock;
+	testblock.timestart = 0;
+	testblock.timeend = 0;
+
+	bool intitle = true;
+	renderer.compileLine( text, 0, 0, &testblock, &intitle );
+	renderer.m_lyricBlocks.push_back( testblock );
+
+	QRect rect = renderer.boundingRect( 0, font );
+
+	return rect.width() <= imagesize.width() && rect.height() <= imagesize.height();
 }
 
-QRect TextRenderer::boundingRect( const QString& text, const QFont& font )
-{
-	QFont smallfont = font;
-	smallfont.setPointSize( font.pointSize() - SMALL_FONT_DIFF );
 
-	QStringList lines = text.split( "\n" );
+QRect TextRenderer::boundingRect( int blockid, const QFont& font )
+{
+	QString block = m_lyricBlocks[blockid].text;
 
 	// Calculate the height
-	QFontMetrics m = QFontMetrics( font );
-	int maxheight = m.height() * lines.size();
+	QFont curFont(font);
+	QFontMetrics metrics = QFontMetrics( curFont );
 
-	// Calculate the width for every line
-	int maxwidth = 0;
+	// Calculate the width and height for every line
+	int linewidth = 0, lineheight = 0, totalheight = 0, totalwidth = 0;
+	int cur = 0;
 
-	for ( int i = 0; i < lines.size(); i++ )
+	while ( 1 )
 	{
-		const QString& line = lines[i];
-
-		// Calculate the line width first
-		int width = 0;
-
-		// We cannot use stripActionSequences as we need to account for smaller font
-		for ( int ch = 0; ch < line.length(); ch++ )
+		// Line/text end
+		if ( cur >= block.length() || block[cur] == '\n' )
 		{
-			if ( line[ch] == actionChar )
-			{
-				ch++; // skip formatting char
+			// Adjust the total height
+			totalheight += lineheight;
+			totalwidth = qMax( totalwidth, linewidth );
 
-				if ( line[ch] == actionSmallFont )
-					m = QFontMetrics( smallfont );
+			if ( cur >= block.length() )
+				break; // we're done here
 
-				if ( line[ch] != actionChar )
-					continue; // allow unescape
-			}
-
-			width += m.width( line[ch] );
+			cur++;
+			linewidth = 0;
+			continue;
 		}
 
-		maxwidth = qMax( maxwidth, width );
+		// We're calculating line width here, so check for any font change events
+		QMap< unsigned int, int >::const_iterator fontchange = m_lyricBlocks[blockid].fonts.find( cur );
+
+		if ( fontchange != m_lyricBlocks[blockid].fonts.end() )
+		{
+			curFont.setPointSize( curFont.pointSize() + fontchange.value() );
+			metrics = QFontMetrics( curFont );
+		}
+
+		linewidth += metrics.width( block[cur] );
+		lineheight = qMax( lineheight, metrics.height() );
+		cur++;
 	}
 
-	return QRect( 0, 0, maxwidth, maxheight );
+	return QRect( 0, 0, totalwidth, totalheight );
 }
 
-
-void TextRenderer::drawLyrics( const QString& paragraph, const QRect& boundingRect )
+void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
 {
-	QStringList lines = paragraph.split( "\n" );
+	QString block = m_lyricBlocks[blockid].text;
 
 	// Prepare the painter
 	QPainter painter( &m_image );
-	painter.setPen( m_colorToSing );
 	painter.setFont( m_renderFont );
 
-	QFontMetrics m = QFontMetrics( m_renderFont );
+	// Used in calculations only
+	QFont curFont( m_renderFont );
+	QFontMetrics metrics( curFont );
+
+	if ( pos == -1 )
+		painter.setPen( m_colorToSing );
+	else
+		painter.setPen( m_colorSang );
 
 	// Get the height offset from the rect
-	int start_y = (m_image.height() - boundingRect.height()) / 2 + m.height();
+	//int start_y = (m_image.height() - boundingRect.height()) / 2 + painter.fontMetrics().height();
+	int start_y = (m_image.height() - boundingRect.height()) + painter.fontMetrics().height();
 
-	// Now draw it, line by line
-	for ( int i = 0; i < lines.size(); i++ )
+	// Draw the whole text
+	int linestart = 0;
+	int linewidth = 0;
+	int cur = 0;
+
+	while ( 1 )
 	{
-		QString& line = lines[i];
-
-		// Calculate the line width first, char by char
-		// We cannot use stripActionSequences as we need to account for font size changes inside the text
-		int width = 0;
-		for ( int ch = 0; ch < line.length(); ch++ )
+		// Line/text end
+		if ( cur >= block.length() || block[cur] == '\n' )
 		{
-			if ( line[ch] == actionChar )
-			{
-				ch++; // skip color
+			// Now we know the width, calculate the start offset
+			int start_x = (m_image.width() - linewidth) / 2;
 
-				if ( ch >= line.length() )
+			// Draw the line
+			for ( int i = linestart; i < cur; i++ )
+			{
+				// Handle the font change events
+				QMap< unsigned int, int >::const_iterator fontchange = m_lyricBlocks[blockid].fonts.find( i );
+
+				if ( fontchange != m_lyricBlocks[blockid].fonts.end() )
+					painter.setFont( QFont(painter.font().family(), painter.font().pointSize() + fontchange.value() ) );
+
+				// Handle the color change events if pos doesn't cover them
+				if ( i > pos )
 				{
-					qWarning("Unterminated escape sequence at the end of line found");
-					continue;
+					QMap< unsigned int, QString >::const_iterator colchange = m_lyricBlocks[blockid].colors.find( i );
+
+					if ( colchange != m_lyricBlocks[blockid].colors.end() )
+					{
+						QColor newcolor( colchange.value() );
+						painter.setPen( newcolor );
+					}
 				}
 
-				// Account for smaller font
-				if ( line[ch] == actionSmallFont )
-					m = QFontMetrics( m_smallFont );
-
-				if ( line[ch] != actionChar )
-					continue; // allow @@ as unescape
-			}
-
-			width += m.width( line[ch] );
-		}
-
-		// Now we know the width, calculate the start offset
-		int start_x = (m_image.width() - width) / 2;
-
-		// And draw the line
-		for ( int ch = 0; ch < line.length(); ch++ )
-		{
-			if ( line[ch] == actionChar )
-			{
-				ch++;
-
-				if ( line[ch] == actionColorToSing )
+				if ( pos != -1 && i >= pos )
+				{
 					painter.setPen( m_colorToSing );
-				else if ( line[ch] == actionColorSang )
-					painter.setPen( m_colorSang );
-				else if ( line[ch] == actionColorTitle )
-					painter.setPen( m_colorTitle );
-				else if ( line[ch] == actionSmallFont )
-					painter.setFont( m_smallFont );
-				else
-					abort();
+				}
 
-				continue;
+				// Outline
+				const int OL = 1;
+				painter.save();
+				painter.setPen( Qt::black );
+				painter.drawText( start_x - OL, start_y - OL, (QString) block[i] );
+				painter.drawText( start_x + OL, start_y - OL, (QString) block[i] );
+				painter.drawText( start_x - OL, start_y + OL, (QString) block[i] );
+				painter.drawText( start_x + OL, start_y + OL, (QString) block[i] );
+				painter.restore();
+
+				painter.drawText( start_x, start_y, (QString) block[i] );
+				start_x += painter.fontMetrics().width( block[i] );
 			}
 
-			// Outline
-			const int OL = 1;
-			painter.save();
-			painter.setPen( Qt::black );
-			painter.drawText( start_x - OL, start_y - OL, (QString) line[ch] );
-			painter.drawText( start_x + OL, start_y - OL, (QString) line[ch] );
-			painter.drawText( start_x - OL, start_y + OL, (QString) line[ch] );
-			painter.drawText( start_x + OL, start_y + OL, (QString) line[ch] );
-			painter.restore();
+			if ( cur >= block.length() )
+				break; // we're done here
 
-			painter.drawText( start_x, start_y, (QString) line[ch] );
-			start_x += painter.fontMetrics().width( line[ch] );
+			// Start the next line
+			start_y += painter.fontMetrics().height();
+			cur++;
+			linewidth = 0;
+			linestart = cur;
+			continue;
 		}
 
-		start_y += painter.fontMetrics().height();
+		// We're calculating line width here, so check for any font change events
+		QMap< unsigned int, int >::const_iterator fontchange = m_lyricBlocks[blockid].fonts.find( cur );
+
+		if ( fontchange != m_lyricBlocks[blockid].fonts.end() )
+		{
+			curFont.setPointSize( curFont.pointSize() + fontchange.value() );
+			metrics = QFontMetrics( curFont );
+		}
+
+		linewidth += metrics.width( block[cur] );
+		cur++;
 	}
 }
 
@@ -502,26 +677,41 @@ int TextRenderer::update( qint64 timing )
 {
 	int result = UPDATE_COLORCHANGE;
 	bool redrawPreamble = false;
-	QString lyricstext;
+	int sungpos = 0;
 
 	// Should we show the title?
-	if ( m_requestedTitleDuration > 0
-	&& timing < m_requestedTitleDuration
-	&& timing < (m_lyrics.firstLyric() - 1000) )
+	int blockid = lyricForTime( timing, &sungpos );
+/*
+	if ( blockid != -1 )
 	{
-		lyricstext = QString("%1%2\n\n%3\n\n%4Created by %5\n%6http://www.karlyriceditor.com/\n")
-						.arg( actionSetColorTitle )
-						.arg( m_titleArtist )
-						.arg( m_titleSong )
-						.arg( actionSetSmallFont )
-						.arg( m_createdBy )
-						.arg( actionSetColorToSing );
+		qDebug("Time %d: block %d: (%d-%d), pos %d\n", (int) timing, blockid, (int) m_lyricBlocks[blockid].timestart,
+			   (int) m_lyricBlocks[blockid].timeend, sungpos );
+
+		QString outbuf;
+
+		for ( int i = 0; i < m_lyricBlocks[blockid].text.length(); i++ )
+		{
+			if ( sungpos != -1 && i == sungpos )
+				outbuf += '|';
+
+			QMap< unsigned int, int >::const_iterator fontchange = m_lyricBlocks[blockid].fonts.find( i );
+
+			if ( fontchange != m_lyricBlocks[blockid].fonts.end() )
+				outbuf += QString("[FONT:%1]").arg( fontchange.value() );
+
+			QMap< unsigned int, QString >::const_iterator colchange = m_lyricBlocks[blockid].colors.find( i );
+
+			if ( colchange != m_lyricBlocks[blockid].colors.end() )
+				outbuf += QString("[COLOR:%1]").arg( colchange.value() );
+
+			outbuf.push_back( m_lyricBlocks[blockid].text[i] );
+		}
+
+		qDebug("%s", qPrintable(outbuf));
 	}
 	else
-	{
-		lyricstext = lyricForTime( timing );
-	}
-
+		qDebug("Time %d: no block!", (int) timing );
+*/
 	// Force the full redraw if time went backward
 	if ( timing < m_lastSungTime )
 		m_forceRedraw = true;
@@ -536,38 +726,45 @@ int TextRenderer::update( qint64 timing )
 	if ( !m_forceRedraw && !redrawPreamble && !background_updated )
 	{
 		// Did lyrics change at all?
-		if ( lyricstext == m_lastLyricsText )
+		if ( blockid == m_lastBlockPlayed && sungpos == m_lastPosition )
 			return UPDATE_NOCHANGE;
 
 		// If the new lyrics is empty, but we just finished playing something, keep it for 5 more seconds
 		// (i.e. post-delay)
-		if ( lyricstext.isEmpty() && timing - m_lastSungTime < 5000 )
+		if ( blockid == -1 && timing - m_lastSungTime < 5000 )
 			return UPDATE_NOCHANGE;
-	}
-
-	// Do the new lyrics fit into the image without resizing?
-	QRect imgrect = boundingRect( lyricstext, m_renderFont );
-
-	if ( imgrect.width() > m_image.width() || imgrect.height() > m_image.height() )
-	{
-		QSize newsize = QSize( qMax( imgrect.width() + 10, m_image.width() ),
-							   qMax( imgrect.height() + 10, m_image.height() ) );
-		m_image = QImage( newsize, QImage::Format_ARGB32 );
-		result = UPDATE_RESIZED;
 	}
 
 	// Draw the background first
 	drawBackground( timing );
 
-	// Draw the lyrics
-	drawLyrics( lyricstext, imgrect );
+	// Did we get lyrics?
+	if ( blockid != -1 )
+	{
+		// Do the new lyrics fit into the image without resizing?
+		QRect imgrect = boundingRect( blockid, m_renderFont );
 
-	// Draw the preamble if needed
-	if ( m_drawPreamble )
-		drawPreamble();
+		if ( imgrect.width() > m_image.width() || imgrect.height() > m_image.height() )
+		{
+			QSize newsize = QSize( qMax( imgrect.width() + 10, m_image.width() ),
+								   qMax( imgrect.height() + 10, m_image.height() ) );
+			m_image = QImage( newsize, QImage::Format_ARGB32 );
+			result = UPDATE_RESIZED;
+
+			// Draw the background again on the resized image
+			drawBackground( timing );
+		}
+
+		// Draw the lyrics
+		drawLyrics( blockid, sungpos, imgrect );
+
+		// Draw the preamble if needed
+		if ( m_drawPreamble )
+			drawPreamble();
+	}
 
 	// Is the text change significant enough to warrant full screen redraw?
-	if ( stripActionSequences( lyricstext ) != stripActionSequences( m_lastLyricsText ) || m_forceRedraw )
+	if ( blockid != m_lastBlockPlayed || m_forceRedraw )
 	{
 		if ( result != UPDATE_RESIZED )
 			result = UPDATE_FULL;
@@ -575,7 +772,9 @@ int TextRenderer::update( qint64 timing )
 
 	//saveImage();
 
-	m_lastLyricsText = lyricstext;
+	m_lastBlockPlayed = blockid;
+	m_lastPosition = sungpos;
+
 	m_forceRedraw = false;
 	return result;
 }
@@ -587,11 +786,12 @@ void TextRenderer::prepareEvents()
 
 	// Events need to be adjusted for the following:
 	// - Those at the start of the block may move;
-	qint64 start, end, lastend = 0;
+	qint64 lastend = 0;
 
-	for ( int i = 0; i < m_lyrics.totalBlockInfoBlocks(); i++ )
+	for ( int i = 0; i < m_lyricBlocks.size(); i++ )
 	{
-		m_lyrics.getBlockText( i, &start, &end );
+		qint64 start = m_lyricBlocks[i].timestart;
+		qint64 end = m_lyricBlocks[i].timeend;
 
 		// Should the next block be shown earlier than expected via prefetch?
 		if ( start - lastend > m_beforeDuration )

@@ -23,7 +23,6 @@ Lyrics::Lyrics()
 {
 	m_scanning = false;
 	m_added_eofs = 0;
-	m_textStarts = 0;
 
 	m_currentLyric.timing = -1;
 	m_currentLyric.pitch = -1;
@@ -37,7 +36,6 @@ void Lyrics::beginLyrics()
 {
 	m_scanning = true;
 	m_added_eofs = 0;
-	m_textStarts = 0;
 
 	m_currentLyric.timing = -1;
 	m_currentLyric.pitch = -1;
@@ -145,8 +143,6 @@ void Lyrics::endLyrics()
 {
 	curLyricAdd();
 	m_scanning = false;
-
-	compile();
 }
 
 int Lyrics::totalBlocks() const
@@ -174,165 +170,6 @@ QString Lyrics::pitchToNote( int pitch, bool )
 	return QString::number( pitch );
 }
 
-void Lyrics::compile()
-{
-	m_playBlocks.clear();
-
-	// Block mode - fill the m_lyricIndex array
-	for ( int bl = 0; bl < totalBlocks(); bl++ )
-	{
-		const Block& block = this->block( bl );
-
-		if ( block.size() == 0 )
-			continue;
-
-		BlockInfo binfo;
-		binfo.blockstart = block.first().first().timing;
-		binfo.blockend = block.last().last().timing;
-
-		for ( int ln = 0; ln < block.size(); ln++ )
-		{
-			const Line& line = block[ln];
-
-			// Calculate the time the line ends
-			qint64 endlinetime = line.last().timing;
-
-			// If the last timing tag for this line is empty, this is the end.
-			// We prefer it, but if it is not the case, we'll find something else.
-			if ( !line.last().text.isEmpty() )
-			{
-				qint64 calcenlinetime;
-
-				if ( ln + 1 < block.size() )	// Beginning of next line in this block
-					calcenlinetime = block[ln].first().timing;
-				else if ( bl + 1 < totalBlocks() ) // Beginning of next block
-					calcenlinetime = block[ln+1].first().timing;
-				else // last line in last block
-					calcenlinetime = endlinetime + 2000; // 2 sec
-
-				endlinetime = qMin( calcenlinetime, endlinetime + 2000 );
-			}
-
-			// Last item must be empty, so it is ok
-			for ( int pos = 0; pos < line.size(); pos++ )
-			{
-				Syllable lentry = line[pos];
-
-				if ( lentry.text.trimmed().isEmpty() )
-					continue;
-
-				if ( m_textStarts == 0 )
-					m_textStarts = lentry.timing;
-
-				qint64 starttime = line[pos].timing;
-				qint64 endtime = (pos + 1 == line.size()) ? endlinetime : line[pos+1].timing;
-				int blockpos = binfo.text.size();
-
-				// Split the line timing
-				int timestep = qMax( 1, (int) ((endtime - starttime) / lentry.text.length() ) );
-
-				for ( int ch = 0; ch < lentry.text.length(); ch++ )
-				{
-					if ( !lentry.text[ch].isLetterOrNumber() )
-						continue;
-
-					binfo.offsets [ starttime + ch * timestep ] = blockpos + ch;
-				}
-
-				binfo.text += lentry.text;
-			}
-
-			binfo.text += "\n";
-			binfo.offsets [ endlinetime ] = binfo.text.size() - 1;
-		}
-
-		m_playBlocks.push_back( binfo );
-	}
-
-/*	// Dump the result
-	qDebug("Block dump, %d blocks\n", m_playBlocks.size() );
-	for ( int bl = 0; bl < m_playBlocks.size(); bl++ )
-	{
-		qDebug("Block %d: (%d-%d)\n", bl, (int) m_playBlocks[bl].blockstart,
-			   (int) m_playBlocks[bl].blockend );
-
-		for ( QMap< qint64, unsigned int >::const_iterator it = m_playBlocks[bl].offsets.begin();
-				it != m_playBlocks[bl].offsets.end(); ++it )
-		{
-			int pos = it.value();
-
-			qDebug("\tTiming %d, pos %d\n%s|%s",
-				   (int) it.key(), pos,
-				   qPrintable( m_playBlocks[bl].text.left( pos + 1 ) ),
-				   qPrintable( m_playBlocks[bl].text.mid( pos + 1 ) ) );
-		}
-	}
-	*/
-}
-
-
-int	Lyrics::totalBlockInfoBlocks() const
-{
-	return m_playBlocks.size();
-}
-
-QString	Lyrics::getBlockText( int block, qint64 * start, qint64 * end ) const
-{
-	if ( start )
-		*start = m_playBlocks[block].blockstart;
-
-	if ( end )
-		*end = m_playBlocks[block].blockend;
-
-	return m_playBlocks[block].text;
-}
-
-bool Lyrics::blockForTime( qint64 timing, QString& block, int& position, qint64& nexttiming ) const
-{
-	for ( int bl = 0; bl < m_playBlocks.size(); bl++ )
-	{
-		if ( timing >= m_playBlocks[bl].blockstart && timing <= m_playBlocks[bl].blockend )
-		{
-			QMap< qint64, unsigned int >::const_iterator it = m_playBlocks[bl].offsets.find( timing );
-
-			if ( it == m_playBlocks[bl].offsets.end() )
-				it = m_playBlocks[bl].offsets.lowerBound( timing );
-
-			if ( it == m_playBlocks[bl].offsets.end() )
-				return false; // shouldnt happen
-
-			block = m_playBlocks[bl].text;
-			position = it.value();
-
-			++it;
-
-			if ( it == m_playBlocks[bl].offsets.end() )
-				nexttiming = -1;
-			else
-				nexttiming = it.key();
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool Lyrics::nextBlock( qint64 current, qint64& time, QString& text ) const
-{
-	for ( int bl = 0; bl < m_playBlocks.size(); bl++ )
-	{
-		if ( current < m_playBlocks[bl].blockstart )
-		{
-			time = m_playBlocks[bl].blockstart;
-			text = m_playBlocks[bl].text;
-			return true;
-		}
-	}
-
-	return false;
-}
-
 bool Lyrics::addBackgroundEvent( qint64 timing, const QString& text )
 {
 	return m_events.addEvent( timing, text );
@@ -342,8 +179,40 @@ LyricsEvents Lyrics::events() const
 {
 	return m_events;
 }
-
-qint64 Lyrics::firstLyric() const
+/*
+int Lyrics::isSpecialSequence( const QString& line, int offset )
 {
-	return m_textStarts;
+	if ( line[offset] != '@' || offset + 1 >= line.length() )
+		return 0;
+
+	offset++;
+
+	if ( line[offset] == '#' && offset + 6 < line.length() )
+		return 7;
+
+	if ( (line[offset] == '!' || line[offset] == 'S') && offset + 1 < line.length() )
+		return 1;
+
+	return 0;
 }
+
+QString Lyrics::stripSpecialSequences( const QString& line )
+{
+	QString out;
+
+	for ( unsigned int i = 0; i < line.length(); i++ )
+	{
+		int speclen = isSpecialSequence( line, i );
+
+		if ( speclen != 0 )
+		{
+			i += speclen;
+			continue;
+		}
+
+		out.push_back( line[i]);
+	}
+
+	return out;
+}
+*/

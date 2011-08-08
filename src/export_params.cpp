@@ -122,7 +122,9 @@ void DialogExportOptions::autodetectFontSize()
 		font.setStyleStrategy( QFont::NoAntialias );
 
 	// Ask the renderer
-	int fsize = TextRenderer::autodetectFontSize( getVideoSize(), m_lyrics, font );
+	TextRenderer renderer( 100, 100 );
+	renderer.setLyrics( m_lyrics );
+	int fsize = renderer.autodetectFontSize( getVideoSize(), font );
 
 	fontVideoSize->setValue( fsize );
 }
@@ -135,7 +137,10 @@ bool DialogExportOptions::testFontSize()
 	if ( !m_videomode )
 		font.setStyleStrategy( QFont::NoAntialias );
 
-	if ( !TextRenderer::verifyFontSize( getVideoSize(), m_lyrics, font ) )
+	TextRenderer renderer( 100, 100 );
+	renderer.setLyrics( m_lyrics );
+
+	if ( !renderer.verifyFontSize( getVideoSize(), font ) )
 	{
 		QMessageBox::critical( 0,
 							  tr("Font size too large"),
@@ -283,7 +288,7 @@ void DialogExportOptions::activateTab( int index )
 	m_renderer = TextRenderer( getVideoSize().width(), getVideoSize().height() );
 
 	// Initialize colors from m_project
-	m_renderer.setData( m_lyrics );
+	m_renderer.setLyrics( m_lyrics );
 	m_renderer.setRenderFont( font );
 	m_renderer.setColorBackground( btnVideoColorBg->color() );
 	m_renderer.setColorTitle( btnVideoColorInfo->color() );

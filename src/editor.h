@@ -70,6 +70,9 @@ class Editor : public QTextEdit
 		void	setProject( Project* proj );
 
 		void	insertTimeTag( qint64 timing );
+		void	insertImageTag( const QString& file );
+		void	insertVideoTag( const QString& file );
+		void	insertColorChangeTag( const QString& name );
 		void	removeLastTimeTag();
 		void	removeAllTimeTags();
 		void	removeExtraWhitespace();

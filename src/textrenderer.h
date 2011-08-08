@@ -35,10 +35,10 @@ class TextRenderer : public LyricsRenderer
 		TextRenderer( int width, int height );
 
 		// Sets the lyrics to render. Resets all previously set params to defaults except setDisplaySize.
-		void	setData( const Lyrics& lyrics );
+		void	setLyrics( const Lyrics& lyrics );
 
 		// Lyrics data to render, overrides defaults from settings
-		void	setRenderFont( const QFont& font ); // this also resets SmallFont
+		void	setRenderFont( const QFont& font );
 		void	setColorBackground( const QColor& color );
 		void	setColorTitle( const QColor& color );
 		void	setColorToSing( const QColor& color );
@@ -64,34 +64,59 @@ class TextRenderer : public LyricsRenderer
 		// Draw a new lyrics image
 		virtual int	update( qint64 timing );
 
-		// Returns the lyrics bounding box for a line or for paragraph using the font specified,
-		// or the default font if not specified
-		QRect	boundingRect( const QString& text );
-		static QRect	boundingRect( const QString& text, const QFont& font );
+		// Checks if a line or block fits into the requested image.
+		static	bool checkFit( const QSize& imagesize, const QFont& font, const QString& text );
 
 		// Autodetects the largest font size to fit all lyrics into a specific image size.
-		static int	autodetectFontSize( const QSize& size, const Lyrics& lyrics, const QFont& font );
+		int		autodetectFontSize( const QSize& imagesize, const QFont& font );
 
 		// Verifies that all lyrics could be rendered into a specific image size using the provided font
-		static bool	verifyFontSize( const QSize& size, const Lyrics& lyrics, const QFont& font );
+		bool	verifyFontSize( const QSize& imagesize, const QFont& font );
 
 	private:
+		// Returns the lyrics bounding box for a line or for paragraph using the font specified,
+		// or the default font if not specified
+		QRect	boundingRect( int blockid, const QFont& font );
+
 		void	init();
 		void	prepareEvents();
-		QString lyricForTime( qint64 tick );
-		void	drawLyrics( const QString& paragraph, const QRect& boundingRect );
+		int		lyricForTime( qint64 tickmark, int * sungpos );
+		QString	titleScreen() const;
+		void	fixActionSequences( QString& block );
+		void	drawLyrics( int blockid, int pos, const QRect& boundingRect );
 		void	drawPreamble();
 		void	drawBackground( qint64 timing );
 
 	private:
+		// Lyrics to render
+		typedef struct
+		{
+			qint64	timestart;
+			qint64	timeend;
+
+			// Text is for the whole block, with all special characters stripped down
+			QString	text;
+
+			// Text offsets in block per specific time
+			QMap< qint64, unsigned int > offsets;
+
+			// Per-character color changes for following (non-sung) characters in the block.
+			// if none, the default color is used
+			QMap< unsigned int, QString > colors;
+
+			// Per-character font size changes for following (non-sung) characters in the block.
+			// if none, the default color is used
+			QMap< unsigned int, int > fonts;
+
+		} LyricBlockInfo;
+
+		QVector< LyricBlockInfo >	m_lyricBlocks;
+
+		// Compile a single line
+		void	compileLine( const QString& line, qint64 starttime, qint64 endtime, LyricBlockInfo * binfo, bool *intitle );
+
 		// True if the image must be redrawn even if lyrics didn't change
 		bool					m_forceRedraw;
-
-		// Last drawn lyrics piece of text together with all marks
-		QString					m_lastLyricsText;
-
-		// Lyrics to render
-		Lyrics					m_lyrics;
 
 		// Rendering params
 		QColor					m_colorBackground;
@@ -99,15 +124,9 @@ class TextRenderer : public LyricsRenderer
 		QColor					m_colorToSing;
 		QColor					m_colorSang;
 		QFont					m_renderFont;
-		QFont					m_smallFont;
 		unsigned int			m_preambleHeight;	// how tall the preamble square should be; 0 - no preamble
 		unsigned int			m_preambleLengthMs;	// maximum time the preamble is shown
 		unsigned int			m_preambleCount;	// how many preamble squares to draw for m_preambleLengthMs
-		QString					m_titleArtist;
-		QString					m_titleSong;
-		QString					m_createdBy;
-
-		unsigned int			m_requestedTitleDuration;
 		unsigned int			m_beforeDuration;
 		unsigned int			m_afterDuration;
 		unsigned int			m_prefetchDuration;
@@ -117,6 +136,9 @@ class TextRenderer : public LyricsRenderer
 		int						m_lastDrawnPreamble; // Timing when the last time the preamble changed
 		qint64					m_lastSungTime;
 		bool					m_drawPreamble;
+
+		int						m_lastBlockPlayed;
+		int						m_lastPosition;
 
 		// Background events
 		LyricsEvents			m_lyricEvents;

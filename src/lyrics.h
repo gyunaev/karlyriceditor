@@ -48,16 +48,6 @@ class Lyrics
 			int		pitch;		// -1 if not set, used for Ultrastar
 		} Syllable;
 
-		typedef struct
-		{
-			qint64	blockstart;
-			qint64	blockend;
-			QString	text;		// for the whole block
-
-			QMap< qint64, unsigned int > offsets; // text offsets in block per specific time
-
-		} BlockInfo;
-
 		typedef QVector<Syllable>	Line;
 		typedef QList<Line>			Block;
 
@@ -102,41 +92,17 @@ class Lyrics
 		// Pitch text representation
 		static QString pitchToNote( int pitch, bool show_octave = true );
 
-		// Accessing blockinfo
-		int		totalBlockInfoBlocks() const;
-		QString	getBlockText( int block, qint64 * start = 0, qint64 * end = 0 ) const;
-
-		// For playing
-		bool	blockForTime( qint64 timing, QString& block, int& position, qint64& nexttiming ) const;
-
-		// Returns the next nearest block time
-		bool	nextBlock( qint64 current, qint64& time, QString& text ) const;
-
 		// Returns the events
 		LyricsEvents events() const;
 
-		// Returns first non-empty lyric timing
-		qint64	firstLyric() const;
-
 	private:
-		// Compile the lyrics
-		void	compile();
-
 		QList<Block>	m_lyrics;
 		LyricsEvents	m_events;
-		qint64			m_textStarts;	// first non-empty lyric
 
 		// Used during scanning lyrics
 		bool			m_scanning;
 		int				m_added_eofs;
 		Syllable		m_currentLyric;
-
-		// This is used for per-block playing
-		QMap< qint64, unsigned int > m_playBlockInfo;
-		QVector< BlockInfo >	m_playBlocks;
-
-		// This is used for per-line playing
-		QMap< qint64, QString >	m_playLyrics;
 };
 
 

@@ -12,7 +12,7 @@ win32-g++-cross: {
 	INCLUDEPATH += /usr/local/ffmpeg/include
 	LIBPATH += /usr/local/ffmpeg/lib
 	LIBS += -lmp3lame \
-	    -lx264 \
+		/usr/lib/libx264.so.114 \
 	    -lxvidcore \
 	    -lbz2
 }

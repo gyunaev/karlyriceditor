@@ -72,7 +72,7 @@ void LyricsWidget::paintEvent( QPaintEvent * )
 void LyricsWidget::setLyrics( const Lyrics& lyrics, const QString& artist, const QString& title )
 {
 	TextRenderer * re = new TextRenderer( 100, 100 );
-	re->setData( lyrics );
+	re->setLyrics( lyrics );
 	re->setPreambleData( 5, 5000, 10 );
 	//re->setColorAlpha( 128 );
 

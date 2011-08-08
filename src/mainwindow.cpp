@@ -24,6 +24,7 @@
 #include <QFileDialog>
 #include <QWhatsThis>
 #include <QDateTime>
+#include <QColorDialog>
 #include <QDesktopServices>
 #include <QUrl>
 
@@ -182,6 +183,8 @@ void MainWindow::connectActions()
 	connect( actionTest_lyric_file, SIGNAL( triggered()), this, SLOT( act_projectTest()) );
 	connect( actionTest_CDG_lyrics, SIGNAL( triggered()), this, SLOT( act_projectTestCDG()) );
 	connect( actionShow_Player_dock_wingow, SIGNAL(triggered(bool)), this, SLOT(act_settingsShowPlayer(bool)) );
+	connect( actionInsert_picture, SIGNAL(triggered(bool)), this, SLOT(act_editInsertPicture() ) );
+	connect( actionInsert_video, SIGNAL(triggered(bool)), this, SLOT(act_editInsertVideo() ) );
 
 	// docks
 	connect( m_player,SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPlayer(bool)) );
@@ -429,6 +432,40 @@ void MainWindow::act_editRemoveTag()
 	editor->removeLastTimeTag();
 }
 
+void MainWindow::act_editInsertPicture()
+{
+	QString fileName = QFileDialog::getOpenFileName( this,
+			tr("Open an image file"),
+			QString::null,
+			QString::null );
+
+	if ( fileName.isEmpty() )
+		return;
+
+	editor->insertImageTag( fileName );
+}
+
+void MainWindow::act_editInsertVideo()
+{
+	QString fileName = QFileDialog::getOpenFileName( this,
+			tr("Open a video file"),
+			QString::null,
+			QString::null );
+
+	if ( fileName.isEmpty() )
+		return;
+
+	editor->insertVideoTag( fileName );
+}
+
+void MainWindow::act_editInsertColorChange()
+{
+	QColor newcolor = QColorDialog::getColor();
+
+	if ( newcolor.isValid() )
+		editor->insertColorChangeTag( newcolor.name() );
+}
+
 void MainWindow::act_editClearText()
 {
 	if ( QMessageBox::question( 0,
@@ -604,6 +641,8 @@ void MainWindow::updateState()
 	actionOpen_lyric_file->setEnabled( project_available );
 	actionClear_text->setEnabled( project_available );
 	actionTrimspaces->setEnabled( project_available );
+	actionInsert_picture->setEnabled( project_available );
+	actionInsert_video->setEnabled( project_available );
 	actionExport_lyric_file->setEnabled( project_available );
 	actionExport_video_file->setEnabled( project_available );
 	actionExport_CD_G_file->setEnabled( project_available );
