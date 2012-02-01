@@ -38,6 +38,7 @@ void Background::reset()
 // BackgroundImage
 //
 BackgroundImage::BackgroundImage( const QString& filename )
+	: Background()
 {
 	if ( !m_image.load( filename ) )
 		qWarning("Cannot load image file %s", qPrintable(filename));
@@ -62,8 +63,16 @@ qint64 BackgroundImage::doDraw( QImage& image, qint64 )
 // BackgroundVideo
 //
 BackgroundVideo::BackgroundVideo( const QString& filename )
+	: Background()
 {
-	m_valid = m_videoDecoder.openFile( filename );
+	QRegExp videopathstart("^(.*);STARTFRAME=(\\d+)$");
+
+	if ( filename.indexOf( videopathstart ) != -1 )
+	{
+		m_valid = m_videoDecoder.openFile( videopathstart.cap(1), videopathstart.cap(2).toUInt() );
+	}
+	else
+		m_valid = m_videoDecoder.openFile( filename, 0 );
 }
 
 bool BackgroundVideo::isValid() const

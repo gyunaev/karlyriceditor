@@ -61,7 +61,7 @@ class BackgroundImage : public Background
 class BackgroundVideo : public Background
 {
 	public:
-		BackgroundVideo( const QString& filename );
+		BackgroundVideo( const QString& arg );
 
 		bool isValid() const;
 		qint64 doDraw( QImage& image, qint64 timing );
