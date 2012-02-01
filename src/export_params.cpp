@@ -18,6 +18,7 @@
  **************************************************************************/
 
 #include <QFileDialog>
+#include <QSettings>
 #include <QMessageBox>
 
 #include "textrenderer.h"
@@ -157,12 +158,25 @@ void DialogExportOptions::browseOutputFile()
 	QString outfile;
 
 	if ( m_videomode )
-		outfile = QFileDialog::getSaveFileName( 0, tr("Export video to a file") );
+	{
+		QString exportdir = QSettings().value( "general/exportdirvideo", "" ).toString();
+		outfile = QFileDialog::getSaveFileName( 0, tr("Export video to a file"), exportdir );
+	}
 	else
-		outfile = QFileDialog::getSaveFileName( 0, tr("Export CD+G graphics to a file"), QString::null, "CD+G (*.cdg)" );
+	{
+		QString exportdir = QSettings().value( "general/exportdircdg", "" ).toString();
+		outfile = QFileDialog::getSaveFileName( 0, tr("Export CD+G graphics to a file"), exportdir, "CD+G (*.cdg)" );
+	}
 
 	if ( outfile.isEmpty() )
 		return;
+
+	QFileInfo finfo( outfile );
+
+	if ( m_videomode )
+		QSettings().setValue( "general/exportdirvideo", finfo.dir().absolutePath() );
+	else
+		QSettings().setValue( "general/exportdircdg", finfo.dir().absolutePath() );
 
 	leOutputFile->setText( outfile );
 }
