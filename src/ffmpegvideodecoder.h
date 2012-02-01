@@ -30,7 +30,7 @@ class FFMpegVideoDecoder
 		FFMpegVideoDecoder();
 		~FFMpegVideoDecoder();
 
-		bool openFile( const QString& file );
+		bool openFile( const QString& file, unsigned int seekto = 0 );
 		QString errorMsg() const;
 		void close();
 

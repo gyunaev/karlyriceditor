@@ -28,6 +28,7 @@ class FFMpegVideoDecoderPriv
 		bool	readFrame( int frame );
 
 	public:
+		unsigned int	skipFrames;
 		AVFormatContext *pFormatCtx;
 		int				 videoStream;
 		AVCodecContext  *pCodecCtx;
@@ -78,20 +79,20 @@ FFMpegVideoDecoder::~FFMpegVideoDecoder()
 	delete d;
 }
 
-bool FFMpegVideoDecoder::openFile( const QString& filename )
+bool FFMpegVideoDecoder::openFile( const QString& filename, unsigned int seekto )
 {
 	// See http://dranger.com/ffmpeg/tutorial01.html
 	close();
 
 	// Open video file
-	if ( av_open_input_file( &d->pFormatCtx, FFMPEG_FILENAME( filename ), NULL, 0, NULL ) != 0 )
+	if ( avformat_open_input( &d->pFormatCtx, FFMPEG_FILENAME( filename ), NULL, 0 ) != 0 )
 	{
 		d->m_errorMsg = "Could not open video file";
 		return false;
 	}
 
 	// Retrieve stream information
-	if ( av_find_stream_info( d->pFormatCtx ) < 0 )
+	if ( avformat_find_stream_info( d->pFormatCtx, 0 ) < 0 )
 	{
 		d->m_errorMsg = "Could not find stream information in the video file";
 		return false;
@@ -102,7 +103,7 @@ bool FFMpegVideoDecoder::openFile( const QString& filename )
 
 	for ( unsigned i = 0; i < d->pFormatCtx->nb_streams; i++ )
 	{
-		if ( d->pFormatCtx->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO )
+		if ( d->pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO )
 		{
 			d->videoStream = i;
 			break;
@@ -131,7 +132,7 @@ bool FFMpegVideoDecoder::openFile( const QString& filename )
 	}
 
 	// Open codec
-	if ( avcodec_open( d->pCodecCtx, d->pCodec ) < 0 )
+	if ( avcodec_open2( d->pCodecCtx, d->pCodec, 0 ) < 0 )
 	{
 	   d->m_errorMsg = "Could not open the codec for the video file";
 	   return false;
@@ -157,6 +158,7 @@ bool FFMpegVideoDecoder::openFile( const QString& filename )
 	avpicture_fill( (AVPicture *) d->pFrameRGB, (uint8_t*) d->m_buffer.data(),
 					PIX_FMT_RGB24, d->pCodecCtx->width, d->pCodecCtx->height );
 
+	d->skipFrames = seekto;
 	return true;
 }
 
@@ -246,6 +248,8 @@ QImage FFMpegVideoDecoder::frame( qint64 timems )
 	if ( frame_for_time == 0 )
 		frame_for_time = 1;
 
+	frame_for_time += d->skipFrames;
+
 	// Loop if we know how many frames we have total
 	if ( d->m_maxFrame > 0 )
 		frame_for_time %= d->m_maxFrame;
@@ -266,6 +270,7 @@ QImage FFMpegVideoDecoder::frame( qint64 timems )
 			return QImage();
 		}
 
+		d->skipFrames = 0;
 		avcodec_flush_buffers( d->pCodecCtx );
 	}
 

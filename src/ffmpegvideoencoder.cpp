@@ -133,7 +133,7 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 	strncpy( pOutputCtx->filename, FFMPEG_FILENAME( fileName ), sizeof(pOutputCtx->filename) );
 
 	// Add the video stream, index 0
-	pVideoStream = av_new_stream( pOutputCtx, 0 );
+	pVideoStream = avformat_new_stream( pOutputCtx, 0 );
 
 	if ( !pVideoStream )
 	{
@@ -143,7 +143,7 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 
 	pVideoCodecCtx = pVideoStream->codec;
 	pVideoCodecCtx->codec_id = pOutputFormat->video_codec;
-	pVideoCodecCtx->codec_type = CODEC_TYPE_VIDEO;
+	pVideoCodecCtx->codec_type = AVMEDIA_TYPE_VIDEO;
 
 	pVideoCodecCtx->bit_rate = m_videobitrate;
 	pVideoCodecCtx->width = m_width;
@@ -159,7 +159,7 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 	if ( m_aplayer )
 	{
 		// Add the audio stream, index 1
-		pAudioStream = av_new_stream( pOutputCtx, 1 );
+		pAudioStream = avformat_new_stream( pOutputCtx, 0 );
 
 		if ( !pAudioStream )
 		{
@@ -378,7 +378,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img )
 			pkt.data = audiopkt.data;
 			pkt.size = audiopkt.size;
 			pkt.stream_index = pAudioStream->index;
-			pkt.flags |= PKT_FLAG_KEY;
+			pkt.flags |= AV_PKT_FLAG_KEY;
 
 			int ret = av_interleaved_write_frame( pOutputCtx, &pkt );
 
@@ -408,7 +408,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img )
 			pkt.pts= av_rescale_q(pVideoCodecCtx->coded_frame->pts, pVideoCodecCtx->time_base, pVideoStream->time_base);
 
 		if ( pVideoCodecCtx->coded_frame->key_frame )
-			pkt.flags |= PKT_FLAG_KEY;
+			pkt.flags |= AV_PKT_FLAG_KEY;
 
 		pkt.stream_index = pVideoStream->index;
 		pkt.data = outbuf;
