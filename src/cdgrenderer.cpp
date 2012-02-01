@@ -18,6 +18,7 @@
  **************************************************************************/
 
 #include <QPainter>
+#include <QFile>
 #include "cdgrenderer.h"
 
 
@@ -382,6 +383,177 @@ void CDGRenderer::setCDGdata( const QByteArray& cdgdata )
 		qDebug( "CDG loader: CDG file was damaged, %d errors ignored", buggy_commands );
 }
 
+void CDGRenderer::dumpPacket( CDGPacket * packet )
+{
+	SubCode& sc = packet->subcode;
+	const char * data = sc.data;
+
+	QString dumpstr = "Packet " + QString::number( packet->packetnum ) + ": ";
+
+	switch ( sc.instruction & CDG_MASK )
+	{
+		case CDG_INST_MEMORY_PRESET:
+		{
+			CDG_MemPreset* preset = (CDG_MemPreset*) data;
+			dumpstr += "CDG_INST_MEMORY_PRESET, color " + QString::number( preset->color & 0x0F ) + ", repeat " + QString::number( preset->repeat & 0x0F );
+			break;
+		}
+
+		case CDG_INST_BORDER_PRESET:
+		{
+			CDG_BorderPreset* preset = (CDG_BorderPreset*) data;
+			dumpstr += "CDG_INST_BORDER_PRESET, color " + QString::number( preset->color & 0x0F );
+			break;
+		}
+
+		case CDG_INST_LOAD_COL_TBL_0_7:
+		{
+			dumpstr += "CDG_INST_LOAD_COL_TBL_0_7\n";
+
+			CDG_LoadColorTable* table = (CDG_LoadColorTable*) data;
+
+			for ( int i = 0; i < 8; i++ )
+			{
+				unsigned int colourEntry = ((table->colorSpec[2 * i] & CDG_MASK) << 8);
+				colourEntry = colourEntry + (table->colorSpec[(2 * i) + 1] & CDG_MASK);
+				colourEntry = ((colourEntry & 0x3F00) >> 2) | (colourEntry & 0x003F);
+
+				quint8 red = ((colourEntry & 0x0F00) >> 8) * 17;
+				quint8 green = ((colourEntry & 0x00F0) >> 4) * 17;
+				quint8 blue = ((colourEntry & 0x000F)) * 17;
+
+				dumpstr += QString("    %1: %2 %3 %4\n") .arg( i ) .arg( red ) .arg( green ) .arg( blue );
+			}
+			break;
+		}
+
+		case CDG_INST_LOAD_COL_TBL_8_15:
+		{
+			dumpstr += "CDG_INST_LOAD_COL_TBL_8_15\n";
+
+			CDG_LoadColorTable* table = (CDG_LoadColorTable*) data;
+
+			for ( int i = 0; i < 8; i++ )
+			{
+				unsigned int colourEntry = ((table->colorSpec[2 * i] & CDG_MASK) << 8);
+				colourEntry = colourEntry + (table->colorSpec[(2 * i) + 1] & CDG_MASK);
+				colourEntry = ((colourEntry & 0x3F00) >> 2) | (colourEntry & 0x003F);
+
+				quint8 red = ((colourEntry & 0x0F00) >> 8) * 17;
+				quint8 green = ((colourEntry & 0x00F0) >> 4) * 17;
+				quint8 blue = ((colourEntry & 0x000F)) * 17;
+
+				dumpstr += QString("    %1: %2 %3 %4\n") .arg( i + 8 ) .arg( red ) .arg( green ) .arg( blue );
+			}
+			break;
+		}
+
+		case CDG_INST_DEF_TRANSP_COL:
+			dumpstr += "CDG_INST_DEF_TRANSP_COL, color " + QString::number( data[0] & 0x0F );
+			break;
+
+		case CDG_INST_TILE_BLOCK:
+		{
+			CDG_Tile* tile = (CDG_Tile*) data;
+			unsigned int offset_y = (tile->row & 0x1F) * 12;
+			unsigned int offset_x = (tile->column & 0x3F) * 6;
+
+			dumpstr += "CDG_INST_TILE_BLOCK\n";
+
+			quint8 color_0 = tile->color0 & 0x0F;
+			quint8 color_1 = tile->color1 & 0x0F;
+
+			quint8 mask[6] = { 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
+
+			for ( int i = 0; i < 12; i++ )
+			{
+				quint8 bTemp = tile->tilePixels[i] & 0x3F;
+
+				for ( int j = 0; j < 6; j++ )
+				{
+					if ( bTemp & mask[j] )
+						dumpstr += "    pixel " + QString::number( offset_x + j ) + "," + QString::number(offset_y + i) + " -> " + QString::number(color_1) + "\n";
+					else
+						dumpstr += "    pixel " + QString::number( offset_x + j ) + ", " + QString::number(offset_y + i) + " -> " + QString::number(color_0) + "\n";
+				}
+			}
+			break;
+		}
+
+		case CDG_INST_TILE_BLOCK_XOR:
+		{
+			CDG_Tile* tile = (CDG_Tile*) data;
+			unsigned int offset_y = (tile->row & 0x1F) * 12;
+			unsigned int offset_x = (tile->column & 0x3F) * 6;
+
+			dumpstr += "CDG_INST_TILE_BLOCK_XOR\n";
+
+			if ( offset_x + 6 >= CDG_FULL_WIDTH || offset_y + 12 >= CDG_FULL_HEIGHT )
+				return;
+
+			// In the XOR variant, the color values are combined with the color values that are
+			// already onscreen using the XOR operator.  Since CD+G only allows a maximum of 16
+			// colors, we are XORing the pixel values (0-15) themselves, which correspond to
+			// indexes into a color lookup table.  We are not XORing the actual R,G,B values.
+			quint8 color_0 = tile->color0 & 0x0F;
+			quint8 color_1 = tile->color1 & 0x0F;
+
+			quint8 mask[6] = { 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
+
+			for ( int i = 0; i < 12; i++ )
+			{
+				quint8 bTemp = tile->tilePixels[i] & 0x3F;
+
+				for ( int j = 0; j < 6; j++ )
+				{
+					// Find the original color index
+					quint8 origindex = getPixel( offset_x + j, offset_y + i );
+
+					if ( bTemp & mask[j] )  //pixel xored with color1
+						dumpstr += "    " + QString::number( origindex ) + " pixel at " + QString::number( offset_x + j ) + "," + QString::number(offset_y + i) + " ^ " + QString::number(color_1) + "\n";
+					else
+						dumpstr += "    " + QString::number( origindex ) + " pixel at " + QString::number( offset_x + j ) + "," + QString::number(offset_y + i) + " ^ " + QString::number(color_0) + "\n";
+				}
+			}
+			break;
+		}
+
+		case CDG_INST_SCROLL_PRESET:
+		case CDG_INST_SCROLL_COPY:
+		{
+			int colour  = data[0] & 0x0F;
+			int hScroll = data[1] & 0x3F;
+			int vScroll = data[2] & 0x3F;
+
+			int hSCmd = (hScroll & 0x30) >> 4;
+			int hOffset = (hScroll & 0x07);
+			int vSCmd = (vScroll & 0x30) >> 4;
+			int vOffset = (vScroll & 0x0F);
+
+
+			if ( (sc.instruction & CDG_MASK) == CDG_INST_SCROLL_COPY )
+				dumpstr += "CDG_INST_SCROLL_COPY";
+			else
+				dumpstr += "CDG_INST_SCROLL_PRESET";
+
+			dumpstr += ": hSCmd " + QString::number( hSCmd ) + ", hoffset " + QString::number(hOffset)
+					+ "vSCmd " + QString::number( vSCmd ) + ", voffset " + QString::number(vOffset) + ", color " + QString::number(colour);
+			break;
+		}
+
+		default:
+			abort();
+	}
+
+	QFile file( "cdg.dump" );
+	if ( !file.open( QIODevice::Append | QIODevice::WriteOnly ) )
+		abort();
+
+	dumpstr += "\n";
+	file.write( dumpstr.toLocal8Bit() );
+	file.close();
+}
+
 int CDGRenderer::UpdateBuffer( unsigned int packets_due )
 {
 	int status = UPDATE_NOCHANGE;
@@ -402,6 +574,8 @@ int CDGRenderer::UpdateBuffer( unsigned int packets_due )
 	while ( m_cdgStream[ m_streamIdx ].packetnum <= packets_due )
 	{
 		SubCode& sc = m_cdgStream[ m_streamIdx ].subcode;
+
+		//dumpPacket( &m_cdgStream[ m_streamIdx ] );
 
 		// Execute the instruction
 		switch ( sc.instruction & CDG_MASK )

@@ -36,6 +36,13 @@ class CDGRenderer : public LyricsRenderer
 		virtual int	update( qint64 timing );
 
 	private:
+		typedef struct
+		{
+			unsigned int	packetnum;
+			SubCode			subcode;
+		} CDGPacket;
+
+		void	dumpPacket( CDGPacket * packet );
 		int		UpdateBuffer( unsigned int packets_due );
 		void	RenderImage( QImage& imagepixels, unsigned int width, unsigned int height, unsigned int pitch ) const;
 		quint8	getPixel( int x, int y );
@@ -52,12 +59,6 @@ class CDGRenderer : public LyricsRenderer
 		void	scrollRight( int color );
 		void	scrollUp( int color );
 		void	scrollDown( int color );
-
-		typedef struct
-		{
-			unsigned int	packetnum;
-			SubCode			subcode;
-		} CDGPacket;
 
 		QVector<CDGPacket>  m_cdgStream;	// Parsed CD+G stream storage
 		int					m_streamIdx;	// packet offset which hasn't been processed yet
