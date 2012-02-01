@@ -9,12 +9,8 @@ win32-g++-cross: {
 }
 
 !win32-g++-cross: {
-	INCLUDEPATH += /usr/local/ffmpeg/include
-	LIBPATH += /usr/local/ffmpeg/lib
-	LIBS += -lmp3lame \
-		/usr/lib/libx264.so.114 \
-	    -lxvidcore \
-	    -lbz2
+	CONFIG += link_pkgconfig
+	PKGCONFIG += libavformat libavcodec libswscale libavutil sdl
 }
 
 # Input
