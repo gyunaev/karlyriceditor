@@ -119,20 +119,26 @@ bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * err
 	}
 	else if ( key == "VIDEO" )
 	{
-		if ( !QFile::exists( value ) )
+		QString filename = value;
+		QRegExp videopathstart("^(.*);STARTFRAME=(\\d+)$");
+
+		if ( value.indexOf( videopathstart ) != -1 )
+			filename = videopathstart.cap(1);
+
+		if ( !QFile::exists( filename ) )
 		{
 			if ( errmsg )
-				*errmsg = QString("Video file %1 does not exist") .arg(value);
+				*errmsg = QString("Video file %1 does not exist") .arg(filename);
 
 			return false;
 		}
 
 		FFMpegVideoDecoder vd;
 
-		if ( !vd.openFile( value ) )
+		if ( !vd.openFile( filename ) )
 		{
 			if ( errmsg )
-				*errmsg = QString("File %1 is not a supported video") .arg(value);
+				*errmsg = QString("File %1 is not a supported video") .arg(filename);
 
 			return false;
 		}
