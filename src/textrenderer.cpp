@@ -62,6 +62,7 @@ void TextRenderer::setLyrics( const Lyrics& lyrics )
 			continue;
 
 		bool intitle = false;
+		bool hadtext = false;
 		LyricBlockInfo binfo;
 		binfo.timestart = block.first().first().timing;
 		binfo.timeend = block.last().last().timing;
@@ -94,11 +95,21 @@ void TextRenderer::setLyrics( const Lyrics& lyrics )
 			{
 				Lyrics::Syllable lentry = line[pos];
 
-				if ( lentry.text.trimmed().isEmpty() )
+				if ( lentry.text.trimmed().isEmpty() && !hadtext )
+					continue;
+
+				if ( lentry.text.isEmpty() )
 					continue;
 
 				qint64 starttime = line[pos].timing;
 				qint64 endtime = (pos + 1 == line.size()) ? endlinetime : line[pos+1].timing;
+
+				// Reset the block start time in case all previous lines were empty
+				if ( !hadtext )
+				{
+					hadtext = true;
+					binfo.timestart = starttime;
+				}
 
 				compileLine( lentry.text, starttime, endtime, &binfo, &intitle );
 			}
@@ -107,9 +118,13 @@ void TextRenderer::setLyrics( const Lyrics& lyrics )
 			binfo.offsets [ endlinetime ] = binfo.text.size() - 1;
 		}
 
-		m_lyricBlocks.push_back( binfo );
-	}
+		binfo.text = binfo.text.trimmed();
 
+		// Do not add the blocks with no text
+		if ( !binfo.text.isEmpty() )
+			m_lyricBlocks.push_back( binfo );
+	}
+/*
 	// Dump the result
 	qDebug("Block dump, %d blocks\n", m_lyricBlocks.size() );
 	for ( int bl = 0; bl < m_lyricBlocks.size(); bl++ )
@@ -128,7 +143,7 @@ void TextRenderer::setLyrics( const Lyrics& lyrics )
 				   qPrintable( m_lyricBlocks[bl].text.mid( pos + 1 ) ) );
 		}
 	}
-
+*/
 	m_lyricEvents = lyrics.events();
 	prepareEvents();
 }
@@ -282,6 +297,7 @@ void TextRenderer::init()
 	m_colorTitle = QColor( Qt::white );
 	m_colorToSing = pSettings->m_previewTextActive;
 	m_colorSang = pSettings->m_previewTextInactive;
+	m_noAntiAliasing = false;
 	setRenderFont( QFont( pSettings->m_previewFontFamily, pSettings->m_previewFontSize ) );
 
 	m_preambleHeight = 0;
@@ -315,6 +331,7 @@ void TextRenderer::forceCDGmode()
 {
 	// Disable anti-aliasing for set fonts
 	m_renderFont.setStyleStrategy( QFont::NoAntialias );
+	m_noAntiAliasing = true;
 	m_forceRedraw = true;
 }
 
@@ -509,6 +526,7 @@ QRect TextRenderer::boundingRect( int blockid, const QFont& font )
 
 			cur++;
 			linewidth = 0;
+
 			continue;
 		}
 
@@ -547,9 +565,14 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
 	else
 		painter.setPen( m_colorSang );
 
-	// Get the height offset from the rect
-	//int start_y = (m_image.height() - boundingRect.height()) / 2 + painter.fontMetrics().height();
-	int start_y = (m_image.height() - boundingRect.height()) + painter.fontMetrics().height();
+	// Get the height offset from the rect.
+	int start_y;
+
+	// Draw title in the center, the rest at bottom
+	if ( blockid == 0 )
+		start_y = (m_image.height() - boundingRect.height()) / 2 + painter.fontMetrics().height();
+	else
+		start_y = (m_image.height() - boundingRect.height());
 
 	// Draw the whole text
 	int linestart = 0;
@@ -571,7 +594,14 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
 				QMap< unsigned int, int >::const_iterator fontchange = m_lyricBlocks[blockid].fonts.find( i );
 
 				if ( fontchange != m_lyricBlocks[blockid].fonts.end() )
-					painter.setFont( QFont(painter.font().family(), painter.font().pointSize() + fontchange.value() ) );
+				{
+					QFont newfont = QFont(painter.font().family(), painter.font().pointSize() + fontchange.value() );
+
+					if ( m_noAntiAliasing )
+						newfont.setStyleStrategy( QFont::NoAntialias );
+
+					painter.setFont( newfont );
+				}
 
 				// Handle the color change events if pos doesn't cover them
 				QMap< unsigned int, QString >::const_iterator colchange = m_lyricBlocks[blockid].colors.find( i );
@@ -641,7 +671,7 @@ void TextRenderer::drawPreamble()
 	int preamble_width = (m_image.width() - preamble_spacing * m_preambleCount ) / m_preambleCount;
 
 	QPainter painter( &m_image );
-	painter.setPen( m_colorTitle );
+	painter.setPen( Qt::black );
 	painter.setBrush( m_colorTitle );
 
 	// Draw a square for each PREAMBLE_SQUARE; we do not draw anything for the last one, and speed up it 0.15sec
