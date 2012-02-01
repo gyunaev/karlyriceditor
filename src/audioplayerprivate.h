@@ -24,9 +24,10 @@
 #include <QString>
 
 #include "ffmpeg_headers.h"
-#include <SDL/SDL.h>
 
 class FFMpegVideoEncoderPriv;
+
+typedef uint8_t		Uint8;
 
 class AudioPlayerPrivate
 {

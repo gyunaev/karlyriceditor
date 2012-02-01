@@ -1,16 +1,13 @@
 TEMPLATE = app
 TARGET = ../bin/karlyriceditor
 DEPENDPATH += .
-LIBS += -lavformat -lavcodec -lswscale -lavutil -lSDL -lcrypto
+LIBS += -lcrypto
 DEFINES += USE_LICENSING
+CONFIG += link_pkgconfig
+PKGCONFIG += libavformat libavcodec libswscale libavutil sdl
 
 win32-g++-cross: {
-	LIBS += -lwsock32 -lvorbis -lvorbisenc -ltheora -lmp3lame -logg -lx264 -lxvidcore -lbz2 -ldxguid
-}
-
-!win32-g++-cross: {
-	CONFIG += link_pkgconfig
-	PKGCONFIG += libavformat libavcodec libswscale libavutil sdl
+	LIBS += -lwsock32 -ldxguid
 }
 
 # Input

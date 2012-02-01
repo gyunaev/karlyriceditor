@@ -21,6 +21,12 @@
 
 #include "audioplayer.h"
 #include "audioplayerprivate.h"
+#include <SDL/SDL.h>
+
+// SDL defines its own main() function in SDL_main. And so does Qt, so if we continue without
+// the #define below we'll end up with the following link error:
+// libqtmain.a(qtmain_win.o):qtmain_win.cpp:(.text+0x159): undefined reference to `qMain(int, char**)'
+#undef main
 
 #define SDL_AUDIO_BUFFER_SIZE 1024
 

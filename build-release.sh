@@ -1,16 +1,25 @@
 #!/bin/sh
 
-# Export the source code
+RELEASEDIR="releases"
+
+# Path to (cross-platform) mingw compiler
+MINGWPATH=/usr/toolchains/windows-x86-mingw-qtsdl/bin
+QMAKE=i686-pc-mingw32-qmake
 
 FILE_VERSION="src/version.h"
 RPM_ARCH="i586"
-RPM_OUTDIR="/usr/src/packages/RPMS/$RPM_ARCH"
+RPM_OUTDIR="$HOME/rpmbuild/RPMS/$RPM_ARCH"
 
 # Get current version
 VERSION_MAJOR=`sed -n 's/^\#define\s\+APP_VERSION_MAJOR\s\+\([0-9]\+\)/\1/p' $FILE_VERSION`
 VERSION_MINOR=`sed -n 's/^\#define\s\+APP_VERSION_MINOR\s\+\([0-9]\+\)/\1/p' $FILE_VERSION`
-INSTNAME="cascade-win32-$VERSION_MAJOR.$VERSION_MINOR.zip"
 CURRENTVER="$VERSION_MAJOR.$VERSION_MINOR"
+
+OUTDIR="$RELEASEDIR/$CURRENTVER"
+
+if [ ! -d "$OUTDIR" ]; then
+	mkdir -p "$OUTDIR" || exit 1
+fi
 
 BUILDDIR="karlyriceditor-$CURRENTVER"
 
@@ -25,7 +34,7 @@ tar zcf examples.tar.gz "$BUILDDIR/example" || exit 1
 rm -rf "$BUILDDIR/example"
 
 # Source package without examples
-tar zcf "$BUILDDIR.tar.gz" $BUILDDIR || exit 1
+tar zcf "$OUTDIR/$BUILDDIR.tar.gz" $BUILDDIR || exit 1
 
 # Build it 
 (cd "$BUILDDIR" && qmake && make -j4) || exit 1
@@ -43,5 +52,15 @@ cp packages/karlyriceditor.png "$BUILDDIR/buildroot/usr/share/pixmaps"
 sed "s/^Version: [0-9.]\\+/Version: $CURRENTVER/" packages/rpm.spec > $BUILDDIR/rpm.spec
 
 rpmbuild -bb --target=$RPM_ARCH --buildroot `pwd`"/$BUILDDIR/buildroot/" $BUILDDIR/rpm.spec || exit 1
-mv $RPM_OUTDIR/*.rpm . || exit 1
+mv $RPM_OUTDIR/*.rpm "$OUTDIR/" || exit 1
 rm -rf "$BUILDDIR"
+
+# Win32 build
+svn export . "$BUILDDIR/" || exit 1
+export PATH=$MINGWPATH:$PATH
+(cd $BUILDDIR && $QMAKE -r "CONFIG += release" && make -j4)  || exit 1
+
+# installer
+(cd $BUILDDIR/nsis && sh create_installer.sh "$CURRENTVER") || exit 1
+mv $BUILDDIR/nsis/*.exe "$OUTDIR/"
+

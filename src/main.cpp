@@ -35,3 +35,16 @@ int main(int argc, char *argv[])
 
 	return app.exec();
 }
+
+#if defined (_WIN32)
+
+// SDL defines its own main() function in SDL_main. And so does Qt, so if we continue without
+// the #define below we'll end up with the following link error:
+// libqtmain.a(qtmain_win.o):qtmain_win.cpp:(.text+0x159): undefined reference to `qMain(int, char**)'
+
+int qMain( int argc, char ** argv )
+{
+	return main( argc, argv );
+}
+
+#endif
