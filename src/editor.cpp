@@ -96,7 +96,6 @@ bool Editor::importFromOldString( const QString& lyricstr )
 	setEnabled( true );
 
 	// A simple state machine
-	bool timing = false;
 	QString saved;
 
 	for ( int i = 0; ; ++i )
@@ -115,7 +114,6 @@ bool Editor::importFromOldString( const QString& lyricstr )
 				break;
 
 			saved.clear();
-			timing = true;
 		}
 		else if ( lyricstr[i] == '>' )
 		{
@@ -131,7 +129,6 @@ bool Editor::importFromOldString( const QString& lyricstr )
 
 			strlyrics += time;
 			saved.clear();
-			timing = false;
 		}
 		else
 			saved.push_back( lyricstr[i] );
