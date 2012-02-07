@@ -376,7 +376,6 @@ int TextRenderer::lyricForTime( qint64 tickmark, int * sungpos )
 	// Find the block which should be currently played, if any.
 	int curblk = -1;
 	int pos = -1;
-	qint64 nexttiming = -1;
 
 	for ( int bl = 0; bl < m_lyricBlocks.size(); bl++ )
 	{
@@ -399,10 +398,6 @@ int TextRenderer::lyricForTime( qint64 tickmark, int * sungpos )
 		pos = it.value();
 
 		++it;
-
-		if ( it != m_lyricBlocks[bl].offsets.end() )
-			nexttiming = it.key();
-
 		break;
 	}
 
