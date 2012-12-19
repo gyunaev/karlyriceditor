@@ -45,7 +45,9 @@ HEADERS += mainwindow.h \
     ffmpeg_headers.h \
     audioplayerprivate.h \
 	export_params.h \
-    licensing.h
+    licensing.h \
+    karaokelyricstextkar.h \
+    kfn_file_parser.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -78,7 +80,9 @@ SOURCES += mainwindow.cpp \
     audioplayerprivate.cpp \
     ffmpeg_headers.cpp \
 	export_params.cpp \
-    licensing.cpp
+    licensing.cpp \
+    karaokelyricstextkar.cpp \
+    kfn_file_parser.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \
     wiznewproject_lyrictype.ui \
@@ -96,3 +100,5 @@ FORMS += mainwindow.ui \
 	dialog_encodingprogress.ui \
     dialog_testwindow.ui \
     dialog_registration.ui
+
+

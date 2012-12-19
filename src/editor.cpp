@@ -934,3 +934,69 @@ void Editor::insertColorChangeTag( const QString& name )
 	cur.insertText( "@@" + name );
 	cur.endEditBlock();
 }
+
+void Editor::addMissingTimingMarks()
+{
+	QString text = toPlainText();
+	QStringList lines = text.split( '\n' );
+
+	QRegExp endTimingPattern( ".*\\[(\\d+:\\d+\\.\\d+)\\]$");
+	QRegExp beginTimingPattern( "^\\[(\\d+:\\d+\\.\\d+)\\]");
+
+
+	for ( int l = 0; l < lines.size(); l++ )
+	{
+		QString line = lines[l];
+
+		if ( line.trimmed().isEmpty() )
+			continue;
+
+		// If the line has the last timing already, ignore it
+		if ( line.indexOf( endTimingPattern ) != -1 )
+			continue;
+
+		// This line doesn't. Analyze it
+		QRegExp pattern( "\\[(\\d+:\\d+\\.\\d+)\\]([^\\[]*)");
+		int pos = 0;
+		QList< qint64 > timings;
+		QList< int > lengths;
+
+		while ( (pos = pattern.indexIn( line, pos )) != -1 )
+		{
+			timings.push_back( timeToMark( pattern.cap( 1 ) ) );
+			lengths.push_back( pattern.cap( 2 ).length() );
+			pos += pattern.matchedLength();
+		}
+
+		// Now get the average length per character
+		QList< qint64 > perchartimings;
+
+		for ( int i = 1; i < timings.size(); i++ )
+			perchartimings.push_back( (timings[i] - timings[i-1]) / lengths[i-1] );
+
+		qSort( perchartimings.begin(), perchartimings.end() );
+		qint64 median = perchartimings[ perchartimings.size() / 2 ];
+		qint64 newtime = timings.back() + lengths.back() * median;
+
+		// Make sure we don't cross to the next line beginning, if any
+		for ( int ll = l + 1; ll < lines.size(); ll++ )
+		{
+			if ( lines[ll].isEmpty() )
+				continue;
+
+			if ( lines[ll].indexOf( beginTimingPattern ) != -1 )
+			{
+				qint64 nextBegin = timeToMark( beginTimingPattern.cap( 1 ) );
+
+				if ( nextBegin < newtime )
+					newtime = nextBegin - 1;
+			}
+
+			break;
+		}
+
+		lines[l] = lines[l].trimmed() + "[" + markToTime( newtime ) + "]";
+	}
+
+	setPlainText( lines.join( "\n") );
+}

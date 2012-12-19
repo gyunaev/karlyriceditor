@@ -186,6 +186,7 @@ void MainWindow::connectActions()
 	connect( actionInsert_picture, SIGNAL(triggered(bool)), this, SLOT(act_editInsertPicture() ) );
 	connect( actionInsert_video, SIGNAL(triggered(bool)), this, SLOT(act_editInsertVideo() ) );
 	connect( actionInsert_color_change, SIGNAL(triggered(bool)), this, SLOT(act_editInsertColorChange() ) );
+	connect( actionAdd_eol_timing_marks, SIGNAL(triggered(bool)), this, SLOT(act_addMissingTimingMarks() ) );
 
 	// docks
 	connect( m_player,SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPlayer(bool)) );
@@ -512,12 +513,12 @@ void MainWindow::act_projectOpenLyricFile()
 	QString fileName = QFileDialog::getOpenFileName( this,
 			tr("Open a lyric file"),
 			QString::null,
-			tr("LRC files (*.lrc);;UltraStar files (*.txt)") );
+			tr("LRC files (*.lrc);;UltraStar files (*.txt);;KAR/MIDI files (*.mid *.midi *.kar)") );
 
 	if ( fileName.isEmpty() )
 		return;
 
-	m_project->importLyrics( fileName, fileName.endsWith( "txt" ) ? Project::LyricType_UStar : Project::LyricType_LRC2 );
+	m_project->importLyrics( fileName );
 }
 
 void MainWindow::act_projectEditHeader()
@@ -650,6 +651,7 @@ void MainWindow::updateState()
 	actionEdit_header_data->setEnabled( project_available );
 	actionProject_settings->setEnabled( project_available );
 	actionView_lyric_file->setEnabled( project_ready );
+	actionAdd_eol_timing_marks->setEnabled( project_ready );
 
 	editor->setEnabled( project_available );
 
@@ -867,4 +869,10 @@ void MainWindow::act_helpRegistration()
 	dlg.resize( dlg.width(), dlg.minimumHeight() );
 
 	dlg.exec();
+}
+
+
+void MainWindow::act_addMissingTimingMarks()
+{
+	editor->addMissingTimingMarks();
 }

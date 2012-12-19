@@ -25,7 +25,6 @@ void ffmpeg_init_once()
 {
 	if ( !ffmpeg_initialized )
 	{
-		avcodec_init();
 		avcodec_register_all();
 		av_register_all();
 	}

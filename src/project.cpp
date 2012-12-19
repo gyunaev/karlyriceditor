@@ -27,6 +27,7 @@
 #include "version.h"
 #include "lyrics.h"
 #include "dialog_selectencoding.h"
+#include "karaokelyricstextkar.h"
 #include "cdggenerator.h"
 
 // Project data enum
@@ -115,9 +116,9 @@ void Project::clear()
 	// Init CD+G data
 	m_projectData[ PD_TAG_CDG_BCOLOR ] = "black";
 	m_projectData[ PD_TAG_CDG_ICOLOR ] = "white";
-	m_projectData[ PD_TAG_CDG_ACOLOR ] = "green";
-	m_projectData[ PD_TAG_CDG_NCOLOR ] = "red";
-	m_projectData[ PD_TAG_CDG_FONT ] = "arial";
+	m_projectData[ PD_TAG_CDG_ACOLOR ] = QColor( 0xC0, 0x00, 0xC0 ).name();
+	m_projectData[ PD_TAG_CDG_NCOLOR ] = QColor( 0x00, 0xC0, 0xC0 ).name();
+	m_projectData[ PD_TAG_CDG_FONT ] = "Droid Sans";
 	m_projectData[ PD_TAG_CDG_FONTSIZE ] = "12";
 	m_projectData[ PD_TAG_CDG_MINTITLE ] = "5";
 	m_projectData[ PD_TAG_CDG_PREAMBLE ] = "1";
@@ -753,7 +754,7 @@ QByteArray Project::exportLyricsAsUStar()
 }
 
 
-bool Project::importLyrics( const QString& filename, LyricType type )
+bool Project::importLyrics( const QString& filename )
 {
 	QFile file( filename );
 
@@ -771,10 +772,25 @@ bool Project::importLyrics( const QString& filename, LyricType type )
 	// Close the file - the user might want to edit it now when we ask for encoding
 	file.close();
 
+	// If this is the MIDI file, parse it first
+	if ( filename.endsWith( "mid" ) || filename.endsWith( "midi" ) || filename.endsWith( "kar" ) )
+	{
+		data = CKaraokeLyricsTextKAR::getLyrics( data );
+
+		if ( data.isEmpty() )
+		{
+			QMessageBox::critical( 0,
+								   QObject::tr( "Cannot read MIDI " ),
+								   QObject::tr( "Cannot read lyrics from MIDI file %1" ) .arg( filename ) );
+			return false;
+		}
+
+	}
+
+	QString lyrictext (data);
+
 	// Before we ask the user for the text encoding, run a loop - if all characters there are < 127, this is ASCII,
 	// and we do not need to ask.
-	QString lyrictext( data );
-
 	for ( int i = 0; i < data.size(); i++ )
 	{
 		if ( data.at(i) < 0 )
@@ -790,29 +806,32 @@ bool Project::importLyrics( const QString& filename, LyricType type )
 		}
 	}
 
+	// Prepend a fake LRC header for MIDI import
+	if ( filename.endsWith( "mid" ) || filename.endsWith( "midi" ) || filename.endsWith( "kar" ) )
+		lyrictext.prepend( "[ar: unknown]\n[ti: unknown]\n" );
+
 	// Convert CRLF to CRs and replace LFs
 	lyrictext.replace( "\r\n", "\n" );
 	lyrictext.remove( '\r' );
+
 	QStringList linedtext = lyrictext.split( '\n' );
 
 	// Import lyrics
 	Lyrics lyr;
 	bool success = false;
 
-	switch ( type )
+	if ( filename.endsWith( "txt" ) )
 	{
-		case LyricType_UStar:
-			lyr.beginLyrics();
-			success = importLyricsUStar( linedtext, lyr );
-			lyr.endLyrics();
-			break;
-
-		case LyricType_LRC1:
-		case LyricType_LRC2:
-			lyr.beginLyrics();
-			success = importLyricsLRC( linedtext, lyr );
-			lyr.endLyrics();
-			break;
+		// LyricType_UStar:
+		lyr.beginLyrics();
+		success = importLyricsUStar( linedtext, lyr );
+		lyr.endLyrics();
+	}
+	else
+	{
+		lyr.beginLyrics();
+		success = importLyricsLRC( linedtext, lyr );
+		lyr.endLyrics();
 	}
 
 	// importLyrics* already showed error message
@@ -823,7 +842,23 @@ bool Project::importLyrics( const QString& filename, LyricType type )
 	return true;
 }
 
-bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics )
+bool Project::convertLyrics( const QString& content )
+{
+	QStringList lines = content.split( '\n' );
+	Lyrics lyr;
+
+	lyr.beginLyrics();
+	bool success = importLyricsLRC( lines, lyr, true );
+	lyr.endLyrics();
+
+	if ( !success )
+		return false;
+
+	m_editor->importLyrics( lyr );
+	return true;
+}
+
+bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics, bool relaxed )
 {
 	bool header = true;
 	bool type_lrc2 = false;
@@ -873,7 +908,7 @@ bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics )
 			else
 			{
 				// Tag not found; either header ended, or invalid file
-				if ( i == 0 )
+				if ( i == 0 && !relaxed )
 				{
 					QMessageBox::critical( 0,
 										   QObject::tr("Invalid LRC file"),
@@ -918,7 +953,6 @@ bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics )
 					text = match[4];
 				}
 
-				//qDebug("Parsed timing: %d:%d, %dms, '%s' text", minutes, seconds, ms, qPrintable( text ) );
 				qint64 timing = minutes * 60000 + seconds * 1000 + ms;
 
 				if ( timing != last_time && timing != -1 )
@@ -937,7 +971,7 @@ bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics )
 	}
 
 	// Check the lyric type
-	if ( type() == LyricType_LRC1 && type_lrc2 )
+	if ( type() == LyricType_LRC1 && type_lrc2 && !relaxed )
 	{
 		QMessageBox::warning( 0,
 							  QObject::tr("LRC2 file read for LCR1 project"),

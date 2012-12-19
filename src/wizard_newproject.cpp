@@ -26,6 +26,7 @@
 #include "project.h"
 #include "version.h"
 #include "wizard_newproject.h"
+#include "kfn_file_parser.h"
 
 namespace WizardNewProject
 {
@@ -95,7 +96,7 @@ void PageMusicFile::browse()
 		return;
 
 	// We cannot handle MIDI/KAR files
-	if ( filename.endsWith( ".mid" ) || filename.endsWith( ".kar" ) )
+	if ( filename.endsWith( ".mid", Qt::CaseInsensitive ) || filename.endsWith( ".kar", Qt::CaseInsensitive ) )
 	{
 		if ( QMessageBox::question( 0,
 						   tr("Trying to open a MIDI file?"),
@@ -110,7 +111,66 @@ void PageMusicFile::browse()
 		}
 	}
 
-	// Try to open itQMessageBox::Yes
+	// Handle the KFN file
+	if ( filename.endsWith( ".kfn",Qt::CaseInsensitive  ) )
+	{
+		if ( QMessageBox::question( 0,
+						   tr("Trying to open a KaraFun file?"),
+						   tr("It looks like you are trying to open the KaraFun file.\n"
+							  "Karaoke Lyrics Editor cannot edit those files directly. However it can import music and lyrics from this file, and export them as any supported format "
+							  "such as CDG, LRC or UltraStar (but not KFN)\n\n"
+							  "Do you want to import the music and lyrics from this file?"),
+								   QMessageBox::Yes | QMessageBox::No, QMessageBox::No )
+				== QMessageBox::No )
+		{
+			return;
+		}
+
+		KFNFileParser parser;
+
+		if ( !parser.open( filename ) )
+		{
+			QMessageBox::information( 0,
+							   tr("Invalid KFN file"),
+							   tr("The file %1 cannot be opened: %2") .arg( filename ) .arg( parser.errorMsg() ) );
+			return;
+		}
+
+		// Music file without .KFN extention
+		QString musicFileName = filename.left( filename.size() - 3 ) + parser.musicFileExtention();
+		QFile musicFile( musicFileName );
+
+		if ( !musicFile.open( QIODevice::WriteOnly ) )
+		{
+			QMessageBox::information( 0,
+							   tr("Cannot import KFN file"),
+							   tr("The file %1 cannot be imported: the music file %2 cannot be created") .arg( filename ) .arg( musicFileName ) );
+			return;
+		}
+
+		if ( !parser.writeMusicFile(musicFile) )
+		{
+			QMessageBox::information( 0,
+							   tr("Cannot import KFN file"),
+							   tr("The file %1 cannot be imported: the music file %2 cannot be stored: %s") .arg( filename ) .arg( musicFileName ) .arg( parser.errorMsg() ) );
+			return;
+		}
+
+		musicFile.close();
+		filename = musicFileName;
+
+		// Lyrics
+		m_kfnLyrics = parser.lyricsAsLRC();
+
+		// Still fall through
+		if ( m_kfnLyrics.isEmpty() )
+			QMessageBox::information( 0,
+							   tr("Cannot import lyrics"),
+							   tr("The file %1 cannot be imported: the lyrics cannot be parsed: %s") .arg( filename ) .arg( parser.errorMsg() ) );
+	}
+
+
+	// Try to open it
 	if ( pAudioPlayer->open( filename ) )
 	{
 		leSongFile->setText( filename );
@@ -159,6 +219,9 @@ bool PageMusicFile::validatePage()
 
 	if ( !leAlbum->text().isEmpty() )
 		m_project->setTag( Project::Tag_Album, leAlbum->text() );
+
+	if ( !m_kfnLyrics.isEmpty() )
+		m_project->convertLyrics( m_kfnLyrics );
 
 	return true;
 }

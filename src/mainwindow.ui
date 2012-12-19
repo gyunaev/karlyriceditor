@@ -37,7 +37,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>24</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -71,6 +71,7 @@
     <addaction name="actionClear_text"/>
     <addaction name="actionTrimspaces"/>
     <addaction name="separator"/>
+    <addaction name="actionAdd_eol_timing_marks"/>
    </widget>
    <widget class="QMenu" name="menuSettings">
     <property name="title">
@@ -543,6 +544,18 @@ Note that for formats which support blocks nothing will be shown until it's less
    </property>
    <property name="text">
     <string>Insert color change...</string>
+   </property>
+  </action>
+  <action name="actionAdd_eol_timing_marks">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/images/dryicons_application_edit.png</normaloff>:/images/dryicons_application_edit.png</iconset>
+   </property>
+   <property name="text">
+    <string>Add EOL timing marks</string>
+   </property>
+   <property name="toolTip">
+    <string>Adds missing end-of-line timing marks automatically. Doesn't touch existing marks.</string>
    </property>
   </action>
  </widget>

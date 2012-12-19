@@ -203,7 +203,7 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 		m_aplayer->reset();
 	}
 
-	avcodec_thread_init( pVideoCodecCtx, 10 );
+	pVideoCodecCtx->thread_count = 10;
 
 	// some formats want stream headers to be separate
 	if ( pOutputCtx->oformat->flags & AVFMT_GLOBALHEADER )
@@ -256,13 +256,13 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 	// Setup the planes
 	avpicture_fill( (AVPicture *)ppicture, picture_buf,pVideoCodecCtx->pix_fmt, pVideoCodecCtx->width, pVideoCodecCtx->height );
 
-	if ( url_fopen( &pOutputCtx->pb, FFMPEG_FILENAME( fileName ), URL_WRONLY) < 0 )
+	if ( avio_open( &pOutputCtx->pb, FFMPEG_FILENAME( fileName ), AVIO_FLAG_WRITE) < 0 )
 	{
 		m_errorMsg = "Could not create the video file";
 		goto cleanup;
 	}
 
-	av_write_header(pOutputCtx);
+	avformat_write_header(pOutputCtx, 0);
 	return true;
 
 cleanup:
@@ -318,7 +318,7 @@ bool FFMpegVideoEncoderPriv::close()
 		}
 
 		// Close file
-		url_fclose(pOutputCtx->pb);
+		avio_close(pOutputCtx->pb);
 
 		// Free the format
 		av_free( pOutputCtx );
