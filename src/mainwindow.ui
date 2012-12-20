@@ -72,6 +72,7 @@
     <addaction name="actionTrimspaces"/>
     <addaction name="separator"/>
     <addaction name="actionAdd_eol_timing_marks"/>
+    <addaction name="actionTime_adjustment"/>
    </widget>
    <widget class="QMenu" name="menuSettings">
     <property name="title">
@@ -552,10 +553,22 @@ Note that for formats which support blocks nothing will be shown until it's less
      <normaloff>:/images/dryicons_application_edit.png</normaloff>:/images/dryicons_application_edit.png</iconset>
    </property>
    <property name="text">
-    <string>Add EOL timing marks</string>
+    <string>Add end timing marks</string>
    </property>
    <property name="toolTip">
     <string>Adds missing end-of-line timing marks automatically. Doesn't touch existing marks.</string>
+   </property>
+  </action>
+  <action name="actionTime_adjustment">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/images/dryicons_clock.png</normaloff>:/images/dryicons_clock.png</iconset>
+   </property>
+   <property name="text">
+    <string>Time adjustment ...</string>
+   </property>
+   <property name="toolTip">
+    <string>Pops up the time adjustment dialog</string>
    </property>
   </action>
  </widget>

@@ -47,7 +47,8 @@ HEADERS += mainwindow.h \
 	export_params.h \
     licensing.h \
     karaokelyricstextkar.h \
-    kfn_file_parser.h
+    kfn_file_parser.h \
+    dialog_timeadjustment.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -82,7 +83,8 @@ SOURCES += mainwindow.cpp \
 	export_params.cpp \
     licensing.cpp \
     karaokelyricstextkar.cpp \
-    kfn_file_parser.cpp
+    kfn_file_parser.cpp \
+    dialog_timeadjustment.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \
     wiznewproject_lyrictype.ui \
@@ -99,6 +101,7 @@ FORMS += mainwindow.ui \
 	dialog_export_params.ui \
 	dialog_encodingprogress.ui \
     dialog_testwindow.ui \
-    dialog_registration.ui
+    dialog_registration.ui \
+    dialog_timeadjustment.ui
 
 

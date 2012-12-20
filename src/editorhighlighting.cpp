@@ -43,7 +43,7 @@ void EditorHighlighting::updateSettings()
 	m_hlPlaceholder.setBackground( pSettings->m_timeMarkPlaceholderBackground );
 	m_hlPlaceholder.setForeground( pSettings->m_timeMarkPlaceholderText );
 
-	m_hlComment.setForeground( Qt::blue );
+	m_hlComment.setForeground( Qt::cyan );
 }
 
 void EditorHighlighting::highlightBlock ( const QString & line )

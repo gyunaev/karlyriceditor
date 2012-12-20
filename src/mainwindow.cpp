@@ -187,6 +187,7 @@ void MainWindow::connectActions()
 	connect( actionInsert_video, SIGNAL(triggered(bool)), this, SLOT(act_editInsertVideo() ) );
 	connect( actionInsert_color_change, SIGNAL(triggered(bool)), this, SLOT(act_editInsertColorChange() ) );
 	connect( actionAdd_eol_timing_marks, SIGNAL(triggered(bool)), this, SLOT(act_addMissingTimingMarks() ) );
+	connect( actionTime_adjustment, SIGNAL(triggered(bool)), this, SLOT(act_adjustTiming() ) );
 
 	// docks
 	connect( m_player,SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPlayer(bool)) );
@@ -871,8 +872,12 @@ void MainWindow::act_helpRegistration()
 	dlg.exec();
 }
 
-
 void MainWindow::act_addMissingTimingMarks()
 {
 	editor->addMissingTimingMarks();
+}
+
+void MainWindow::act_adjustTiming()
+{
+	editor->adjustTimings();
 }

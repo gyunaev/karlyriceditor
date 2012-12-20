@@ -34,6 +34,7 @@
 #include "editorhighlighting.h"
 #include "lyricsevents.h"
 #include "textrenderer.h"
+#include "dialog_timeadjustment.h"
 #include "cdg.h"
 
 
@@ -156,6 +157,10 @@ bool Editor::exportLyrics( Lyrics * lyrics )
 			lyrics->curLyricAddEndOfLine();
 			continue;
 		}
+
+		// Skip comments
+		if ( line.trimmed().startsWith( '#') )
+			continue;
 
 		QString lyrictext, timing, special;
 		bool in_time_tag = false;
@@ -1006,5 +1011,39 @@ void Editor::addMissingTimingMarks()
 		lines[l] = lines[l].trimmed() + "[" + markToTime( newtime ) + "]";
 	}
 
-	setPlainText( lines.join( "\n") );
+	// Replace the text by a new one, preserving the undo
+	selectAll();
+	insertPlainText( lines.join( "\n") );
+}
+
+void Editor::adjustTimings()
+{
+	DialogTimeAdjustment dlg;
+
+	if ( dlg.exec() != QDialog::Accepted )
+		return;
+
+	// Iterate through all the timing marks
+	QString text = toPlainText();
+
+	QRegExp pattern( "\\[(\\d+:\\d+\\.\\d+)\\]");
+	int pos = 0;
+
+	while ( (pos = pattern.indexIn( text, pos )) != -1 )
+	{
+		qint64 timing = timeToMark( pattern.cap( 1 ) );
+		timing *= dlg.m_valueMultiply;
+		timing += dlg.m_valueAdd;
+
+		QString newtime = "[" + markToTime( timing ) + "]";
+
+		text.remove( pos, pattern.matchedLength() );
+		text.insert( pos, newtime );
+
+		pos += newtime.length();
+	}
+
+	// Replace the text by a new one, preserving the undo
+	selectAll();
+	insertPlainText( text );
 }

@@ -77,6 +77,7 @@ class Editor : public QTextEdit
 		void	addMissingTimingMarks();
 		void	removeAllTimeTags();
 		void	removeExtraWhitespace();
+		void	adjustTimings();
 
 		// Validate the lyrics
 		bool	validate( const QFont * font = 0, const QSize * fitsize = 0 );

@@ -61,6 +61,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	act_editInsertVideo();
 		void	act_editInsertColorChange();
 		void	act_addMissingTimingMarks();
+		void	act_adjustTiming();
 
 		void	act_projectOpenLyricFile();
 		void	act_projectEditHeader();
