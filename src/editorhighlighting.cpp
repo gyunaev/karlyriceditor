@@ -42,12 +42,22 @@ void EditorHighlighting::updateSettings()
 
 	m_hlPlaceholder.setBackground( pSettings->m_timeMarkPlaceholderBackground );
 	m_hlPlaceholder.setForeground( pSettings->m_timeMarkPlaceholderText );
+
+	m_hlComment.setForeground( Qt::blue );
 }
 
 void EditorHighlighting::highlightBlock ( const QString & line )
 {
 	if ( line.trimmed().isEmpty() )
 		return;
+
+	// Highlight comments
+	if ( line.trimmed().startsWith("#") )
+	{
+		setFormat( 0, line.length(), m_hlComment );
+		return;
+	}
+
 
 	// from Editor::validate
 	int time_tag_start = 0;

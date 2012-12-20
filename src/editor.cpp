@@ -260,7 +260,7 @@ void Editor::importLyrics( const Lyrics& lyrics )
 		strlyrics += "\n";
 	}
 
-	setPlainText( strlyrics );
+	setPlainText( strlyrics.trimmed() + "\n" );
 }
 
 void Editor::cursorToLine( int line, int column )
@@ -968,15 +968,23 @@ void Editor::addMissingTimingMarks()
 			pos += pattern.matchedLength();
 		}
 
+		if ( timings.isEmpty() )
+			continue;
+
 		// Now get the average length per character
-		QList< qint64 > perchartimings;
+		qint64 newtime = timings.back() + lengths.back() * 10;
 
-		for ( int i = 1; i < timings.size(); i++ )
-			perchartimings.push_back( (timings[i] - timings[i-1]) / lengths[i-1] );
+		if ( timings.size() > 1 )
+		{
+			QList< qint64 > perchartimings;
 
-		qSort( perchartimings.begin(), perchartimings.end() );
-		qint64 median = perchartimings[ perchartimings.size() / 2 ];
-		qint64 newtime = timings.back() + lengths.back() * median;
+			for ( int i = 1; i < timings.size(); i++ )
+				perchartimings.push_back( (timings[i] - timings[i-1]) / lengths[i-1] );
+
+			qSort( perchartimings.begin(), perchartimings.end() );
+			qint64 median = perchartimings[ perchartimings.size() / 2 ];
+			newtime = timings.back() + lengths.back() * median;
+		}
 
 		// Make sure we don't cross to the next line beginning, if any
 		for ( int ll = l + 1; ll < lines.size(); ll++ )

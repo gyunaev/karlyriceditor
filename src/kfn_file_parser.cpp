@@ -222,14 +222,27 @@ QString	KFNFileParser::lyricsAsLRC()
 
 	QString lrcoutput = "";
 	int curr_sync = 0;
+	bool has_linefeed = false;
+	int lines_no_block = 0;
 
 	for ( int i = 0; i < texts.size(); i++ )
 	{
 		if ( texts[i] == "\n" )
 		{
+			if ( has_linefeed )
+				lines_no_block = 0;
+			else if ( ++lines_no_block > 6 )
+			{
+				lines_no_block = 0;
+				lrcoutput += "\n";
+			}
+
+			has_linefeed = true;
 			lrcoutput += "\n";
 			continue;
 		}
+		else
+			has_linefeed = false;
 
 		// Get the time if we have it
 		if ( curr_sync >= syncs.size() )
@@ -245,7 +258,7 @@ QString	KFNFileParser::lyricsAsLRC()
 		lrcoutput += timebuf + texts[i];
 	}
 
-	return lrcoutput;
+	return lrcoutput.trimmed();
 }
 
 QByteArray KFNFileParser::extract( const Entry& entry )

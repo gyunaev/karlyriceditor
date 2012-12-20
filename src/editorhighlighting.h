@@ -39,6 +39,7 @@ class EditorHighlighting : public QSyntaxHighlighter
 		QTextCharFormat		m_hlValidSpecial;
 		QTextCharFormat		m_hlInvalidTiming;
 		QTextCharFormat		m_hlPlaceholder;
+		QTextCharFormat		m_hlComment;
 };
 
 #endif // EDITORHIGHLIGHTING_H
