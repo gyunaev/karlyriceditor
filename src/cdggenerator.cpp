@@ -166,7 +166,7 @@ int CDGGenerator::getColor( QRgb color )
 			return i;
 
 	if ( m_colors.size() == 16 )
-		qFatal("Color table is out of color entries");
+		throw QString("Color table is out of color entries");
 
 //	qDebug("Adding color %08X", color );
 	m_colors.push_back( color );
@@ -333,94 +333,105 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	m_stream.reserve( total_length * 300 / 1000 );
 
 	// Render
-	while ( 1 )
+	try
 	{
-		// There should be 300 packets in 1000ms of music
-		// So each packet adds 1000 / 300 ms
-		// Speed up time a little to compensate CD+G reader delay
-		qint64 timing = m_stream.size() * 1000 / 300 + 250;
-
-		// Should we show the next step?
-		if ( timing / dialog_step > progressUi.progressBar->value() )
+		while ( 1 )
 		{
-			progressUi.progressBar->setValue( timing / dialog_step );
+			// There should be 300 packets in 1000ms of music
+			// So each packet adds 1000 / 300 ms
+			// Speed up time a little to compensate CD+G reader delay
+			qint64 timing = m_stream.size() * 1000 / 300 + 250;
 
-			progressUi.lblFrames->setText( QString::number( m_stream.size() ) );
-			progressUi.lblOutput->setText( QString( "%1 Kb" ) .arg( m_stream.size() * 24 / 1024 ) );
-			progressUi.lblTime->setText( markToTime( timing ) );
+			// Should we show the next step?
+			if ( timing / dialog_step > progressUi.progressBar->value() )
+			{
+				progressUi.progressBar->setValue( timing / dialog_step );
 
-			progressUi.image->setPixmap( QPixmap::fromImage( lastImage ) );
+				progressUi.lblFrames->setText( QString::number( m_stream.size() ) );
+				progressUi.lblOutput->setText( QString( "%1 Kb" ) .arg( m_stream.size() * 24 / 1024 ) );
+				progressUi.lblTime->setText( markToTime( timing ) );
 
-			qApp->processEvents( QEventLoop::ExcludeUserInputEvents );
+				progressUi.image->setPixmap( QPixmap::fromImage( lastImage ) );
+
+				qApp->processEvents( QEventLoop::ExcludeUserInputEvents );
+			}
+
+			if ( timing > total_length )
+				break;
+
+	//		qDebug("timing: %d packets, %dms (%d sec)", m_stream.size(), (int) timing, (int) (timing / 1000) );
+			int status = lyricrenderer.update( timing );
+
+			if ( status == LyricsRenderer::UPDATE_RESIZED )
+			{
+				QImage errimg = lyricrenderer.image();
+				errimg.save( "error", "bmp" );
+
+				QMessageBox::critical( 0,
+									  "Invalid lyrics",
+									  QString("Lyrics out of boundary at %1, screen requested: %2x%3")
+										.arg( markToTime( timing ) )
+										.arg( errimg.width() )
+										.arg( errimg.height() )
+									  );
+
+				m_stream.clear();
+				return ;
+			}
+
+			if ( status == LyricsRenderer::UPDATE_NOCHANGE )
+			{
+				addEmpty();
+				continue;
+			}
+
+			// Is change significant enough to warrant full redraw?
+			if ( status == LyricsRenderer::UPDATE_FULL )
+			{
+				clearScreen();
+
+				// Clear the old image too
+				lastImage.fill( m_colorBackground.rgb() );
+			}
+
+			int packets = m_stream.size();
+			const QImage& currImage = lyricrenderer.image();
+			applyTileChanges( lastImage, currImage );
+			lastImage = currImage;
+
+			// Make sure we added at least some tiles
+			if ( packets == m_stream.size() )
+				addEmpty();
 		}
 
-		if ( timing > total_length )
-			break;
+		// Clean up the parity bits in the CD+G stream
+		char *p = (char*) &m_stream[0];
 
-//		qDebug("timing: %d packets, %dms (%d sec)", m_stream.size(), (int) timing, (int) (timing / 1000) );
-		int status = lyricrenderer.update( timing );
-
-		if ( status == LyricsRenderer::UPDATE_RESIZED )
+		for ( unsigned int i = 0; i < m_stream.size() * sizeof(SubCode); i++, p++ )
 		{
-			QImage errimg = lyricrenderer.image();
-			errimg.save( "error", "bmp" );
+			if ( *p & 0xC0 )
+				*p &= 0x3F;
+		}
 
+		QFile file( dlg.m_outputVideo );
+		if ( !file.open( QIODevice::WriteOnly | QIODevice::Truncate ) )
+		{
 			QMessageBox::critical( 0,
-								  "Invalid lyrics",
-								  QString("Lyrics out of boundary at %1, screen requested: %2x%3")
-									.arg( markToTime( timing ) )
-									.arg( errimg.width() )
-									.arg( errimg.height() )
-								  );
-
-			m_stream.clear();
-			return ;
+								   QObject::tr("Cannot write CD+G file"),
+								   QObject::tr("Cannot write CD+G file %1: %2")
+										.arg( dlg.m_outputVideo)
+										.arg(file.errorString()) );
+			return;
 		}
 
-		if ( status == LyricsRenderer::UPDATE_NOCHANGE )
-		{
-			addEmpty();
-			continue;
-		}
-
-		// Is change significant enough to warrant full redraw?
-		if ( status == LyricsRenderer::UPDATE_FULL )
-		{
-			clearScreen();
-
-			// Clear the old image too
-			lastImage.fill( m_colorBackground.rgb() );
-		}
-
-		int packets = m_stream.size();
-		const QImage& currImage = lyricrenderer.image();
-		applyTileChanges( lastImage, currImage );
-		lastImage = currImage;
-
-		// Make sure we added at least some tiles
-		if ( packets == m_stream.size() )
-			addEmpty();
+		file.write( stream() );
 	}
-
-	// Clean up the parity bits in the CD+G stream
-	char *p = (char*) &m_stream[0];
-
-	for ( unsigned int i = 0; i < m_stream.size() * sizeof(SubCode); i++, p++ )
-	{
-		if ( *p & 0xC0 )
-			*p &= 0x3F;
-	}
-
-	QFile file( dlg.m_outputVideo );
-	if ( !file.open( QIODevice::WriteOnly | QIODevice::Truncate ) )
+	catch ( QString& txt )
 	{
 		QMessageBox::critical( 0,
 							   QObject::tr("Cannot write CD+G file"),
-							   QObject::tr("Cannot write CD+G file %1: %2")
-									.arg( dlg.m_outputVideo)
-									.arg(file.errorString()) );
+							   QObject::tr("Cannot write CD+G file: %1")
+									.arg( txt ) );
 		return;
 	}
-
-	file.write( stream() );
 }
