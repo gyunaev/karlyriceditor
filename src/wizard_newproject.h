@@ -83,7 +83,7 @@ class PageMusicFile : public QWizardPage, public Ui::WizNewProject_MusicFile
 	private:
 		Project *	m_project;
 		QString		m_lastMusicFile;
-		QString		m_kfnLyrics;
+		QString		m_hasLrcLyrics;
 };
 
 

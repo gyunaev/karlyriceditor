@@ -24,6 +24,7 @@
 #include "textrenderer.h"
 #include "export_params.h"
 #include "playerwidget.h"
+#include "util.h"
 #include "cdg.h"
 
 
@@ -84,6 +85,7 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 
 		setWindowTitle( tr("Specify CDG parameters") );
 		lblOutput->setText( tr("Write CD+G data to file:") );
+		leOutputFile->setText( Util::removeFileExtention( m_project->musicFile() ) + "cdg" );
 
 		// resize as we hid the video part
 		resize( width(), 1 );

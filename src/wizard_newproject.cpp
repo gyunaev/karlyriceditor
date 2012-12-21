@@ -27,6 +27,7 @@
 #include "version.h"
 #include "wizard_newproject.h"
 #include "kfn_file_parser.h"
+#include "util.h"
 
 namespace WizardNewProject
 {
@@ -160,27 +161,47 @@ void PageMusicFile::browse()
 		filename = musicFileName;
 
 		// Lyrics
-		m_kfnLyrics = parser.lyricsAsLRC();
+		m_hasLrcLyrics = parser.lyricsAsLRC();
 
 		// Still fall through
-		if ( m_kfnLyrics.isEmpty() )
+		if ( m_hasLrcLyrics.isEmpty() )
 			QMessageBox::information( 0,
 							   tr("Cannot import lyrics"),
 							   tr("The file %1 cannot be imported: the lyrics cannot be parsed: %s") .arg( filename ) .arg( parser.errorMsg() ) );
 	}
 
-
 	// Try to open it
-	if ( pAudioPlayer->open( filename ) )
-	{
-		leSongFile->setText( filename );
-		pAudioPlayer->close();
-	}
-	else
+	if ( !pAudioPlayer->open( filename ) )
 	{
 		QMessageBox::critical( 0,
 							   tr("Cannot open the music file"),
 							   tr("Cannot open the music file.\n\n%1") .arg(pAudioPlayer->errorMsg()) );
+		return;
+	}
+
+	// Store the music file
+	leSongFile->setText( filename );
+	pAudioPlayer->close();
+
+	// If there's an LRC file nearby, ask whether the user wants to load it (and get the values from it)
+	if ( !m_hasLrcLyrics.isEmpty() )
+		return;
+
+	QString lrcfile = Util::removeFileExtention( filename ) + "lrc";
+	QFile file( lrcfile );
+
+	if ( file.open( QIODevice::ReadOnly ) )
+	{
+		if ( QMessageBox::question( 0,
+						   tr("Lyrics file found"),
+						   tr("It looks like there is a lyrics file %1 matching this music file.\n\n"
+							  "Do you want to import it as well?") .arg(lrcfile),
+								   QMessageBox::Yes | QMessageBox::No, QMessageBox::No )
+				== QMessageBox::Yes )
+		{
+			m_hasLrcLyrics = Util::convertWithUserEncoding( file.readAll() );
+
+		}
 	}
 }
 
@@ -220,8 +241,8 @@ bool PageMusicFile::validatePage()
 	if ( !leAlbum->text().isEmpty() )
 		m_project->setTag( Project::Tag_Album, leAlbum->text() );
 
-	if ( !m_kfnLyrics.isEmpty() )
-		m_project->convertLyrics( m_kfnLyrics );
+	if ( !m_hasLrcLyrics.isEmpty() )
+		m_project->convertLyrics( m_hasLrcLyrics );
 
 	return true;
 }

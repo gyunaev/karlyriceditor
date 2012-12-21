@@ -26,9 +26,9 @@
 #include "settings.h"
 #include "version.h"
 #include "lyrics.h"
-#include "dialog_selectencoding.h"
 #include "karaokelyricstextkar.h"
 #include "cdggenerator.h"
+#include "util.h"
 
 // Project data enum
 // Formats info:
@@ -787,24 +787,10 @@ bool Project::importLyrics( const QString& filename )
 
 	}
 
-	QString lyrictext (data);
+	QString lyrictext = Util::convertWithUserEncoding( data );
 
-	// Before we ask the user for the text encoding, run a loop - if all characters there are < 127, this is ASCII,
-	// and we do not need to ask.
-	for ( int i = 0; i < data.size(); i++ )
-	{
-		if ( data.at(i) < 0 )
-		{
-			// This is not ASCII. Ask the text encoding
-			DialogSelectEncoding dlg( data );
-
-			if ( dlg.exec() == QDialog::Rejected )
-				return false;
-
-			lyrictext = dlg.codec()->toUnicode( data );
-			break;
-		}
-	}
+	if ( lyrictext.isEmpty() )
+		return false;
 
 	// Prepend a fake LRC header for MIDI import
 	if ( filename.endsWith( "mid" ) || filename.endsWith( "midi" ) || filename.endsWith( "kar" ) )
