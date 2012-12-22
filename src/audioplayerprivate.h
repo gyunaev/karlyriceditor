@@ -77,6 +77,8 @@ class AudioPlayerPrivate
 		QByteArray		m_sample_buffer;
 		unsigned int	m_sample_buf_size;
 		unsigned int	m_sample_buf_idx;
+
+		AVFrame		*	m_frame;
 };
 
 #endif // AUDIOPLAYERPRIVATE_H

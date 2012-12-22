@@ -219,7 +219,7 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 	}
 
 	// open the codec
-	if ( ( err = avcodec_open( pVideoCodecCtx, pCodec )) < 0 )
+	if ( ( err = avcodec_open2( pVideoCodecCtx, pCodec, 0 )) < 0 )
 	{
 		m_errorMsg = QString("Could not open video codec: error %1") .arg( err );
 		goto cleanup;
@@ -269,7 +269,7 @@ cleanup:
 	if ( pOutputCtx )
 	{
 		// free the streams
-		for ( int i = 0; i < pOutputCtx->nb_streams; i++ )
+		for ( unsigned int i = 0; i < pOutputCtx->nb_streams; i++ )
 		{
 			av_freep(&pOutputCtx->streams[i]->codec);
 			av_freep(&pOutputCtx->streams[i]);
@@ -311,7 +311,7 @@ bool FFMpegVideoEncoderPriv::close()
 		avcodec_close( pVideoStream->codec );
 
 		// free the streams
-		for ( int i = 0; i < pOutputCtx->nb_streams; i++ )
+		for ( unsigned int i = 0; i < pOutputCtx->nb_streams; i++ )
 		{
 			av_freep(&pOutputCtx->streams[i]->codec);
 			av_freep(&pOutputCtx->streams[i]);
@@ -404,7 +404,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img )
 	{
 		av_init_packet(&pkt);
 
-		if ( pVideoCodecCtx->coded_frame->pts != (0x8000000000000000LL) )
+		if ( pVideoCodecCtx->coded_frame->pts != (int64_t) (0x8000000000000000LL) )
 			pkt.pts= av_rescale_q(pVideoCodecCtx->coded_frame->pts, pVideoCodecCtx->time_base, pVideoStream->time_base);
 
 		if ( pVideoCodecCtx->coded_frame->key_frame )
@@ -441,7 +441,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img )
 bool FFMpegVideoEncoderPriv::convertImage_sws(const QImage &img)
 {
 	// Check if the image matches the size
-	if ( img.width() != m_width || img.height() != m_height )
+	if ( img.width() != (int) m_width || img.height() != (int) m_height )
 	{
 		printf("Wrong image size!\n");
 		return false;

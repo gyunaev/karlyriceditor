@@ -183,7 +183,7 @@ void FFMpegVideoDecoder::close()
 
 	// Close the video file
 	if ( d->pFormatCtx )
-		av_close_input_file( d->pFormatCtx );
+		avformat_close_input( &d->pFormatCtx );
 
 	// Reset the pointers
 	d->init();

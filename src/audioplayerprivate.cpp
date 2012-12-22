@@ -49,6 +49,7 @@ AudioPlayerPrivate::AudioPlayerPrivate()
 	m_currentTime = 0;
 	m_totalTime = 0;
 
+	m_frame = 0;
 	m_sample_buf_size = 0;
 	m_sample_buf_idx = 0;
 }
@@ -105,7 +106,7 @@ void AudioPlayerPrivate::close()
 
 	// Close the video file
 	if ( pFormatCtx )
-		av_close_input_file( pFormatCtx );
+		avformat_close_input( &pFormatCtx );
 
 	if ( m_audioOpened )
 	{
@@ -113,6 +114,10 @@ void AudioPlayerPrivate::close()
 		m_audioOpened = false;
 	}
 
+	if ( m_frame )
+		av_free( m_frame );
+
+	m_frame = 0;
 	pFormatCtx = 0;
 	aCodecCtx = 0;
 	pCodec = 0;
@@ -133,7 +138,7 @@ bool AudioPlayerPrivate::open( const QString& filename )
 	}
 
 	// Retrieve stream information
-	if ( av_find_stream_info( pFormatCtx ) < 0 )
+	if ( avformat_find_stream_info( pFormatCtx, 0 ) < 0 )
 	{
 		m_errorMsg = "Could not find stream information in the audio file";
 		return false;
@@ -178,7 +183,7 @@ bool AudioPlayerPrivate::open( const QString& filename )
 		return false;
 	}
 
-	avcodec_open( aCodecCtx, aCodec );
+	avcodec_open2( aCodecCtx, aCodec, 0 );
 
 	// Now initialize the SDL audio device
 	SDL_AudioSpec wanted_spec, spec;
@@ -194,6 +199,15 @@ bool AudioPlayerPrivate::open( const QString& filename )
 	if ( SDL_OpenAudio( &wanted_spec, &spec ) < 0 )
 	{
 		m_errorMsg = QObject::tr("Cannot initialize audio device: %1") .arg( SDL_GetError() );
+		return false;
+	}
+
+	// Allocate the buffer
+	m_frame = avcodec_alloc_frame();
+
+	if ( !m_frame )
+	{
+		m_errorMsg = QObject::tr("Cannot allocate frame memory buffer");
 		return false;
 	}
 
@@ -303,10 +317,8 @@ bool AudioPlayerPrivate::MoreAudio()
 
 		while ( packet.size > 0 )
 		{
-			int data_size = AVCODEC_MAX_AUDIO_FRAME_SIZE * 2;
-			m_sample_buffer.resize( m_sample_buffer.size() + data_size );
-
-			int len = avcodec_decode_audio3( aCodecCtx, (int16_t *) (m_sample_buffer.data() + m_sample_buf_size), &data_size, &packet );
+			int got_frame_ptr;
+			int len = avcodec_decode_audio4( aCodecCtx, m_frame, &got_frame_ptr, &packet );
 
 			if ( len < 0 )
 			{
@@ -317,7 +329,19 @@ bool AudioPlayerPrivate::MoreAudio()
 			packet.data += len;
 			packet.size -= len;
 
-			m_sample_buf_size += data_size;
+			if ( !got_frame_ptr )
+				continue;
+
+			void * samples = m_frame->data[0];
+			int decoded_data_size = av_samples_get_buffer_size( NULL,
+																aCodecCtx->channels,
+																m_frame->nb_samples,
+																aCodecCtx->sample_fmt, 1 );
+
+			int cur = m_sample_buf_size;
+			m_sample_buf_size += decoded_data_size;
+			m_sample_buffer.resize( m_sample_buf_size );
+			memcpy( m_sample_buffer.data() + cur, samples, decoded_data_size );
 		}
 
 		packet.data = (uint8_t*) porigdata;
