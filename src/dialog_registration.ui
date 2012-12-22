@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>347</width>
-    <height>337</height>
+    <height>336</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,13 +23,10 @@
       <item>
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>The application is not registered.
-
-If you received the registration key from the author,
-please enter it here.</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The application is not registered. See the &lt;a href=&quot;http://www.ulduzsoft.com/linux/karaoke-lyrics-editor/kleregistration/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0057ae;&quot;&gt;web site&lt;/span&gt;&lt;/a&gt; for the registration information.&lt;/p&gt;&lt;p&gt;If you received the registration key, please enter it here:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="wordWrap">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
        </widget>
       </item>

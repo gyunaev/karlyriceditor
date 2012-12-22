@@ -24,6 +24,8 @@
 #include "textrenderer.h"
 #include "export_params.h"
 #include "playerwidget.h"
+#include "licensing.h"
+#include "version.h"
 #include "util.h"
 #include "cdg.h"
 
@@ -92,6 +94,20 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 	}
 
 	fontVideo->setFontFilters( QFontComboBox::ScalableFonts | QFontComboBox::MonospacedFonts | QFontComboBox::ProportionalFonts );
+
+	// Title window
+	leTitleName->setText( m_project->tag( Project::Tag_Title, "") );
+	leTitleArtist->setText( m_project->tag( Project::Tag_Artist, "") );
+
+	if ( pLicensing->isValid() )
+	{
+		leTitleCreatedBy->setText( QString("Created by %1<br>http://www.ulduzsoft.com") .arg(APP_NAME) );
+	}
+	else
+	{
+		leTitleCreatedBy->setEnabled( false );
+		leTitleCreatedBy->setText( "Application not registered, this field cannot be modified" );
+	}
 }
 
 DialogExportOptions::~DialogExportOptions()
@@ -196,6 +212,11 @@ void DialogExportOptions::accept()
 
 	if ( !testFontSize() )
 		return;
+
+	// Store title params
+	m_artist = leTitleArtist->text();
+	m_title = leTitleName->text();
+	m_createdBy = leTitleCreatedBy->text();
 
 	// Store encoding params
 	if ( m_videomode )
@@ -316,8 +337,9 @@ void DialogExportOptions::activateTab( int index )
 		m_renderer.forceCDGmode();
 
 	// Title
-	m_renderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
-								 m_project->tag( Project::Tag_Title ),
+	m_renderer.setTitlePageData( leTitleArtist->text(),
+								 leTitleName->text(),
+								 pLicensing->isValid() ? leTitleCreatedBy->text() : "",
 								 titleVideoMin->value() * 1000 );
 
 	// Preamble

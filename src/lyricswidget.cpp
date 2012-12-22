@@ -77,7 +77,7 @@ void LyricsWidget::setLyrics( const Lyrics& lyrics, const QString& artist, const
 	//re->setColorAlpha( 128 );
 
 	if ( !artist.isEmpty() && !title.isEmpty() )
-		re->setTitlePageData( artist, title, 5000 );
+		re->setTitlePageData( artist, title, "", 5000 );
 
 	m_renderer = re;
 

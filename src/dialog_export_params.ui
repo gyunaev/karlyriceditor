@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>642</width>
-    <height>521</height>
+    <width>725</width>
+    <height>601</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Specify video parameters</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_4">
+  <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
@@ -23,13 +23,13 @@
       <attribute name="title">
        <string>Options</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
+      <layout class="QVBoxLayout" name="verticalLayout">
        <item>
         <widget class="QGroupBox" name="groupVideo">
          <property name="title">
           <string>Video encoding parameters</string>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout">
+         <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
            <layout class="QGridLayout" name="gridLayout">
             <item row="0" column="0">
@@ -294,30 +294,10 @@
              <string>Colors</string>
             </property>
             <layout class="QGridLayout" name="gridLayout_5">
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_28">
+             <item row="1" column="2">
+              <widget class="QLabel" name="label_31">
                <property name="text">
-                <string>Backround</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="ColorButton" name="btnVideoColorBg">
-               <property name="whatsThis">
-                <string>Preview window background color.</string>
-               </property>
-               <property name="text">
-                <string>PushButton</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="2">
-              <widget class="QLabel" name="label_29">
-               <property name="text">
-                <string>Information</string>
+                <string>Not sung yet</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -326,6 +306,16 @@
              </item>
              <item row="0" column="3">
               <widget class="ColorButton" name="btnVideoColorInfo">
+               <property name="whatsThis">
+                <string>Preview window text color for the text which has been sung.</string>
+               </property>
+               <property name="text">
+                <string>PushButton</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="3">
+              <widget class="ColorButton" name="btnVideoColorActive">
                <property name="whatsThis">
                 <string>Preview window text color for the text which has been sung.</string>
                </property>
@@ -354,23 +344,33 @@
                </property>
               </widget>
              </item>
-             <item row="1" column="2">
-              <widget class="QLabel" name="label_31">
+             <item row="0" column="2">
+              <widget class="QLabel" name="label_29">
                <property name="text">
-                <string>Not sung yet</string>
+                <string>Information</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                </property>
               </widget>
              </item>
-             <item row="1" column="3">
-              <widget class="ColorButton" name="btnVideoColorActive">
+             <item row="0" column="1">
+              <widget class="ColorButton" name="btnVideoColorBg">
                <property name="whatsThis">
-                <string>Preview window text color for the text which has been sung.</string>
+                <string>Preview window background color.</string>
                </property>
                <property name="text">
                 <string>PushButton</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_28">
+               <property name="text">
+                <string>Backround</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                </property>
               </widget>
              </item>
@@ -383,6 +383,48 @@
              <string>Draw squares showing where singing starts</string>
             </property>
            </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox">
+         <property name="title">
+          <string>Title window parameters</string>
+         </property>
+         <layout class="QFormLayout" name="formLayout">
+          <property name="fieldGrowthPolicy">
+           <enum>QFormLayout::ExpandingFieldsGrow</enum>
+          </property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Artist</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="leTitleName"/>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Title</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="leTitleArtist"/>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>Created by:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="leTitleCreatedBy"/>
           </item>
          </layout>
         </widget>

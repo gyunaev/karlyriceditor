@@ -256,24 +256,25 @@ void TextRenderer::setColorAlpha( int alpha )
 	m_colorSang.setAlpha( alpha );
 }
 
-void TextRenderer::setTitlePageData( const QString& artist, const QString& title, unsigned int msec )
+void TextRenderer::setTitlePageData( const QString& artist, const QString& title, const QString& userCreatedBy, unsigned int msec )
 {
 	// setLyrics should be called before setTitlePageData
 	if ( m_lyricBlocks.size() < 2 )
 		abort();
 
-	QString createdBy = APP_NAME;
+	QString createdBy = QString("@<@%1Created by %2\nhttp://www.ulduzsoft.com/\n") .arg( m_colorToSing.name()) .arg( APP_NAME);
 
-	if ( pLicensing->isEnabled() && pLicensing->isValid() )
-		createdBy = pLicensing->subject();
+	if ( pLicensing->isEnabled() && pLicensing->isValid() && !userCreatedBy.isEmpty() )
+		createdBy = userCreatedBy;
+
+	createdBy = createdBy.replace( "<br>", "\n" );
 
 	// Block 0 is reserved for us; fill it up
-	QString titletext = QString("@%1%2\n\n%3\n\n@<Created by %4\n@%5http://www.karlyriceditor.com/\n")
+	QString titletext = QString("@%1%2\n\n%3\n\n%4")
 							.arg( m_colorTitle.name() )
 							.arg( artist )
 							.arg( title )
-							.arg( createdBy )
-							.arg( m_colorToSing.name() );
+							.arg( createdBy );
 
 	// Do we have at least 500ms to show the title?
 	if ( m_lyricBlocks[1].timestart < 500 && !m_lyricBlocks[1].offsets.isEmpty() )

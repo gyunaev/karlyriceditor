@@ -55,6 +55,9 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 
 	public:
 		QString	m_outputVideo;
+		QString	m_artist;
+		QString	m_title;
+		QString	m_createdBy;
 
 	private:
 		void	setBoxIndex( Project::Tag tag, QComboBox * box );

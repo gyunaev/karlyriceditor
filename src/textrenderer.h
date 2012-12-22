@@ -44,7 +44,7 @@ class TextRenderer : public LyricsRenderer
 		void	setColorToSing( const QColor& color );
 		void	setColorSang( const QColor& color );
 		void	setPreambleData( unsigned int height, unsigned int timems, unsigned int count );
-		void	setTitlePageData( const QString& artist, const QString& title, unsigned int msec ); // duration = 0 - no title, default
+		void	setTitlePageData( const QString& artist, const QString& title, const QString& userCreatedBy, unsigned int msec ); // duration = 0 - no title, default
 		void	setColorAlpha( int alpha ); // 0 - 255
 
 		// Force CD+G rendering mode (no anti-aliasing)

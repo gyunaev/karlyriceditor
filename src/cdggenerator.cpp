@@ -291,9 +291,10 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	lyricrenderer.setColorToSing( m_project->tag( Project::Tag_CDG_activecolor, "green" ) );
 
 	// Title
-	lyricrenderer.setTitlePageData( m_project->tag( Project::Tag_Artist ),
-								 m_project->tag( Project::Tag_Title ),
-								 m_project->tag( Project::Tag_CDG_titletime, "5" ).toInt() * 1000 );
+	lyricrenderer.setTitlePageData( dlg.m_artist,
+									dlg.m_title,
+									dlg.m_createdBy,
+									m_project->tag( Project::Tag_CDG_titletime, "5" ).toInt() * 1000 );
 
 	// Preamble
 	lyricrenderer.setPreambleData( 4, 5000, 8 );
