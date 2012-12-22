@@ -122,7 +122,18 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 		frames++;
 		lyricrenderer.update( time );
 		QImage image = lyricrenderer.image();
-		size += encoder.encodeImage( image );
+		int ret = encoder.encodeImage( image );
+
+		if ( ret < 0 )
+		{
+			QMessageBox::critical( 0,
+								  "Cannot write video",
+								  QString("Encoding error while creating the video file: %1") .arg(errmsg) );
+			encoder.close();
+			return;
+		}
+
+		size += ret;
 
 		// Should we update the progress dialog?
 		if ( time / dialog_step > ui.progressBar->value() )

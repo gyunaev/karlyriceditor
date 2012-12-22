@@ -398,12 +398,17 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img )
 	// SWS conversion
 	convertImage_sws(img);
 
-	int out_size = avcodec_encode_video(pVideoCodecCtx,outbuf,outbuf_size,ppicture);
+	av_init_packet( &pkt );
+	pkt.data = NULL;
+	pkt.size = 0;
+	int got_packet;
+	int ret = avcodec_encode_video2( pVideoCodecCtx, &pkt, ppicture, &got_packet );
 
-	if (out_size > 0)
+	if ( ret < 0 )
+		return -1;
+
+	if ( got_packet )
 	{
-		av_init_packet(&pkt);
-
 		if ( pVideoCodecCtx->coded_frame->pts != (int64_t) (0x8000000000000000LL) )
 			pkt.pts= av_rescale_q(pVideoCodecCtx->coded_frame->pts, pVideoCodecCtx->time_base, pVideoStream->time_base);
 
@@ -411,8 +416,6 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img )
 			pkt.flags |= AV_PKT_FLAG_KEY;
 
 		pkt.stream_index = pVideoStream->index;
-		pkt.data = outbuf;
-		pkt.size = out_size;
 
 		int ret = av_interleaved_write_frame(pOutputCtx, &pkt);
 
