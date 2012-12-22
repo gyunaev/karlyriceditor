@@ -134,7 +134,7 @@ void MainWindow::checkNewVersionAvailable()
 	connect( pNewVer, SIGNAL(error(int)), this, SLOT(newVerAvailError(int)) );
 	connect( pNewVer, SIGNAL(newVersionAvailable( NewVersionMetaMap )), this, SLOT(newVerAvailable(NewVersionMetaMap)) );
 
-	pNewVer->setUrl( "http://www.karlyriceditor.com/latestversion.txt" );
+	pNewVer->setUrl( "http://www.ulduzsoft.com.com/karlyriceditor_latestversion.txt" );
 	pNewVer->setCurrentVersion( QString("%1.%2").arg( APP_VERSION_MAJOR ) . arg( APP_VERSION_MINOR ) );
 	pNewVer->start();
 }

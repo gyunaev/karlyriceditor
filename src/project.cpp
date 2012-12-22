@@ -28,6 +28,7 @@
 #include "lyrics.h"
 #include "karaokelyricstextkar.h"
 #include "cdggenerator.h"
+#include "kfn_file_parser.h"
 #include "util.h"
 
 // Project data enum
@@ -756,38 +757,59 @@ QByteArray Project::exportLyricsAsUStar()
 
 bool Project::importLyrics( const QString& filename )
 {
-	QFile file( filename );
+	QString lyrictext;
 
-	// Open the file and read its content
-	if ( !file.open( QIODevice::ReadOnly ) )
+	// If this is KaraFun file, parse it
+	if ( filename.endsWith( "kfn", Qt::CaseInsensitive ) )
 	{
-		QMessageBox::critical( 0,
-							   QObject::tr( "Cannot open file" ),
-							   QObject::tr( "Cannot open file %1: %2" ) .arg( filename ) .arg( file.errorString() ) );
-		return false;
-	}
+		KFNFileParser parser;
 
-	QByteArray data = file.readAll();
-
-	// Close the file - the user might want to edit it now when we ask for encoding
-	file.close();
-
-	// If this is the MIDI file, parse it first
-	if ( filename.endsWith( "mid" ) || filename.endsWith( "midi" ) || filename.endsWith( "kar" ) )
-	{
-		data = CKaraokeLyricsTextKAR::getLyrics( data );
-
-		if ( data.isEmpty() )
+		if ( !parser.open( filename ) )
 		{
-			QMessageBox::critical( 0,
-								   QObject::tr( "Cannot read MIDI " ),
-								   QObject::tr( "Cannot read lyrics from MIDI file %1" ) .arg( filename ) );
+			QMessageBox::information( 0,
+							   QObject::tr("Invalid KFN file"),
+							   QObject::tr("The file %1 cannot be opened: %2") .arg( filename ) .arg( parser.errorMsg() ) );
+
 			return false;
 		}
 
+		lyrictext = parser.lyricsAsLRC();
 	}
+	else
+	{
+		QFile file( filename );
 
-	QString lyrictext = Util::convertWithUserEncoding( data );
+		// Open the file and read its content
+		if ( !file.open( QIODevice::ReadOnly ) )
+		{
+			QMessageBox::critical( 0,
+								   QObject::tr( "Cannot open file" ),
+								   QObject::tr( "Cannot open file %1: %2" ) .arg( filename ) .arg( file.errorString() ) );
+			return false;
+		}
+
+		QByteArray data = file.readAll();
+
+		// Close the file - the user might want to edit it now when we ask for encoding
+		file.close();
+
+		// If this is the MIDI file, parse it first
+		if ( filename.endsWith( "mid", Qt::CaseInsensitive ) || filename.endsWith( "midi", Qt::CaseInsensitive ) || filename.endsWith( "kar", Qt::CaseInsensitive ) )
+		{
+			data = CKaraokeLyricsTextKAR::getLyrics( data );
+
+			if ( data.isEmpty() )
+			{
+				QMessageBox::critical( 0,
+									   QObject::tr( "Cannot read MIDI " ),
+									   QObject::tr( "Cannot read lyrics from MIDI file %1" ) .arg( filename ) );
+				return false;
+			}
+
+		}
+
+		lyrictext = Util::convertWithUserEncoding( data );
+	}
 
 	if ( lyrictext.isEmpty() )
 		return false;

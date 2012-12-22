@@ -1,5 +1,46 @@
+2012-12-22 gyunaev <gyunaev@ulduzsoft.com>
+  - Released version 1.4
+  - Added partial KaraFun (KFN) format support. The KaraFun files could be imported during the project creation (only music and lyrics). Also the lyrics could be imported via Project -> Import lyrics.
+  - Added the time adjustment dialog which allows modifying all the timestamps in the file simultaneously.
+  - Added the option to automatically create end-of-line timing marks (useful with import of LRCv2)
+  - Exceeding the 16 colors during CD+G output does not result in crash anymore.
+  - The code does not use deprecated FFMpeg functions anymore, should fix builds on some new distributions.
+  - Various video and CD+G output fixes.
+
+
+2012-02-01 gyunaev <gyunaev@ulduzsoft.com>
+  - Released versio 1.3
+  - Audio player switched to FFMpeg/SDL instead of incredibly buggy and unreliable Phonon. No more “cannot play this file” error on Win32.
+  - Added improved export in CD+G format with a preview dialog and easily configurable options.
+  - Improved the CD+G tester which allows playing any CD+G file, not only the one generated internally. Therefore it is now possible to do several exports, test them all and see which one would suit you the best.
+  - Added support for the video and image backgrounds (Edit/Insert picture and Edit/Insert video). Any lyrics can use multiple backgrounds, which will be switched at specified times. Note that all existing lyrics formats are based on text and do not support backgrounds (it will be ignored when exporting to, for example, LRC format). Therefore it is only relevant for CD+G and video export.
+  - Added support for video export. You can now export your Karaoke song together with music, lyrics and the background into a video file!
+  - Numerous improvements and bugfixes.
+
+
+2011-01-13 gyunaev <gyunaev@ulduzsoft.com>
+  - Released version 1.1
+  - Fixed several major bugs, including CD+G rendering;
+  - Removed UltraStar pitch editor as it seems like nobody was using it;
+  - Switched the editor to use regular text instead of annoying drawn timing marks.
+  - Text editor is now not locked if the music file is not loaded.
+
+
+2010-07-14 gyunaev <gyunaev@ulduzsoft.com>
+  - Released version 1.0
+  - Added support for CD+G format;
+  - Fixed several minor bugs;
+
+
 2009-12-13 gyunaev <gyunaev@ulduzsoft.com>
-  - Released version 0.7 (rev. 67)
+  - Released version 0.7
+  - Added piano roll for choosing pitch for UltraStar format lyrics;
+  - Added feature to check whether a new version is available;
+  - Fixed a lot of UltraStar export issues;
+  - Fixed issue when project loaded with an empty editor window;
+  - If lyrics type changed, project settings now change accordingly.
+  - Multiple UI changes.
+
 
 2009-12-13 gyunaev <gyunaev@ulduzsoft.com>
   - Added "Show player" and "Show piano roll" actions to Settings menu.
@@ -9,10 +50,12 @@
   - CheckNewVersion now uses special type;
   - Fixed pitch applicator for editor;
 
+
 2009-12-12 gyunaev <gyunaev@ulduzsoft.com>
   - Fixed import into disabled editor window.
   - Added "check for new version" feature.
   - If lyrics type changed, project settings change accordingly.
+
 
 2009-12-07 gyunaev <gyunaev@ulduzsoft.com>
   - Fixed UltraStar export, import and other specific stuff.
@@ -21,6 +64,6 @@
   - Timing mark editor dialog redesigned.
   - "Save project" button is disabled unless changes are made to the project.
 
+
 2009-12-06 gyunaev <gyunaev@ulduzsoft.com>
-  - Initial release, version 0.6.
-  
+  - Initial release, version 0.6.  
