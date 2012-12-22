@@ -1,7 +1,7 @@
 /**************************************************************************
  *  Karlyriceditor - a lyrics editor and CD+G / video export for Karaoke  *
  *  songs.                                                                *
- *  Copyright (C) 2009-2011 George Yunaev, support@karlyriceditor.com     *
+ *  Copyright (C) 2009-2013 George Yunaev, support@ulduzsoft.com          *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
  *  it under the terms of the GNU General Public License as published by  *
@@ -65,8 +65,6 @@ void LyricsWidget::paintEvent( QPaintEvent * )
 	int x = (width() - m_lastImage.width()) / 2;
 	int y = (height() - m_lastImage.height() ) / 2;
 	p.drawImage( x, y, m_lastImage );
-
-//	p.drawImage( 0, 0, m_lastImage.scaled( QSize(width() - 1, height() - 1), Qt::IgnoreAspectRatio, Qt::FastTransformation ) );
 }
 
 void LyricsWidget::setLyrics( const Lyrics& lyrics, const QString& artist, const QString& title )
@@ -74,7 +72,6 @@ void LyricsWidget::setLyrics( const Lyrics& lyrics, const QString& artist, const
 	TextRenderer * re = new TextRenderer( 720, 480 );
 	re->setLyrics( lyrics );
 	re->setPreambleData( 5, 5000, 10 );
-	//re->setColorAlpha( 128 );
 
 	if ( !artist.isEmpty() && !title.isEmpty() )
 		re->setTitlePageData( artist, title, "", 5000 );

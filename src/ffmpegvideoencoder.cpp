@@ -1,7 +1,7 @@
 /**************************************************************************
  *  Karlyriceditor - a lyrics editor and CD+G / video export for Karaoke  *
  *  songs.                                                                *
- *  Copyright (C) 2009-2011 George Yunaev, support@karlyriceditor.com     *
+ *  Copyright (C) 2009-2013 George Yunaev, support@ulduzsoft.com          *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
  *  it under the terms of the GNU General Public License as published by  *
@@ -15,7 +15,9 @@
  *                                                                        *
  *  You should have received a copy of the GNU General Public License     *
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
- **************************************************************************
+ **************************************************************************/
+
+/**************************************************************************
  * This class uses ideas from QTFFmpegWrapper - QT FFmpeg Wrapper Class   *
  * Copyright (C) 2009,2010: Daniel Roggen, droggen@gmail.com              *
  * All rights reserved.                                                   *
@@ -112,7 +114,6 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 		return false;
 
 	// Allocate output format
-	//pOutputFormat = av_guess_format( FFMPEG_FILENAME( outformat ), FFMPEG_FILENAME( fileName ), 0 );
 	pOutputFormat = av_guess_format( 0, FFMPEG_FILENAME( fileName ), 0 );
 
 	if ( !pOutputFormat )
@@ -152,8 +153,6 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName, const QString&
 	pVideoCodecCtx->time_base.den = m_time_base_den;
 	pVideoCodecCtx->gop_size = m_videogop;
 	pVideoCodecCtx->pix_fmt = PIX_FMT_YUV420P;
-
-	//pVideoCodecCtx->bit_rate_tolerance = pVideoCodecCtx->bit_rate * av_q2d(pVideoCodecCtx->time_base);
 
 	// Do we also have audio stream?
 	if ( m_aplayer )

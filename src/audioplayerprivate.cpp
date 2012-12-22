@@ -1,7 +1,7 @@
 /**************************************************************************
  *  Karlyriceditor - a lyrics editor and CD+G / video export for Karaoke  *
  *  songs.                                                                *
- *  Copyright (C) 2009-2011 George Yunaev, support@karlyriceditor.com     *
+ *  Copyright (C) 2009-2013 George Yunaev, support@ulduzsoft.com          *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
  *  it under the terms of the GNU General Public License as published by  *
@@ -162,7 +162,7 @@ bool AudioPlayerPrivate::open( const QString& filename )
 		return false;
 	}
 
-	if ( pFormatCtx->streams[audioStream]->duration == AV_NOPTS_VALUE )
+	if ( pFormatCtx->streams[audioStream]->duration == (int64_t) AV_NOPTS_VALUE )
 	{
 		m_errorMsg = "Cannot determine the total audio length";
 		return false;

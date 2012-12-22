@@ -1,8 +1,7 @@
 /**************************************************************************
- *  Karaoke disk unpacker - an application which allows you to extract    *
- *  the content of some disks used by hardware Karaoke players.           *
- *                                                                        *
- *  Copyright (C) 2008-2012 George Yunaev, gyunaev@ulduzsoft.com          *
+ *  Karlyriceditor - a lyrics editor and CD+G / video export for Karaoke  *
+ *  songs.                                                                *
+ *  Copyright (C) 2009-2013 George Yunaev, support@ulduzsoft.com          *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
  *  it under the terms of the GNU General Public License as published by  *
