@@ -452,7 +452,6 @@ QString	Project::generateUStarheader()
 	appendIfPresent( PD_TAG_ARTIST, "ARTIST", hdr, LyricType_UStar );
 	appendIfPresent( PD_TAG_LANGUAGE, "LANGUAGE", hdr, LyricType_UStar );
 	appendIfPresent( PD_TAG_GENRE, "GENRE", hdr, LyricType_UStar );
-	appendIfPresent( PD_TAG_MP3FILE, "MP3FILE", hdr, LyricType_UStar );
 	appendIfPresent( PD_TAG_COVER, "COVER", hdr, LyricType_UStar );
 	appendIfPresent( PD_TAG_BACKGROUND, "BACKGROUND", hdr, LyricType_UStar );
 	appendIfPresent( PD_TAG_VIDEO, "VIDEO", hdr, LyricType_UStar );
@@ -678,8 +677,9 @@ QByteArray Project::exportLyricsAsUStar()
 	int gap = lyrics.block(0).front().front().timing;
 
 	QString	lyricstext = generateUStarheader();
-	lyricstext += QString("#BPM: %1\n") .arg(bpm);
-	lyricstext += QString("#GAP: %1\n") .arg(gap);
+	lyricstext += QString("#MP3:%1\n") .arg( musicFile() );
+	lyricstext += QString("#BPM:%1\n") .arg(bpm);
+	lyricstext += QString("#GAP:%1\n") .arg(gap);
 
 	for ( int i = 0; i < lyrics.totalBlocks(); i++ )
 	{

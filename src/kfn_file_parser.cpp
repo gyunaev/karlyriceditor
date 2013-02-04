@@ -18,6 +18,8 @@
  **************************************************************************/
 
 #include "kfn_file_parser.h"
+
+#include <QMap>
 #include <QRegExp>
 #include <QStringList>
 
@@ -80,7 +82,7 @@ bool KFNFileParser::open( const QString& filename )
 			quint8 type = readByte();
 			quint32 len_or_value = readDword();
 
-			// Type 2 is
+			// Type 2 is variable data length
 			if ( type == 2 )
 			{
 				QByteArray data = readBytes( len_or_value );
@@ -239,25 +241,32 @@ QString	KFNFileParser::lyricsAsLRC()
 		}
 	}
 
-	QString lrcoutput = "";
 	int curr_sync = 0;
 	bool has_linefeed = false;
 	int lines_no_block = 0;
+	int lastsync = -1;
+
+	// The original timing marks are not necessarily sorted, so we add them into a map
+	// and then output them from that map
+	QMap< int, QString > sortedLyrics;
 
 	for ( int i = 0; i < texts.size(); i++ )
 	{
 		if ( texts[i] == "\n" )
 		{
+			if ( lastsync == -1 )
+				continue;
+
 			if ( has_linefeed )
 				lines_no_block = 0;
 			else if ( ++lines_no_block > 6 )
 			{
 				lines_no_block = 0;
-				lrcoutput += "\n";
+				sortedLyrics[ lastsync ] += "\n";
 			}
 
 			has_linefeed = true;
-			lrcoutput += "\n";
+			sortedLyrics[ lastsync ] += "\n";
 			continue;
 		}
 		else
@@ -267,14 +276,21 @@ QString	KFNFileParser::lyricsAsLRC()
 		if ( curr_sync >= syncs.size() )
 			continue;
 
-		int syncval = syncs[ curr_sync++ ];
+		lastsync = syncs[ curr_sync++ ];
+		sortedLyrics.insert( lastsync, texts[i] );
+	}
+
+	QString lrcoutput = "";
+	for ( QMap< int, QString >::const_iterator it = sortedLyrics.begin(); it != sortedLyrics.end(); ++it )
+	{
+		int syncval = it.key();
 		int min = syncval / 6000;
 		int sec = (syncval - (min * 6000)) / 100;
 		int msec = syncval - (min * 6000 + sec * 100);
 		char timebuf[256];
 		sprintf( timebuf, "[%d:%02d.%02d]", min, sec, msec );
 
-		lrcoutput += timebuf + texts[i];
+		lrcoutput += timebuf + it.value();
 	}
 
 	return lrcoutput.trimmed();
