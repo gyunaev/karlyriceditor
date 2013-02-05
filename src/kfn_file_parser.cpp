@@ -327,7 +327,7 @@ QByteArray KFNFileParser::extract( const Entry& entry )
 
 	while ( total_in < entry.length_in )
 	{
-		int toRead = qMin( sizeof(buffer), (unsigned int) entry.length_in - total_in );
+		int toRead = qMin( (unsigned int)  sizeof(buffer), (unsigned int) entry.length_in - total_in );
 		int bytesRead = m_file.read( buffer, toRead );
 
 		// We might need to write less than we read since the file is rounded to 16 bytes
