@@ -649,11 +649,14 @@ int CDGRenderer::update( qint64 songTime )
 		m_image = QImage( 2 * CDG_FULL_WIDTH, 2 * CDG_FULL_HEIGHT, QImage::Format_ARGB32 );
 		status = UPDATE_RESIZED;
 	}
+	else
+	{
+		// Time to update?
+		unsigned int packets_due = songTime * 300 / 1000;
+		status = UpdateBuffer( packets_due );
+	}
 
-	// Time to update?
-	unsigned int packets_due = songTime * 300 / 1000;
-
-	if ( status == UPDATE_RESIZED || (status = UpdateBuffer( packets_due )) != UPDATE_NOCHANGE )
+	if ( status != UPDATE_NOCHANGE )
 	{
 		QImage img( QSize( CDG_FULL_WIDTH, CDG_FULL_HEIGHT ), QImage::Format_ARGB32 );
 
