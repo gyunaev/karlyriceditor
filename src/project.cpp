@@ -832,7 +832,13 @@ bool Project::importLyrics( const QString& filename )
 	{
 		// LyricType_UStar:
 		lyr.beginLyrics();
-		success = importLyricsUStar( linedtext, lyr );
+		success = importLyricsTxt( linedtext, lyr );
+		lyr.endLyrics();
+	}
+	else if ( filename.endsWith( "kok" ) )
+	{
+		lyr.beginLyrics();
+		success = importLyricsKOK( linedtext, lyr );
 		lyr.endLyrics();
 	}
 	else
@@ -990,6 +996,125 @@ bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics, b
 	return true;
 }
 
+bool Project::importLyricsTxt( const QStringList & readlyrics, Lyrics& lyrics )
+{
+	lyrics.clear();
+
+	if ( readlyrics.isEmpty() )
+		return false;
+
+	// TXT could be UltraStar or PowerKaraoke
+	if ( readlyrics.first().indexOf( QRegExp( "^#[a-zA-Z]+:\\s*.*\\s*$" ) ) != -1 )
+		return importLyricsUStar( readlyrics, lyrics );
+	else if ( readlyrics.first().indexOf( QRegExp( "^([0-9.]+) ([0-9.]+) (.+)" ) ) != -1 )
+		return importLyricsPowerKaraoke( readlyrics, lyrics );
+
+	QMessageBox::critical( 0,
+						   QObject::tr("Invalid text file"),
+						   QObject::tr("This file is not a valid UltraStar nor PowerKaraoke lyric file") );
+	return false;
+}
+
+static int powerKaraokeTime( QString time )
+{
+	int timing = 0;
+
+	if ( time.contains(":") )
+	{
+		QStringList parts = time.split( ":" );
+		timing = parts[0].toInt() * 600;
+		time = parts[1];
+	}
+
+	timing += (int) (time.toFloat() * 10 );
+	return timing;
+}
+
+
+bool Project::importLyricsKOK( const QStringList & readlyrics, Lyrics& lyrics )
+{
+	// J'ai ;7,9050634;tra;8,0651993;vail;8,2144914;lé;8,3789922;
+	foreach ( QString line, readlyrics )
+	{
+		if ( line.isEmpty() )
+			continue;
+
+		QStringList entries = line.split( ";" );
+
+		// Must be even
+		if ( (entries.size() % 2) != 0 )
+			return false;
+
+		for ( int i = 0; i < entries.size() / 2; i++ )
+		{
+			QString text = entries[2 * i];
+			QString timing = entries[2 * i + 1].replace( ",", "." );
+			int timevalue = (int) ( timing.toFloat() * 10 );
+
+			lyrics.curLyricSetTime( timevalue );
+			lyrics.curLyricAppendText( text );
+
+			if ( i == entries.size() / 2 - 1 )
+				lyrics.curLyricAddEndOfLine();
+			else
+				lyrics.curLyricAdd();
+		}
+	}
+
+	return true;
+}
+
+bool Project::importLyricsPowerKaraoke( const QStringList & readlyrics, Lyrics& lyrics )
+{
+	// For the PowerKaraoke format there is no header, just times.
+	QRegExp regex("^([0-9.:]+) ([0-9.:]+) (.*)");
+
+	// Analyze each line
+	for ( int i = 0; i < readlyrics.size(); i++ )
+	{
+		QString line = readlyrics[i];
+
+		if ( line.isEmpty() )
+			continue;
+
+		// Try to match the sync first
+		if ( line.indexOf( regex ) == -1 )
+		{
+			QMessageBox::critical( 0,
+								   QObject::tr("Invalid PowerKaraoke file"),
+								   QObject::tr("This file is not a valid PowerKaraoke lyric file, error at line %1") .arg( i + 1 ) );
+			return false;
+		}
+
+		int start = powerKaraokeTime( regex.cap( 1 ) );
+		//int end = powerKaraokeTime( regex.cap( 2 ) );
+		QString text = regex.cap( 3 ).trimmed();
+
+		lyrics.curLyricSetTime( start );
+
+		if ( text.endsWith( "\\n" ) )
+		{
+			text.chop( 2 );
+			lyrics.curLyricAppendText( text );
+			lyrics.curLyricAddEndOfLine();
+		}
+		else if ( !text.endsWith( "-" ) )
+		{
+			text += " ";
+			lyrics.curLyricAppendText( text );
+			lyrics.curLyricAdd();
+		}
+		else
+		{
+			text.chop( 1 );
+			lyrics.curLyricAppendText( text );
+			lyrics.curLyricAdd();
+		}
+	}
+
+	return true;
+}
+
 bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics )
 {
 	bool header = true;
@@ -999,8 +1124,6 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 	int last_time_ms = 0;
 	int next_time_ms = 0;
 	int last_pitch = 0;
-
-	lyrics.clear();
 
 	for ( int i = 0; i < readlyrics.size(); i++ )
 	{
@@ -1143,30 +1266,3 @@ qint64 Project::getSongLength() const
 {
 	return m_totalSongLength;
 }
-
-/*
-QByteArray Project::exportLyricsAsCDG()
-{
-	// We cheat to force the editor to test CD+G piece too
-	LyricType t = type();
-	setType( LyricType_CDG );
-
-	bool valid = m_editor->validate();
-	setType( t );
-
-	if ( !valid )
-		return QByteArray();
-
-	Lyrics lyrics;
-
-	if ( !m_editor->exportLyrics( &lyrics ) )
-		return QByteArray();
-
-	CDGGenerator cdggen( this );
-
-	cdggen.init();
-	cdggen.generate( lyrics, m_totalSongLength );
-
-	return cdggen.stream();
-}
-*/

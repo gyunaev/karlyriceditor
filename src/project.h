@@ -126,6 +126,9 @@ class Project
 	private:
 		bool	importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics, bool relaxed = false );
 		bool	importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics );
+		bool	importLyricsTxt( const QStringList & readlyrics, Lyrics& lyrics );
+		bool	importLyricsPowerKaraoke( const QStringList & readlyrics, Lyrics& lyrics );
+		bool	importLyricsKOK( const QStringList & readlyrics, Lyrics& lyrics );
 
 		void	appendIfPresent( int id, const QString& prefix, QString& src, LyricType type );
 		QString	generateLRCheader();
