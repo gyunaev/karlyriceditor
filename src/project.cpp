@@ -1022,11 +1022,11 @@ static int powerKaraokeTime( QString time )
 	if ( time.contains(":") )
 	{
 		QStringList parts = time.split( ":" );
-		timing = parts[0].toInt() * 600;
+		timing = parts[0].toInt() * 60000;
 		time = parts[1];
 	}
 
-	timing += (int) (time.toFloat() * 10 );
+	timing += (int) (time.toFloat() * 1000 );
 	return timing;
 }
 
@@ -1049,7 +1049,7 @@ bool Project::importLyricsKOK( const QStringList & readlyrics, Lyrics& lyrics )
 		{
 			QString text = entries[2 * i];
 			QString timing = entries[2 * i + 1].replace( ",", "." );
-			int timevalue = (int) ( timing.toFloat() * 10 );
+			int timevalue = (int) ( timing.toFloat() * 1000 );
 
 			lyrics.curLyricSetTime( timevalue );
 			lyrics.curLyricAppendText( text );
