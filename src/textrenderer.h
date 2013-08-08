@@ -124,7 +124,6 @@ class TextRenderer : public LyricsRenderer
 		QColor					m_colorToSing;
 		QColor					m_colorSang;
 		QFont					m_renderFont;
-		bool					m_noAntiAliasing;
 		unsigned int			m_preambleHeight;	// how tall the preamble square should be; 0 - no preamble
 		unsigned int			m_preambleLengthMs;	// maximum time the preamble is shown
 		unsigned int			m_preambleCount;	// how many preamble squares to draw for m_preambleLengthMs

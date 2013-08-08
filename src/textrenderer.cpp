@@ -298,7 +298,6 @@ void TextRenderer::init()
 	m_colorTitle = QColor( Qt::white );
 	m_colorToSing = pSettings->m_previewTextActive;
 	m_colorSang = pSettings->m_previewTextInactive;
-	m_noAntiAliasing = false;
 	setRenderFont( QFont( pSettings->m_previewFontFamily, pSettings->m_previewFontSize ) );
 
 	m_preambleHeight = 0;
@@ -330,9 +329,6 @@ void TextRenderer::setPreambleData( unsigned int height, unsigned int timems, un
 
 void TextRenderer::forceCDGmode()
 {
-	// Disable anti-aliasing for set fonts
-	m_renderFont.setStyleStrategy( QFont::NoAntialias );
-	m_noAntiAliasing = true;
 	m_forceRedraw = true;
 }
 
@@ -591,12 +587,7 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
 
 				if ( fontchange != m_lyricBlocks[blockid].fonts.end() )
 				{
-					QFont newfont = QFont(painter.font().family(), painter.font().pointSize() + fontchange.value() );
-
-					if ( m_noAntiAliasing )
-						newfont.setStyleStrategy( QFont::NoAntialias );
-
-					painter.setFont( newfont );
+					painter.setFont( QFont(painter.font().family(), painter.font().pointSize() + fontchange.value() ) );
 				}
 
 				// Handle the color change events if pos doesn't cover them

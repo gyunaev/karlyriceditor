@@ -22,6 +22,8 @@
 #include <QMessageBox>
 #include <QApplication>
 
+#include <math.h>
+
 #include "editor.h"
 #include "cdggenerator.h"
 #include "export_params.h"
@@ -38,6 +40,12 @@ CDGGenerator::CDGGenerator( Project * proj )
 
 void CDGGenerator::init()
 {
+	// Initialize colors from m_project
+	m_colorBackground = m_project->tag( Project::Tag_CDG_bgcolor, "black" );
+	m_colorInfo = m_project->tag( Project::Tag_CDG_infocolor, "white" );
+	m_colorInactive = m_project->tag( Project::Tag_CDG_inactivecolor, "blue" );
+	m_colorActive = m_project->tag( Project::Tag_CDG_activecolor, "green" );
+
 	initColors();
 
 	// Initialize the stream
@@ -47,10 +55,64 @@ void CDGGenerator::init()
 	clearScreen();
 }
 
+void CDGGenerator::addColorGradations( const QColor& color, unsigned int number )
+{
+	int r = color.red();
+	int g = color.green();
+	int b = color.blue();
+
+	int r_step = r / number;
+	int g_step = g / number;
+	int b_step = b / number;
+
+	for ( unsigned int i = 0; i < number; i++ )
+	{
+		QColor newcolor( r - r_step * i, g - g_step * i, b - b_step * i );
+		m_colors.push_back( newcolor );
+	}
+}
+
+int CDGGenerator::getColor( QRgb rgbcolor )
+{
+	// See http://stackoverflow.com/questions/4057475/rounding-colour-values-to-the-nearest-of-a-small-set-of-colours
+	QColor targetcolor( rgbcolor );
+
+	int smallest_dist_idx = -1;
+	double smallest_dist = 0.0;
+
+	// Calculate the smallest color distance between this color and other colors in the array
+	for ( int i = 0; i < m_colors.size(); i++ )
+	{
+		const QColor& origcolor = m_colors.at( i );
+		double dist = sqrt( pow( origcolor.redF() - targetcolor.redF(), 2.0)
+							+ pow( origcolor.greenF() - targetcolor.greenF(), 2.0 )
+							+ pow( origcolor.blueF() - targetcolor.blueF(), 2.0 ) );
+
+		if ( smallest_dist_idx == -1 || dist < smallest_dist )
+		{
+			smallest_dist_idx = i;
+			smallest_dist = dist;
+		}
+	}
+
+	return smallest_dist_idx;
+}
+
 void CDGGenerator::initColors()
 {
+	// Initialize the color map with the following:
+	// - 1 entry for the background color
+	// - 5 entries for the init color
+	// - 5 entries for the sung color
+	// - 5 entries for the unsung color
 	m_colors.clear();
 	m_colors.push_back( m_colorBackground );
+
+	// We can't have more than two gradations here, CD+G format has too limited throughput
+	addColorGradations( m_colorInfo, 2 );
+	addColorGradations( m_colorInactive, 2 );
+	addColorGradations( m_colorActive, 2 );
+
 	m_streamColorIndex = -1;
 }
 
@@ -120,7 +182,7 @@ void CDGGenerator::clearScreen()
 			m_stream[ m_streamColorIndex + 1 ] = sc;
 		}
 
-		initColors();
+		//initColors();
 	}
 
 	// Now clear the screen
@@ -155,23 +217,6 @@ QByteArray CDGGenerator::stream()
 	return QByteArray( (const char*) m_stream.data(), m_stream.size() * sizeof( SubCode ) );
 }
 
-int CDGGenerator::getColor( QRgb color )
-{
-	// Mask alpha channel
-	color |= 0xFF000000;
-
-	// Find in the array of colors
-	for ( int i = 0; i < m_colors.size(); i++ )
-		if ( m_colors[i] == QColor(color) )
-			return i;
-
-	if ( m_colors.size() == 16 )
-		throw QString("Color table is out of color entries");
-
-//	qDebug("Adding color %08X", color );
-	m_colors.push_back( color );
-	return m_colors.size() - 1;
-}
 
 void CDGGenerator::checkTile( int offset_x, int offset_y, const QImage& orig,const QImage& newimg )
 {
@@ -201,7 +246,7 @@ void CDGGenerator::checkTile( int offset_x, int offset_y, const QImage& orig,con
 			// Calculate the mask for the color change
 			int mask = origcolor ^ newcolor;
 
-			if ( (mask & 0xFFFFFFF0) != 0 )
+			if ( (mask & 0xFFFFFF00) != 0 )
 				qFatal("error in mask calculation");
 
 			// Store the coordinates in lo/hi bytes
@@ -277,18 +322,19 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	if ( dlg.exec() != QDialog::Accepted )
 		return;
 
+	// Initialize the buffer and colors
+	init();
+
 	// Prepare the renderer
 	TextRenderer lyricrenderer( CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT );
 
 	lyricrenderer.setLyrics( lyrics );
 	lyricrenderer.setRenderFont( QFont( m_project->tag(Project::Tag_CDG_font), m_project->tag(Project::Tag_CDG_fontsize).toInt()) );
 
-	// Initialize colors from m_project
-	m_colorBackground = m_project->tag( Project::Tag_CDG_bgcolor, "black" );
 	lyricrenderer.setColorBackground( m_colorBackground );
-	lyricrenderer.setColorTitle( m_project->tag( Project::Tag_CDG_infocolor, "white" ) );
-	lyricrenderer.setColorSang( m_project->tag( Project::Tag_CDG_inactivecolor, "blue" ) );
-	lyricrenderer.setColorToSing( m_project->tag( Project::Tag_CDG_activecolor, "green" ) );
+	lyricrenderer.setColorTitle( m_colorInfo );
+	lyricrenderer.setColorSang( m_colorInactive );
+	lyricrenderer.setColorToSing( m_colorActive );
 
 	// Title
 	lyricrenderer.setTitlePageData( dlg.m_artist,

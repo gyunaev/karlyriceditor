@@ -35,9 +35,6 @@ class CDGGenerator
 	public:
 		CDGGenerator( Project * project );
 
-		// Initializes the stream, fills up the color tables and clears screen
-		void	init();
-
 		// Generate the CD+G lyrics
 		void	generate( const Lyrics& lyrics, qint64 total_length );
 
@@ -45,7 +42,9 @@ class CDGGenerator
 		QByteArray	stream();
 
 	private:
+		void	init();
 		void	initColors();
+		void	addColorGradations( const QColor& color, unsigned int number );
 		void	addSubcode( const SubCode& sc );
 		void	addEmpty();
 		void	addLoadColors( const QColor& bgcolor, const QColor& titlecolor,
@@ -58,8 +57,12 @@ class CDGGenerator
 		void	checkTile( int offset_x, int offset_y, const QImage& orig,const QImage& newimg );
 
 	private:
-		QVector< SubCode >		m_stream;			// CD+G stream
 		QColor					m_colorBackground;
+		QColor					m_colorInfo;
+		QColor					m_colorActive;
+		QColor					m_colorInactive;
+
+		QVector< SubCode >		m_stream;			// CD+G stream
 		QVector< QColor >		m_colors;			// 16 colors used in CD+G
 		int						m_streamColorIndex; // Reserved space for colors
 		Project		*			m_project;
