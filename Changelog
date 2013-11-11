@@ -1,3 +1,27 @@
+2013-11-10 gyunaev <gyunaev@ulduzsoft.com>
+  - Released version 1.9
+  - Fixed jittering sound output when a newer version of ffmped is installed;
+  - Fixed reversed Artist and Title fields in the CD+G export dialog;
+  - Fixed the registration dialog which didn't pop up;
+  - Fixed the "missing LRC header" error while importing KFN lyrics via "Import lyrics" menu
+  - When a new project is created the editor now will try to read the meta tags and fill up the Artist, Title and Album automatically.
+
+
+2013-10-05 gyunaev <gyunaev@ulduzsoft.com>
+  - Released version 1.8
+  - Fixed the registration dialog entry lockup with recent Qt versions
+
+2013-08-08 gyunaev <gyunaev@ulduzsoft.com>
+  - Released version 1.7
+  - Fixed the CD+G output which now uses two color gradations. The output looks better, and the "Color table out of colors" error is gone forever.
+
+2013-05-30 gyunaev <gyunaev@ulduzsoft.com>
+  - Released version 1.6
+  - Added support for importing Doblon PowerKaraoke lyrics and Del MP3 KOK lyrics; 
+  - Fixed "Test CD+G" option sometime showing a black screen; 
+  - Fixed KFN parsing and Ultrastar output; 
+  - Fixed compilation on x86_64
+
 2012-12-22 gyunaev <gyunaev@ulduzsoft.com>
   - Released version 1.4
   - Added partial KaraFun (KFN) format support. The KaraFun files could be imported during the project creation (only music and lyrics). Also the lyrics could be imported via Project -> Import lyrics.
