@@ -96,8 +96,8 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 	fontVideo->setFontFilters( QFontComboBox::ScalableFonts | QFontComboBox::MonospacedFonts | QFontComboBox::ProportionalFonts );
 
 	// Title window
-	leTitleName->setText( m_project->tag( Project::Tag_Title, "") );
-	leTitleArtist->setText( m_project->tag( Project::Tag_Artist, "") );
+	leTitle->setText( m_project->tag( Project::Tag_Title, "") );
+	leArtist->setText( m_project->tag( Project::Tag_Artist, "") );
 
 	if ( pLicensing->isValid() )
 	{
@@ -214,8 +214,8 @@ void DialogExportOptions::accept()
 		return;
 
 	// Store title params
-	m_artist = leTitleArtist->text();
-	m_title = leTitleName->text();
+	m_artist = leArtist->text();
+	m_title = leTitle->text();
 	m_createdBy = leTitleCreatedBy->text();
 
 	// Store encoding params
@@ -337,8 +337,8 @@ void DialogExportOptions::activateTab( int index )
 		m_renderer.forceCDGmode();
 
 	// Title
-	m_renderer.setTitlePageData( leTitleArtist->text(),
-								 leTitleName->text(),
+	m_renderer.setTitlePageData( leArtist->text(),
+								 leTitle->text(),
 								 pLicensing->isValid() ? leTitleCreatedBy->text() : "",
 								 titleVideoMin->value() * 1000 );
 
