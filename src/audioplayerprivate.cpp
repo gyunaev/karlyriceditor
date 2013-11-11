@@ -173,6 +173,7 @@ bool AudioPlayerPrivate::open( const QString& filename )
 							   AV_TIME_BASE_Q ) / 1000;
 
 	aCodecCtx = pFormatCtx->streams[audioStream]->codec;
+	aCodecCtx->request_sample_fmt = AV_SAMPLE_FMT_S16;
 
 	// Open audio codec
 	AVCodec * aCodec = avcodec_find_decoder( aCodecCtx->codec_id );
