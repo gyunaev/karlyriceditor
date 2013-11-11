@@ -833,7 +833,8 @@ void MainWindow::act_helpRegistration()
 
 			// Hide the registration info form and shrink the dialog
 			ui.groupShowInfo->hide();
-			dlg.resize( dlg.width(), dlg.minimumHeight() );
+			dlg.adjustSize();
+			dlg.setWindowTitle( tr("Enter registration key") );
 
 			if ( dlg.exec() != QDialog::Accepted )
 				return;
@@ -867,7 +868,8 @@ void MainWindow::act_helpRegistration()
 
 	// Hide the "enter key" form and shrink the dialog
 	ui.groupEnterKey->hide();
-	dlg.resize( dlg.width(), dlg.minimumHeight() );
+	dlg.adjustSize();
+	dlg.setWindowTitle( tr("Registration information") );
 
 	dlg.exec();
 }
