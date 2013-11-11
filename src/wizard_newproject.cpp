@@ -181,6 +181,8 @@ void PageMusicFile::browse()
 
 	// Store the music file
 	leSongFile->setText( filename );
+	leArtist->setText( pAudioPlayer->metaArtist() );
+	leTitle->setText( pAudioPlayer->metaTitle() );
 	pAudioPlayer->close();
 
 	// If there's an LRC file nearby, ask whether the user wants to load it (and get the values from it)

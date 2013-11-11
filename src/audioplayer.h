@@ -57,6 +57,11 @@ class AudioPlayer : public QObject
 		// The audio file length
 		qint64	totalTime() const;
 
+		// Metadata
+		QString	metaTitle() const;
+		QString	metaArtist() const;
+		QString	metaAlbum() const;
+
 		// To access the implementation (for video encoding)
 		AudioPlayerPrivate * impl();
 

@@ -123,6 +123,16 @@ void AudioPlayerPrivate::close()
 	pCodec = 0;
 }
 
+static QString getMetaTag( AVDictionary* meta, const char * tagname )
+{
+	AVDictionaryEntry * ent = av_dict_get(meta, tagname, NULL, 0);
+
+	if ( ent )
+		return QString::fromUtf8( ent->value );
+	else
+		return "";
+}
+
 bool AudioPlayerPrivate::open( const QString& filename )
 {
 	// Close if opened
@@ -166,6 +176,16 @@ bool AudioPlayerPrivate::open( const QString& filename )
 	{
 		m_errorMsg = "Cannot determine the total audio length";
 		return false;
+	}
+
+	// Extract some metadata
+	AVDictionary* metadata = pFormatCtx->metadata;
+
+	if ( metadata )
+	{
+		m_metaTitle = getMetaTag( metadata, "title" );
+		m_metaArtist = getMetaTag( metadata, "artist" );
+		m_metaAlbum = getMetaTag( metadata, "album" );
 	}
 
 	m_totalTime = av_rescale_q( pFormatCtx->streams[audioStream]->duration,

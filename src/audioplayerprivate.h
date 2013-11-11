@@ -49,6 +49,11 @@ class AudioPlayerPrivate
 		// Called from SDL in a different thread
 		void	SDL_audio_callback( Uint8 *stream, int len);
 
+		// Meta tags
+		QString			m_metaTitle;
+		QString			m_metaArtist;
+		QString			m_metaAlbum;
+
 	private:
 		// Called from the callback
 		bool	MoreAudio();

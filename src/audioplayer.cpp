@@ -102,3 +102,18 @@ AudioPlayerPrivate * AudioPlayer::impl()
 {
 	return d;
 }
+
+QString	AudioPlayer::metaTitle() const
+{
+	return d->m_metaTitle;
+}
+
+QString	AudioPlayer::metaArtist() const
+{
+	return d->m_metaArtist;
+}
+
+QString	AudioPlayer::metaAlbum() const
+{
+	return d->m_metaAlbum;
+}
