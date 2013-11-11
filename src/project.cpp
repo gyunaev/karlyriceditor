@@ -757,6 +757,7 @@ QByteArray Project::exportLyricsAsUStar()
 
 bool Project::importLyrics( const QString& filename )
 {
+	bool fake_lrc_header = false;
 	QString lyrictext;
 
 	// If this is KaraFun file, parse it
@@ -774,6 +775,9 @@ bool Project::importLyrics( const QString& filename )
 		}
 
 		lyrictext = parser.lyricsAsLRC();
+
+		// Fake the LRC header
+		fake_lrc_header = true;
 	}
 	else
 	{
@@ -806,6 +810,8 @@ bool Project::importLyrics( const QString& filename )
 				return false;
 			}
 
+			// Fake the LRC header
+			fake_lrc_header = true;
 		}
 
 		lyrictext = Util::convertWithUserEncoding( data );
@@ -815,7 +821,7 @@ bool Project::importLyrics( const QString& filename )
 		return false;
 
 	// Prepend a fake LRC header for MIDI import
-	if ( filename.endsWith( "mid" ) || filename.endsWith( "midi" ) || filename.endsWith( "kar" ) )
+	if ( fake_lrc_header )
 		lyrictext.prepend( "[ar: unknown]\n[ti: unknown]\n" );
 
 	// Convert CRLF to CRs and replace LFs
