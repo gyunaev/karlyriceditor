@@ -70,12 +70,7 @@ class Project
 			Tag_Video_font,
 			Tag_Video_fontsize,
 			Tag_Video_titletime,
-			Tag_Video_preamble,
-
-			Tag_Video_Profile,
-			Tag_Video_Format,
-			Tag_Video_Quality,
-			Tag_Video_Audiomode
+			Tag_Video_preamble
 		};
 
 		Project( Editor * editor );

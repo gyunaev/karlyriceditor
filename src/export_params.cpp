@@ -20,6 +20,7 @@
 #include <QFileDialog>
 #include <QSettings>
 #include <QMessageBox>
+#include <QWhatsThis>
 
 #include "textrenderer.h"
 #include "export_params.h"
@@ -54,20 +55,13 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 	connect( boxVideoTarget, SIGNAL(currentIndexChanged(int)), this, SLOT(videoTargetChanged(int)) );
 	connect( boxVideoMedium, SIGNAL(currentIndexChanged(int)), this, SLOT(videoMediumChanged(int)) );
 
+	// Details label
+	connect( lblVideoDetailsLink, SIGNAL(linkActivated(QString)), this, SLOT(videoShowDetails()) );
+
 	if ( video )
 	{
 		// Set the video output params
 		boxVideoMedium->addItems( pVideoEncodingProfiles->videoMediumTypes() );
-
-//		setBoxIndex( Project::Tag_Video_ImgSizeIndex, boxImageSize );
-//		setBoxIndex( Project::Tag_Video_FpsIndex, boxFPS );
-//		setBoxIndex( Project::Tag_Video_EncodingIndex, boxVideoEncoding );
-//		setBoxIndex( Project::Tag_Video_ContainerIndex, boxContainer );
-//		cbAllKeyframes->setChecked( m_project->tag( Project::Tag_Video_AllKeyframes).toInt() );
-//		cbExportNoAudio->setChecked( m_project->tag( Project::Tag_Video_ExportNoAudio).toInt() );
-
-
-
 		btnVideoColorActive->setColor( m_project->tag( Project::Tag_Video_activecolor, "blue" ) );
 		btnVideoColorBg->setColor( m_project->tag( Project::Tag_Video_bgcolor, "black" ) );
 		btnVideoColorInactive->setColor( m_project->tag( Project::Tag_Video_inactivecolor, "green" ) );
@@ -235,11 +229,6 @@ void DialogExportOptions::accept()
 		m_audioEncodingMode = boxVideoAudio->currentIndex();
 		m_quality = boxVideoQuality->itemData( boxVideoQuality->currentIndex() ).toInt();
 
-		m_project->setTag( Project::Tag_Video_Profile, m_currentProfile->name );
-		m_project->setTag( Project::Tag_Video_Format, m_currentVideoFormat->name );
-		m_project->setTag( Project::Tag_Video_Quality, QString::number( m_quality ) );
-		m_project->setTag( Project::Tag_Video_Audiomode, QString::number( m_audioEncodingMode ) );
-
 		// Store rendering params
 		m_project->setTag( Project::Tag_Video_activecolor, btnVideoColorActive->color().name() );
 		m_project->setTag( Project::Tag_Video_bgcolor, btnVideoColorBg->color().name() );
@@ -323,6 +312,57 @@ void DialogExportOptions::videoTargetChanged( int )
 
 	boxVideoProfile->setEnabled( boxVideoProfile->count() > 1 );
 	boxVideoQuality->setEnabled( boxVideoQuality->count() > 1 );
+}
+
+void DialogExportOptions::videoShowDetails()
+{
+	m_currentVideoFormat = pVideoEncodingProfiles->videoFormat( boxVideoProfile->currentText() );
+	m_currentProfile = pVideoEncodingProfiles->videoProfile( boxVideoTarget->currentText() );
+
+	if ( !m_currentProfile || !m_currentVideoFormat )
+		return;
+
+	m_audioEncodingMode = boxVideoAudio->currentIndex();
+	m_quality = boxVideoQuality->itemData( boxVideoQuality->currentIndex() ).toInt();
+
+	QString data = tr("<table border=0>"
+					  "<tr colspan=2><td><b>Video parameters</b></td></tr>"
+					  "<tr><td>Codec:</td><td>$videoCodec</td></tr>"
+					  "<tr><td>Container:</td><td>$videoContainer</td></tr>"
+					  "<tr><td>Resolution:</td><td>$videoResolution</td></tr>"
+					  "<tr><td>Frame rate:</td><td>$frameRate</td></tr>"
+					  "<tr><td>Bitrate:</td><td>$videoBitrate</td></tr>"
+					  "<tr><td>Display aspect ratio:</td><td>$displayAspectRatio</td></tr>"
+					  "<tr><td>Sample aspect ratio:</td><td>$sampleAspectRatio</td></tr>"
+					  "<tr><td>Progressive:</td><td>$progressive</td></tr>"
+					  "<tr colspan=2><td>&nbsp;</td></tr>"
+					  "<tr colspan=2><td><b>Audio parameters</b></td></tr>"
+					  "<tr><td>Codec:</td><td>$audioCodec</td></tr>"
+					  "<tr><td>Sample rate:</td><td>$audioSampleRate</td></tr>"
+					  "<tr><td>Channels:</td><td>$audioChannels</td></tr>"
+					  "<tr><td>Bitrate:</td><td>$audioBitrate</td></tr>"
+					  "</table>");
+
+	QMap< QString, QString > variables;
+	variables["$videoCodec"] = m_currentProfile->videoCodec;
+	variables["$videoContainer"] = m_currentProfile->videoContainer;
+	variables["$videoResolution"] = QString("%1x%2") .arg(m_currentVideoFormat->width) .arg(m_currentVideoFormat->height);
+	variables["$frameRate"] = QString::number( (double) m_currentVideoFormat->display_aspect_den * 1000 / m_currentVideoFormat->display_aspect_num, 'f', 2 );
+	variables["$videoBitrate"] = QString("%1Kbps") .arg( m_currentProfile->bitratesVideo[m_quality] );
+	variables["$displayAspectRatio"] = QString("%1:%2") .arg( m_currentVideoFormat->display_aspect_num ) .arg( m_currentVideoFormat->display_aspect_den );
+	variables["$sampleAspectRatio"] = QString("%1:%2") .arg( m_currentVideoFormat->display_aspect_num ) .arg( m_currentVideoFormat->display_aspect_den );
+	variables["$progressive"] = m_currentVideoFormat->progressive ? "true" : "false";
+	variables["$audioCodec"] = m_currentProfile->audioCodec;
+	variables["$audioSampleRate"] = QString::number( m_currentProfile->sampleRate );
+	variables["$audioChannels"] = QString::number( m_currentProfile->channels );
+	variables["$audioBitrate"] = QString("%1Kbps") .arg( m_currentProfile->bitratesAudio[m_quality] );
+
+	Q_FOREACH( QString key, variables.keys() )
+	{
+		data.replace( key, variables[key]);
+	}
+
+	QWhatsThis::showText( mapToGlobal(lblVideoDetailsLink->pos()), data );
 }
 
 

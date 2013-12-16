@@ -59,6 +59,7 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 
 		void	videoMediumChanged( int newvalue );
 		void	videoTargetChanged(int);
+		void	videoShowDetails();
 
 	public:
 		QString	m_outputVideo;

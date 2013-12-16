@@ -349,22 +349,6 @@ int	Project::tagToId( Tag tag  ) const
 		case Tag_Video_preamble:
 			tagid = PD_TAG_VIDEO_PREAMBLE;
 			break;
-
-		case Tag_Video_Profile:
-			tagid = PD_TAG_VIDEO_PROFILE;
-			break;
-
-		case Tag_Video_Format:
-			tagid = PD_TAG_VIDEO_FORMAT;
-			break;
-
-		case Tag_Video_Audiomode:
-			tagid = PD_TAG_VIDEO_AUDIOMODE;
-			break;
-
-		case Tag_Video_Quality:
-			tagid = PD_TAG_VIDEO_QUALITY;
-			break;
 	}
 
 	return tagid;

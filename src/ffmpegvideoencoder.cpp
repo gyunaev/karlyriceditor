@@ -95,6 +95,21 @@ class FFMpegVideoEncoderPriv
 };
 
 
+static bool isAudioSampleFormatSupported( const enum AVSampleFormat * sample_formats, AVSampleFormat format )
+{
+	while ( *sample_formats != AV_SAMPLE_FMT_NONE )
+	{
+		qDebug("sample format %d", *sample_formats);
+		if ( *sample_formats == format )
+			return true;
+
+		sample_formats++;
+	}
+
+	return false;
+}
+
+
 FFMpegVideoEncoderPriv::FFMpegVideoEncoderPriv()
 {
 	ffmpeg_init_once();
@@ -185,19 +200,8 @@ av_log_set_level(AV_LOG_VERBOSE);
 	videoCodecCtx->bit_rate = m_videobitrate;
 	videoCodecCtx->bit_rate_tolerance = m_videobitrate * av_q2d(videoCodecCtx->time_base);
 
-	// If we have a global header for the format, no need to duplicate the codec info in each keyframe
-	if ( outputFormatCtx->oformat->flags & AVFMT_GLOBALHEADER )
-		videoCodecCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
-
-	// Open the codec
-	if ( ( err = avcodec_open2( videoCodecCtx, videoCodec, 0 )) < 0 )
-	{
-		m_errorMsg = QString("Could not open video codec: error %1") .arg( err );
-		goto cleanup;
-	}
-
 	// Video format-specific hacks
-	switch ( videoCodecCtx->codec->id )
+	switch ( videoCodec->id )
 	{
 		case AV_CODEC_ID_H264:
 			av_opt_set( videoCodecCtx->priv_data, "preset", "slow", 0 );
@@ -215,6 +219,17 @@ av_log_set_level(AV_LOG_VERBOSE);
 
 		default:
 			break;
+	}
+
+	// If we have a global header for the format, no need to duplicate the codec info in each keyframe
+	if ( outputFormatCtx->oformat->flags & AVFMT_GLOBALHEADER )
+		videoCodecCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
+
+	// Open the codec
+	if ( ( err = avcodec_open2( videoCodecCtx, videoCodec, 0 )) < 0 )
+	{
+		m_errorMsg = QString("Could not open video codec: error %1") .arg( err );
+		goto cleanup;
 	}
 
 	// Create the video stream, index
@@ -287,14 +302,20 @@ av_log_set_level(AV_LOG_VERBOSE);
 			audioCodecCtx->bit_rate = m_audiobitrate;
 			audioCodecCtx->channels = m_profile->channels;
 			audioCodecCtx->sample_rate = m_profile->sampleRate;
-			audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_S16;
 			audioCodecCtx->channel_layout = av_get_channel_layout( m_profile->channels == 1 ? "mono" : "stereo" );
 			audioCodecCtx->time_base.num = m_videoformat->frame_rate_num;
 			audioCodecCtx->time_base.den = m_videoformat->frame_rate_den;
 
-			// For AC3 codec the sample must be float
-			if ( audioCodecCtx->codec_id == AV_CODEC_ID_AC3 )
-				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_FLT;
+			// Since different audio codecs support different sample formats, look up which one is supported by this specific codec
+			if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_FLTP ) )
+				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_FLTP;
+			else if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_S16 ) )
+				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_S16;
+			else
+			{
+				m_errorMsg = QString("Could not find the sample format supported by the audio codec %1") . arg( m_profile->audioCodec );
+				goto cleanup;
+			}
 
 			// Open the audio codec
 			err = avcodec_open2( audioCodecCtx, audioCodec, 0 );
