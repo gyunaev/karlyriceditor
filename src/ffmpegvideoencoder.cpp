@@ -85,7 +85,7 @@ class FFMpegVideoEncoderPriv
 		SwsContext			*	videoConvertCtx;
 
 		// FIXME: Audio resample
-		AVAudioResampleContext* pAudioResampleCtx;
+		AVAudioResampleContext* audioResampleCtx;
 
 		// File has been outputFileOpened successfully
 		bool					outputFileOpened;
@@ -107,7 +107,7 @@ FFMpegVideoEncoderPriv::FFMpegVideoEncoderPriv()
 	audioCodec = 0;
 	videoCodec = 0;
 	videoFrame = 0;
-	pAudioResampleCtx = 0;
+	audioResampleCtx = 0;
 
 	audioFrame = 0;
 	audioFifo = 0;
@@ -189,10 +189,6 @@ av_log_set_level(AV_LOG_VERBOSE);
 	if ( outputFormatCtx->oformat->flags & AVFMT_GLOBALHEADER )
 		videoCodecCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
-	//videoCodecCtx->coder_type = FF_CODER_TYPE_VLC; // FIXME
-	//videoCodecCtx->max_b_frames = 0;	// FIXME
-	//videoCodecCtx->profile = FF_PROFILE_H264_BASELINE;  // FIXME
-
 	// Open the codec
 	if ( ( err = avcodec_open2( videoCodecCtx, videoCodec, 0 )) < 0 )
 	{
@@ -209,6 +205,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 
 		case AV_CODEC_ID_MPEG2VIDEO:
 			videoCodecCtx->max_b_frames = 2;
+			videoCodecCtx->bit_rate_tolerance = m_videobitrate * av_q2d(videoCodecCtx->time_base) * 2;
 			break;
 
 		case AV_CODEC_ID_MPEG1VIDEO:
@@ -295,6 +292,10 @@ av_log_set_level(AV_LOG_VERBOSE);
 			audioCodecCtx->time_base.num = m_videoformat->frame_rate_num;
 			audioCodecCtx->time_base.den = m_videoformat->frame_rate_den;
 
+			// For AC3 codec the sample must be float
+			if ( audioCodecCtx->codec_id == AV_CODEC_ID_AC3 )
+				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_FLT;
+
 			// Open the audio codec
 			err = avcodec_open2( audioCodecCtx, audioCodec, 0 );
 			if ( err < 0 )
@@ -312,27 +313,28 @@ av_log_set_level(AV_LOG_VERBOSE);
 				goto cleanup;
 			}
 
-			audioStream->codec = audioCodecCtx; // FIXME
+			// Remember the codec for the stream
+			audioStream->codec = audioCodecCtx;
 
 			// Setup the audio resampler
-			pAudioResampleCtx = avresample_alloc_context();
+			audioResampleCtx = avresample_alloc_context();
 
-			if ( !pAudioResampleCtx )
+			if ( !audioResampleCtx )
 			{
 				m_errorMsg = QString("Could not open the audio resampler");
 				goto cleanup;
 			}
 
-			av_opt_set_int( pAudioResampleCtx, "in_channel_layout",	m_aplayer->aCodecCtx->channel_layout, 0 );
-			av_opt_set_int( pAudioResampleCtx, "in_sample_fmt",     m_aplayer->aCodecCtx->sample_fmt, 0);
-			av_opt_set_int( pAudioResampleCtx, "in_sample_rate",    m_aplayer->aCodecCtx->sample_rate, 0);
-			av_opt_set_int( pAudioResampleCtx, "in_channels",       m_aplayer->aCodecCtx->channels,0);
-			av_opt_set_int( pAudioResampleCtx, "out_channel_layout", audioCodecCtx->channel_layout, 0);
-			av_opt_set_int( pAudioResampleCtx, "out_sample_fmt",     audioCodecCtx->sample_fmt, 0);
-			av_opt_set_int( pAudioResampleCtx, "out_sample_rate",    audioCodecCtx->sample_rate, 0);
-			av_opt_set_int( pAudioResampleCtx, "out_channels",       audioCodecCtx->channels, 0);
+			av_opt_set_int( audioResampleCtx, "in_channel_layout",	m_aplayer->aCodecCtx->channel_layout, 0 );
+			av_opt_set_int( audioResampleCtx, "in_sample_fmt",     m_aplayer->aCodecCtx->sample_fmt, 0);
+			av_opt_set_int( audioResampleCtx, "in_sample_rate",    m_aplayer->aCodecCtx->sample_rate, 0);
+			av_opt_set_int( audioResampleCtx, "in_channels",       m_aplayer->aCodecCtx->channels,0);
+			av_opt_set_int( audioResampleCtx, "out_channel_layout", audioCodecCtx->channel_layout, 0);
+			av_opt_set_int( audioResampleCtx, "out_sample_fmt",     audioCodecCtx->sample_fmt, 0);
+			av_opt_set_int( audioResampleCtx, "out_sample_rate",    audioCodecCtx->sample_rate, 0);
+			av_opt_set_int( audioResampleCtx, "out_channels",       audioCodecCtx->channels, 0);
 
-			err = avresample_open( pAudioResampleCtx );
+			err = avresample_open( audioResampleCtx );
 			if ( err < 0 )
 			{
 				m_errorMsg = QString("Could not open the audio resampler: %1") . arg( err );
@@ -552,24 +554,29 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
 			if ( !got_audio )
 				continue;
 
-			void * input_samples = srcaudio.data[0];
-			int decoded_data_size = av_samples_get_buffer_size( NULL,
-																m_aplayer->aCodecCtx->channels,
-																srcaudio.nb_samples,
-																m_aplayer->aCodecCtx->sample_fmt, 1 );
-
-			// Write the decoded data into the FIFO
-			if ( av_fifo_generic_write( audioFifo, input_samples, decoded_data_size, 0 ) != decoded_data_size )
+			// Resample the input into the audioSampleBuffer until we proceed the whole decoded data
+			if ( (err = avresample_convert( audioResampleCtx,
+											NULL,
+											0,
+											0,
+											srcaudio.data,
+											0,
+											srcaudio.nb_samples )) < 0 )
 			{
-				qWarning( "Error writing into FIFO" );
+				qWarning( "Error resampling decoded audio: %d", err );
 				return -1;
 			}
 
-			// Now encode all available frames (there may be more than one)
-			while ( av_fifo_size(audioFifo) >= (int) audioSampleBuffer_size )
+			while( avresample_available( audioResampleCtx ) >= audioFrame->nb_samples )
 			{
 				// Read a frame audio data from the fifo
-				av_fifo_generic_read( audioFifo, audioSampleBuffer, audioSampleBuffer_size, NULL );
+				//av_fifo_generic_read( audioFifo, audioSampleBuffer, audioSampleBuffer_size, NULL );
+
+				if ( avresample_read( audioResampleCtx, audioFrame->data, audioFrame->nb_samples ) != audioFrame->nb_samples )
+				{
+					qWarning( "Error reading resampled audio: %d", err );
+					return -1;
+				}
 
 				// Prepare the packet
 				av_init_packet( &pkt );
@@ -613,21 +620,20 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
 
 	if ( got_packet )
 	{
+		// Convert the PTS from the packet base to stream base
 		if ( pkt.pts != AV_NOPTS_VALUE )
 			pkt.pts = av_rescale_q( pkt.pts, videoStream->time_base, videoStream->time_base );
 
+		// Convert the DTS from the packet base to stream base
 		if ( pkt.dts != AV_NOPTS_VALUE )
 			pkt.dts = av_rescale_q( pkt.dts, videoStream->time_base, videoStream->time_base );
-
-//		if ( videoCodecCtx->coded_frame->pts != (int64_t) (0x8000000000000000LL) )
-//			pkt.pts= av_rescale_q(videoCodecCtx->coded_frame->pts, videoCodecCtx->time_base, videoStream->time_base);
 
 		if ( videoCodecCtx->coded_frame->key_frame )
 			pkt.flags |= AV_PKT_FLAG_KEY;
 
 		pkt.stream_index = videoStream->index;
 
-		int ret = av_interleaved_write_frame(outputFormatCtx, &pkt);
+		int ret = av_interleaved_write_frame( outputFormatCtx, &pkt );
 
 		if ( ret < 0 )
 			return -1;
