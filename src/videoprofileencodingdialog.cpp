@@ -17,42 +17,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-/**************************************************************************
- * This class uses ideas from QTFFmpegWrapper - QT FFmpeg Wrapper Class   *
- * Copyright (C) 2009,2010: Daniel Roggen, droggen@gmail.com              *
- * All rights reserved.                                                   *
- **************************************************************************/
+#include "videoprofileencodingdialog.h"
 
-#ifndef FFMPEGVIDEOENCODER_H
-#define FFMPEGVIDEOENCODER_H
-
-#include <QString>
-#include <QImage>
-
-#include "videoencodingprofiles.h"
-
-class AudioPlayer;
-class FFMpegVideoEncoderPriv;
-
-class FFMpegVideoEncoder
+VideoProfileEncodingDialog::VideoProfileEncodingDialog( QWidget *parent )
+	: QDialog( parent ), Ui::video_encoding_dialog()
 {
-	public:
-		FFMpegVideoEncoder();
-		virtual ~FFMpegVideoEncoder();
+	setupUi( this );
 
-		// Returns non-empty error message if failed
-		QString createFile( const QString& filename,
-							const VideoEncodingProfile * profile,
-							const VideoFormat * videoformat,
-							unsigned int quality,
-							bool  convert_audio,
-							AudioPlayer * audio );
 
-		bool close();
-		int encodeImage( const QImage & img, qint64 time );
+}
 
-	private:
-		FFMpegVideoEncoderPriv * d;
-};
+void VideoProfileEncodingDialog::accept()
+{
 
-#endif // FFMPEGVIDEOENCODER_H
+}
+
+

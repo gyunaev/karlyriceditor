@@ -23,6 +23,7 @@
 #include <QDialog>
 #include "ui_dialog_export_params.h"
 
+#include "videoencodingprofiles.h"
 #include "textrenderer.h"
 #include "lyrics.h"
 #include "project.h"
@@ -34,17 +35,20 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 
 	public:
 		DialogExportOptions( Project * project, const Lyrics& lyrics, bool video = true, QWidget *parent = 0 );
-		~DialogExportOptions();
 
 		// For both CD+G and video modes
 		QSize	getVideoSize();
 
-		// For video mode only
-		void	getFPS( unsigned int * num, unsigned int * den );
-		QString	getEncoding();
-		QString	getContainer();
+		// Returns the selected video profile
+		const VideoEncodingProfile * videoProfile() const;
 
-	public slots:
+		// Return the video encoding parameters
+		bool	videoParams( const VideoEncodingProfile ** profile,
+							 const VideoFormat ** format,
+							 unsigned int * audioMode,
+							 unsigned int * qualty );
+
+	private slots:
 		void	activateTab( int index );
 		void	autodetectFontSize();
 		void	browseOutputFile();
@@ -52,6 +56,9 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 		void	previewUpdateImage();
 		void	previewSliderMoved( int newvalue );
 		void	accept();
+
+		void	videoMediumChanged( int newvalue );
+		void	videoTargetChanged(int);
 
 	public:
 		QString	m_outputVideo;
@@ -71,6 +78,11 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 		TextRenderer	m_renderer;
 		qint64			m_time;
 
+		// For current video selection tracking
+		const VideoEncodingProfile * m_currentProfile;
+		const VideoFormat * m_currentVideoFormat;
+		unsigned int		m_audioEncodingMode;
+		unsigned int		m_quality;
 };
 
 #endif // VIDEOEXPORTOPTIONS_H

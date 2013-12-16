@@ -20,6 +20,7 @@
 #include <QProgressDialog>
 #include <QApplication>
 #include <QMessageBox>
+#include <QTime>
 
 #include "audioplayer.h"
 #include "videogenerator.h"
@@ -45,19 +46,17 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	if ( dlg.exec() != QDialog::Accepted )
 		return;
 
-	// Validate params
-	unsigned int num, den;
-	QSize videosize = dlg.getVideoSize();
-	dlg.getFPS( &num, &den );
+	// Get the video info
+	const VideoEncodingProfile * profile;
+	const VideoFormat * format;
+	unsigned int		audioEncodingMode;
+	unsigned int		quality;
 
-	if ( videosize.isEmpty() || num == 0 || den == 0 )
-	{
-		QMessageBox::critical( 0, "Invalid parameters", "Video size or FPS is not valid" );
+	if ( !dlg.videoParams( &profile, &format, &audioEncodingMode, &quality ) )
 		return;
-	}
 
 	// Prepare the renderer
-	TextRenderer lyricrenderer( videosize.width(), videosize.height() );
+	TextRenderer lyricrenderer( format->width, format->height );
 	lyricrenderer.setLyrics( lyrics );
 
 	// Initialize colors from m_project
@@ -80,13 +79,13 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	// Video encoder
 	FFMpegVideoEncoder encoder;
 
+	// audioEncodingMode: 0 - encode, 1 - copy, 2 - no audio
 	QString errmsg = encoder.createFile( dlg.m_outputVideo,
-										dlg.getContainer(),
-										videosize,
-										2000000,
-										num, den,
-										25,
-										m_project->tag( Project::Tag_Video_ExportNoAudio).toInt() > 0 ? 0 : pAudioPlayer );
+										 profile,
+										 format,
+										 quality,
+										 audioEncodingMode == 0 ? true : false,
+										 audioEncodingMode == 2 ? 0 : pAudioPlayer );
 
 	if ( !errmsg.isEmpty() )
 	{
@@ -112,9 +111,11 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	progressdlg.show();
 
 	qint64 dialog_step = total_length / 100;
-	qint64 time_step = (1000 * num) / den;
+	qint64 time_step = (1000 * format->frame_rate_num) / format->frame_rate_den;
 
-	int frames = 0, size = 0;
+	int frames = 0, size = 0, totalframes = total_length / time_step;
+	QTime timing;
+	timing.start();
 
 	// Rendering
 	for ( qint64 time = 0; time < total_length; time += time_step )
@@ -122,7 +123,8 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 		frames++;
 		lyricrenderer.update( time );
 		QImage image = lyricrenderer.image();
-		int ret = encoder.encodeImage( image );
+
+		int ret = encoder.encodeImage( image, time );
 
 		if ( ret < 0 )
 		{
@@ -140,9 +142,9 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 		{
 			ui.progressBar->setValue( time / dialog_step );
 
-			ui.lblFrames->setText( QString::number( frames ) );
+			ui.lblFrames->setText( QString("%1 of %2") .arg( frames ) .arg( totalframes ) );
 			ui.lblOutput->setText( QString( "%1 Mb" ) .arg( size / (1024*1024) ) );
-			ui.lblTime->setText( markToTime( time ) );
+			ui.lblTime->setText( markToTime( timing.elapsed() / 1000 ) );
 			ui.image->setPixmap( QPixmap::fromImage( image ).scaled( ui.image->size() ) );
 
 			qApp->processEvents( QEventLoop::ExcludeUserInputEvents );

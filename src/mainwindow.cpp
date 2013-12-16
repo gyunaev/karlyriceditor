@@ -44,6 +44,7 @@
 #include "ui_dialog_about.h"
 #include "videogenerator.h"
 #include "cdggenerator.h"
+#include "videoencodingprofiles.h"
 #include "licensing.h"
 #include "ui_dialog_registration.h"
 
@@ -61,6 +62,9 @@ MainWindow::MainWindow()
 
 	// Call UIC-generated code
 	setupUi( this );
+
+	// Video profiles
+	pVideoEncodingProfiles = new VideoEncodingProfiles();
 
 	// Initialize stuff
 	m_project = 0;

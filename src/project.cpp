@@ -85,7 +85,12 @@ enum
 	PD_TAG_VIDEO_ENCODING,	// index of video encoding
 	PD_TAG_VIDEO_CONTAINER,	// index of container format
 	PD_TAG_VIDEO_ALLKEYFRAMES, // if nonzero, every frame is a keyframe
-	PD_TAG_VIDEO_NOAUDIO	// export no audio
+	PD_TAG_VIDEO_NOAUDIO,	// export no audio
+
+	PD_TAG_VIDEO_PROFILE,	// video profile name
+	PD_TAG_VIDEO_FORMAT,	// video format name
+	PD_TAG_VIDEO_QUALITY,
+	PD_TAG_VIDEO_AUDIOMODE
 };
 
 
@@ -345,28 +350,20 @@ int	Project::tagToId( Tag tag  ) const
 			tagid = PD_TAG_VIDEO_PREAMBLE;
 			break;
 
-		case Tag_Video_ImgSizeIndex:
-			tagid = PD_TAG_VIDEO_IMAGESIZE;
+		case Tag_Video_Profile:
+			tagid = PD_TAG_VIDEO_PROFILE;
 			break;
 
-		case Tag_Video_FpsIndex:
-			tagid = PD_TAG_VIDEO_FPSSIZE;
+		case Tag_Video_Format:
+			tagid = PD_TAG_VIDEO_FORMAT;
 			break;
 
-		case Tag_Video_EncodingIndex:
-			tagid = PD_TAG_VIDEO_ENCODING;
+		case Tag_Video_Audiomode:
+			tagid = PD_TAG_VIDEO_AUDIOMODE;
 			break;
 
-		case Tag_Video_ContainerIndex:
-			tagid = PD_TAG_VIDEO_CONTAINER;
-			break;
-
-		case Tag_Video_AllKeyframes:
-			tagid = PD_TAG_VIDEO_ALLKEYFRAMES;
-			break;
-
-		case Tag_Video_ExportNoAudio:
-			tagid = PD_TAG_VIDEO_NOAUDIO;
+		case Tag_Video_Quality:
+			tagid = PD_TAG_VIDEO_QUALITY;
 			break;
 	}
 

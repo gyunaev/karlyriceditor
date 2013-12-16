@@ -4,7 +4,7 @@ DEPENDPATH += .
 LIBS += -lcrypto
 DEFINES += USE_LICENSING
 CONFIG += link_pkgconfig
-PKGCONFIG += libavformat libavcodec libswscale libavutil sdl
+PKGCONFIG += libavformat libavcodec libswscale libavutil libavresample sdl
 
 win32-g++-cross: {
 	LIBS += -lwsock32 -ldxguid
@@ -49,7 +49,8 @@ HEADERS += mainwindow.h \
     karaokelyricstextkar.h \
     kfn_file_parser.h \
     dialog_timeadjustment.h \
-    util.h
+    util.h \
+    videoencodingprofiles.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -86,7 +87,8 @@ SOURCES += mainwindow.cpp \
     karaokelyricstextkar.cpp \
     kfn_file_parser.cpp \
     dialog_timeadjustment.cpp \
-    util.cpp
+    util.cpp \
+    videoencodingprofiles.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \
     wiznewproject_lyrictype.ui \
@@ -104,6 +106,7 @@ FORMS += mainwindow.ui \
 	dialog_encodingprogress.ui \
     dialog_testwindow.ui \
     dialog_registration.ui \
-    dialog_timeadjustment.ui
+    dialog_timeadjustment.ui \
+    video_profile_dialog.ui
 
 

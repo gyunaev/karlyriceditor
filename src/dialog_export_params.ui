@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>725</width>
-    <height>601</height>
+    <width>607</width>
+    <height>579</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,159 +29,115 @@
          <property name="title">
           <string>Video encoding parameters</string>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_4">
-          <item>
-           <layout class="QGridLayout" name="gridLayout">
-            <item row="0" column="0">
-             <widget class="QLabel" name="label">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="text">
-               <string>Image size:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QComboBox" name="boxImageSize">
-              <property name="whatsThis">
-               <string>Specifies the output image size. Note that some output formats (VideoCD, DVD, HD) require a specific image size.</string>
-              </property>
-              <item>
-               <property name="text">
-                <string>352x288 (VCD PAL)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>352x240 (VCD NTSC)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>720x576 (DVD PAL)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>720x480 (DVD NTSC)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>1280x720 (HD 720p)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>1980x1080 (HD 1080p)</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QLabel" name="label_3">
-              <property name="whatsThis">
-               <string>Which codec to use for video encoding</string>
-              </property>
-              <property name="text">
-               <string>Video encoding:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="3" rowspan="2">
-             <widget class="QComboBox" name="boxVideoEncoding">
-              <item>
-               <property name="text">
-                <string>xvid</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-            <item row="1" column="0" rowspan="2">
-             <widget class="QLabel" name="label_2">
-              <property name="text">
-               <string>Frame rate:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1" rowspan="2">
-             <widget class="QComboBox" name="boxFPS">
-              <property name="whatsThis">
-               <string>Output frame rate. PAL frame rate is 25 FPS, NTSC is 29.95 FPS</string>
-              </property>
-              <item>
-               <property name="text">
-                <string>25 FPS (PAL)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>29.97 FPS (NTSC)</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QLabel" name="label_5">
-              <property name="text">
-               <string>Container format:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="3">
-             <widget class="QComboBox" name="boxContainer">
-              <property name="whatsThis">
-               <string>Output file (container) format, i.e. AVI, MKV, MP4</string>
-              </property>
-              <item>
-               <property name="text">
-                <string>AVI</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>MKV</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>MP4</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-           </layout>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Target medium</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
           </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout">
+          <item row="0" column="1">
+           <widget class="QComboBox" name="boxVideoMedium">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>1</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Subtarget</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QComboBox" name="boxVideoTarget">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>1</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Video profile</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="boxVideoProfile">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>1</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Quality</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QComboBox" name="boxVideoQuality">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>1</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Audio</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1" colspan="3">
+           <widget class="QComboBox" name="boxVideoAudio">
             <item>
-             <widget class="QCheckBox" name="cbAllKeyframes">
-              <property name="whatsThis">
-               <string>Export every video frame as keyframe. It produces MUCH larger video files, but the quality would be the best. Use if you are going to process the video further.</string>
-              </property>
-              <property name="text">
-               <string>Every frame is a keyframe</string>
-              </property>
-             </widget>
+             <property name="text">
+              <string>encode according to profile</string>
+             </property>
             </item>
             <item>
-             <widget class="QCheckBox" name="cbExportNoAudio">
-              <property name="whatsThis">
-               <string>Export every video frame as keyframe. It produces MUCH larger video files, but the quality would be the best. Use if you are going to process the video further.</string>
-              </property>
-              <property name="text">
-               <string>Do not export audio</string>
-              </property>
-              <property name="checked">
-               <bool>false</bool>
-              </property>
-             </widget>
+             <property name="text">
+              <string>copy original content</string>
+             </property>
             </item>
-           </layout>
+            <item>
+             <property name="text">
+              <string>no audio</string>
+             </property>
+            </item>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -539,6 +495,31 @@
    <header>colorbutton.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>boxVideoMedium</tabstop>
+  <tabstop>boxVideoTarget</tabstop>
+  <tabstop>boxVideoProfile</tabstop>
+  <tabstop>boxVideoQuality</tabstop>
+  <tabstop>boxVideoAudio</tabstop>
+  <tabstop>fontVideo</tabstop>
+  <tabstop>fontVideoSize</tabstop>
+  <tabstop>btnDetectSize</tabstop>
+  <tabstop>btnTestSize</tabstop>
+  <tabstop>titleVideoMin</tabstop>
+  <tabstop>btnVideoColorBg</tabstop>
+  <tabstop>btnVideoColorInactive</tabstop>
+  <tabstop>btnVideoColorInfo</tabstop>
+  <tabstop>btnVideoColorActive</tabstop>
+  <tabstop>cbVideoPreamble</tabstop>
+  <tabstop>leArtist</tabstop>
+  <tabstop>leTitle</tabstop>
+  <tabstop>leTitleCreatedBy</tabstop>
+  <tabstop>leOutputFile</tabstop>
+  <tabstop>btnBrowse</tabstop>
+  <tabstop>buttonBox</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>seekSlider</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

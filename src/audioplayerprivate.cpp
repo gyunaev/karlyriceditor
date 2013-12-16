@@ -372,3 +372,9 @@ bool AudioPlayerPrivate::MoreAudio()
 
 	return false;
 }
+
+/*
+QByteArray AudioPlayerPrivate::nextAudioBuffer()
+{
+}
+*/
