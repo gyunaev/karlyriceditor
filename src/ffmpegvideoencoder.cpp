@@ -70,8 +70,6 @@ class FFMpegVideoEncoderPriv
 		AVCodec				*	videoCodec;
 		AVCodec				*	audioCodec;
 
-		AVFifoBuffer		*	audioFifo;
-
 		// Video frame data
 		AVFrame				*	videoFrame;
 		uint8_t				*	videoImageBuffer;
@@ -99,7 +97,6 @@ static bool isAudioSampleFormatSupported( const enum AVSampleFormat * sample_for
 {
 	while ( *sample_formats != AV_SAMPLE_FMT_NONE )
 	{
-		qDebug("sample format %d", *sample_formats);
 		if ( *sample_formats == format )
 			return true;
 
@@ -125,7 +122,6 @@ FFMpegVideoEncoderPriv::FFMpegVideoEncoderPriv()
 	audioResampleCtx = 0;
 
 	audioFrame = 0;
-	audioFifo = 0;
 	audioCodecCtx = 0;
 	videoImageBuffer = 0;
 	audioSampleBuffer = 0;
@@ -303,14 +299,23 @@ av_log_set_level(AV_LOG_VERBOSE);
 			audioCodecCtx->channels = m_profile->channels;
 			audioCodecCtx->sample_rate = m_profile->sampleRate;
 			audioCodecCtx->channel_layout = av_get_channel_layout( m_profile->channels == 1 ? "mono" : "stereo" );
-			audioCodecCtx->time_base.num = m_videoformat->frame_rate_num;
-			audioCodecCtx->time_base.den = m_videoformat->frame_rate_den;
+			audioCodecCtx->time_base.num = 1;
+			audioCodecCtx->time_base.den = m_profile->sampleRate;
+
+			if ( outputFormatCtx->oformat->flags & AVFMT_GLOBALHEADER )
+				audioCodecCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
 			// Since different audio codecs support different sample formats, look up which one is supported by this specific codec
 			if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_FLTP ) )
+			{
+				qDebug("Audio format %s: using AV_SAMPLE_FMT_FLTP", qPrintable( m_profile->audioCodec ) );
 				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_FLTP;
+			}
 			else if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_S16 ) )
+			{
+				qDebug("Audio format %s: using AV_SAMPLE_FMT_S16", qPrintable( m_profile->audioCodec ) );
 				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_S16;
+			}
 			else
 			{
 				m_errorMsg = QString("Could not find the sample format supported by the audio codec %1") . arg( m_profile->audioCodec );
@@ -391,15 +396,6 @@ av_log_set_level(AV_LOG_VERBOSE);
 				goto cleanup;
 			}
 
-			// Allocate audio FIFO
-			audioFifo = av_fifo_alloc( MAX_AUDIO_FRAME_SIZE );
-
-			if ( !audioFifo )
-			{
-				m_errorMsg = "Could not allocate audio FIFO";
-				goto cleanup;
-			}
-
 			if ( audioStream->codec->block_align == 1 && audioStream->codec->codec_id == CODEC_ID_MP3 )
 				audioStream->codec->block_align= 0;
 
@@ -451,10 +447,11 @@ av_log_set_level(AV_LOG_VERBOSE);
 	for ( unsigned int i = 0; i < outputFormatCtx->nb_streams; i++)
 	{
 		qDebug( "Output stream %d: %s %.02f FPS, ", i, outputFormatCtx->streams[i]->codec->codec->name,
-				(double) (outputFormatCtx->streams[i]->time_base.num / outputFormatCtx->streams[i]->time_base.den) );
+				((double) outputFormatCtx->streams[i]->codec->time_base.den / outputFormatCtx->streams[i]->codec->time_base.num) );
 
 		if ( outputFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-			qDebug("width %d height %d bitrate %d\n", outputFormatCtx->streams[i]->codec->width, outputFormatCtx->streams[i]->codec->height, outputFormatCtx->streams[i]->codec->bit_rate );
+			qDebug("width %d height %d bitrate %d\n", outputFormatCtx->streams[i]->codec->width,
+				   outputFormatCtx->streams[i]->codec->height, outputFormatCtx->streams[i]->codec->bit_rate );
 
 		if ( outputFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO )
 			qDebug( "channels %d sample_rate %d bitrate %d\n", outputFormatCtx->streams[i]->codec->channels,
@@ -507,10 +504,6 @@ bool FFMpegVideoEncoderPriv::close()
 	if ( audioFrame )
 		av_free( audioFrame );
 
-	if ( audioFifo )
-		av_fifo_free( audioFifo );
-
-	audioFifo = 0;
 	outputFormatCtx = 0;
 	outputFormat = 0;
 	videoCodecCtx = 0;
@@ -590,9 +583,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
 
 			while( avresample_available( audioResampleCtx ) >= audioFrame->nb_samples )
 			{
-				// Read a frame audio data from the fifo
-				//av_fifo_generic_read( audioFifo, audioSampleBuffer, audioSampleBuffer_size, NULL );
-
+				// Read a frame audio data from the resample fifo
 				if ( avresample_read( audioResampleCtx, audioFrame->data, audioFrame->nb_samples ) != audioFrame->nb_samples )
 				{
 					qWarning( "Error reading resampled audio: %d", err );
