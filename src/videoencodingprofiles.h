@@ -24,6 +24,7 @@
 #include <QString>
 #include <QStringList>
 
+const static unsigned int VIFO_INTERLACED = (1<<0);
 
 typedef struct
 {
@@ -36,7 +37,7 @@ typedef struct
 	unsigned int	sample_aspect_den;
 	unsigned int	display_aspect_num;
 	unsigned int	display_aspect_den;
-	bool			progressive;
+	unsigned int	flags;
 	unsigned int	colorspace;
 } VideoFormat;
 

@@ -351,7 +351,7 @@ void DialogExportOptions::videoShowDetails()
 	variables["$videoBitrate"] = QString("%1Kbps") .arg( m_currentProfile->bitratesVideo[m_quality] );
 	variables["$displayAspectRatio"] = QString("%1:%2") .arg( m_currentVideoFormat->display_aspect_num ) .arg( m_currentVideoFormat->display_aspect_den );
 	variables["$sampleAspectRatio"] = QString("%1:%2") .arg( m_currentVideoFormat->sample_aspect_num ) .arg( m_currentVideoFormat->sample_aspect_den );
-	variables["$progressive"] = m_currentVideoFormat->progressive ? "true" : "false";
+	variables["$progressive"] = (m_currentVideoFormat->flags & VIFO_INTERLACED) ? "false" : "true";
 	variables["$audioCodec"] = m_currentProfile->audioCodec;
 	variables["$audioSampleRate"] = QString::number( m_currentProfile->sampleRate );
 	variables["$audioChannels"] = QString::number( m_currentProfile->channels );

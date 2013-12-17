@@ -88,8 +88,10 @@ class FFMpegVideoEncoderPriv
 		// File has been outputFileOpened successfully
 		bool					outputFileOpened;
 
-		// Video frame output counter
-		unsigned int			videoFramesOut;
+		// Audio and video PTS
+		unsigned int			videoFrameNumber;
+		double					audioPTS;
+		double					videoPTS;
 };
 
 
@@ -127,7 +129,6 @@ FFMpegVideoEncoderPriv::FFMpegVideoEncoderPriv()
 	audioSampleBuffer = 0;
 	videoConvertCtx = 0;
 	outputFileOpened = false;
-	videoFramesOut = 0;
 }
 
 FFMpegVideoEncoderPriv::~FFMpegVideoEncoderPriv()
@@ -183,7 +184,6 @@ av_log_set_level(AV_LOG_VERBOSE);
 	}
 
 	// Set the video encoding parameters
-	videoCodecCtx->thread_count = 4;
 	videoCodecCtx->codec_type = AVMEDIA_TYPE_VIDEO;
 	videoCodecCtx->width = m_videoformat->width;
 	videoCodecCtx->height = m_videoformat->height;
@@ -191,10 +191,23 @@ av_log_set_level(AV_LOG_VERBOSE);
 	videoCodecCtx->sample_aspect_ratio.num = m_videoformat->sample_aspect_num;
 	videoCodecCtx->time_base.num = m_videoformat->frame_rate_num;
 	videoCodecCtx->time_base.den = m_videoformat->frame_rate_den;
-	videoCodecCtx->gop_size = (m_videoformat->sample_aspect_num / m_videoformat->sample_aspect_den) / 2;	// GOP size is framerate / 2
-	videoCodecCtx->pix_fmt = PIX_FMT_YUV420P; // FIXME m_videoformat->colorspace ? m_videoformat->colorspace : PIX_FMT_YUV420P;
+	videoCodecCtx->gop_size = (m_videoformat->frame_rate_den / m_videoformat->frame_rate_num) / 2;	// GOP size is framerate / 2
+	videoCodecCtx->pix_fmt = PIX_FMT_YUV420P;
 	videoCodecCtx->bit_rate = m_videobitrate;
 	videoCodecCtx->bit_rate_tolerance = m_videobitrate * av_q2d(videoCodecCtx->time_base);
+
+	// Set up the colorspace
+	if ( m_videoformat->colorspace == 601 )
+		videoCodecCtx->colorspace = ( 576 % videoCodecCtx->height ) ? AVCOL_SPC_SMPTE170M : AVCOL_SPC_BT470BG;
+	else if ( m_videoformat->colorspace == 709 )
+		videoCodecCtx->colorspace = AVCOL_SPC_BT709;
+
+	// Enable interlacing if needed
+	if ( m_videoformat->flags & VIFO_INTERLACED )
+		videoCodecCtx->flags |= CODEC_FLAG_INTERLACED_DCT;
+
+	// Enable multithreaded encoding: breaks FLV!
+	//videoCodecCtx->thread_count = 4;
 
 	// Video format-specific hacks
 	switch ( videoCodec->id )
@@ -240,6 +253,10 @@ av_log_set_level(AV_LOG_VERBOSE);
 	// Specify the coder for the stream
 	videoStream->codec = videoCodecCtx;
 
+	// Set the video stream timebase if not set
+	if ( videoStream->time_base.den == 0 )
+		videoStream->time_base = videoCodecCtx->time_base;
+
 	// Do we also have audio stream?
 	if ( m_aplayer )
 	{
@@ -284,6 +301,10 @@ av_log_set_level(AV_LOG_VERBOSE);
 				goto cleanup;
 			}
 
+			// Hack to use the fixed AC3 codec if available
+			if ( audioCodec->id == CODEC_ID_AC3 && avcodec_find_encoder_by_name( "ac3_fixed" ) )
+				audioCodec = avcodec_find_encoder_by_name( "ac3_fixed" );
+
 			// Allocate the audio context
 			audioCodecCtx = avcodec_alloc_context3( audioCodec );
 
@@ -316,9 +337,19 @@ av_log_set_level(AV_LOG_VERBOSE);
 				qDebug("Audio format %s: using AV_SAMPLE_FMT_S16", qPrintable( m_profile->audioCodec ) );
 				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_S16;
 			}
+			else if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_S16P ) )
+			{
+				qDebug("Audio format %s: using AV_SAMPLE_FMT_S16P", qPrintable( m_profile->audioCodec ) );
+				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_S16P;
+			}
 			else
 			{
-				m_errorMsg = QString("Could not find the sample format supported by the audio codec %1") . arg( m_profile->audioCodec );
+				QString supported;
+
+				for ( const enum AVSampleFormat * fmt = audioCodec->sample_fmts; *fmt != AV_SAMPLE_FMT_NONE; fmt++ )
+					supported+= QString(" %1") .arg( *fmt );
+
+				m_errorMsg = QString("Could not find the sample format supported by the audio codec %1; supported: %2") . arg( m_profile->audioCodec ) .arg(supported);
 				goto cleanup;
 			}
 
@@ -459,7 +490,9 @@ av_log_set_level(AV_LOG_VERBOSE);
 					outputFormatCtx->streams[i]->codec->bit_rate );
 	}
 
-	videoFramesOut = 0;
+	videoFrameNumber = 1;
+	audioPTS = 0;
+	videoPTS = 0;
 	outputFileOpened = true;
 	return true;
 
@@ -604,6 +637,12 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
 					// Newer ffmpeg versions do it anyway, but just in case
 					pkt.flags |= AV_PKT_FLAG_KEY;
 
+					if ( audioCodecCtx->coded_frame && audioCodecCtx->coded_frame->pts != AV_NOPTS_VALUE )
+					{
+						pkt.pts = av_rescale_q( audioCodecCtx->coded_frame->pts, audioCodecCtx->time_base, audioStream->time_base );
+						qDebug( "audio stream %d pkt pts %"PRId64" frame pts %"PRId64, audioStream->index, pkt.pts, audioCodecCtx->coded_frame->pts );
+					}
+
 					// And write the file
 					av_interleaved_write_frame( outputFormatCtx, &pkt );
 					outsize += pkt.size;
@@ -617,6 +656,10 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
 	// SWS conversion
 	convertImage_sws(img);
 
+	// Setup frame data
+	videoFrame->interlaced_frame = (m_videoformat->flags & VIFO_INTERLACED) ? 1 : 0;
+	videoFrame->pts = videoFrameNumber++;
+
 	av_init_packet( &pkt );
 	pkt.data = NULL;
 	pkt.size = 0;
@@ -628,17 +671,15 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
 		return -1;
 	}
 
-	videoFrame->pts += av_rescale_q( 1, videoCodecCtx->time_base, videoCodecCtx->time_base );
-
 	if ( got_packet )
 	{
 		// Convert the PTS from the packet base to stream base
 		if ( pkt.pts != AV_NOPTS_VALUE )
-			pkt.pts = av_rescale_q( pkt.pts, videoStream->time_base, videoStream->time_base );
+			pkt.pts = av_rescale_q( pkt.pts, videoCodecCtx->time_base, videoStream->time_base );
 
 		// Convert the DTS from the packet base to stream base
 		if ( pkt.dts != AV_NOPTS_VALUE )
-			pkt.dts = av_rescale_q( pkt.dts, videoStream->time_base, videoStream->time_base );
+			pkt.dts = av_rescale_q( pkt.dts, videoCodecCtx->time_base, videoStream->time_base );
 
 		if ( videoCodecCtx->coded_frame->key_frame )
 			pkt.flags |= AV_PKT_FLAG_KEY;
