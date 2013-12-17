@@ -88,10 +88,9 @@ class FFMpegVideoEncoderPriv
 		// File has been outputFileOpened successfully
 		bool					outputFileOpened;
 
-		// Audio and video PTS
+		// Video frame PTS
 		unsigned int			videoFrameNumber;
-		double					audioPTS;
-		double					videoPTS;
+		unsigned int			audioFrameNumber;
 };
 
 
@@ -490,9 +489,10 @@ av_log_set_level(AV_LOG_VERBOSE);
 					outputFormatCtx->streams[i]->codec->bit_rate );
 	}
 
-	videoFrameNumber = 1;
-	audioPTS = 0;
-	videoPTS = 0;
+	videoFrame->pts = 0;
+
+	videoFrameNumber = 0;
+	audioFrameNumber = 0;
 	outputFileOpened = true;
 	return true;
 
@@ -552,7 +552,7 @@ bool FFMpegVideoEncoderPriv::close()
 	return true;
 }
 
-int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
+int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 {
 	int outsize = 0;
 	AVPacket pkt;
@@ -563,9 +563,17 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
 	{
 		while ( true )
 		{
-			qint64 audio_timestamp = (audioStream->pts.val * (qint64) audioStream->time_base.num * 1000) / audioStream->time_base.den;
+			double audio_pts = (double) audioStream->pts.val * av_q2d( audioStream->time_base );
+			double video_pts = (double) videoStream->pts.val * av_q2d( videoStream->time_base );
+
+			qDebug( "PTS check: A: %g V: %g", audio_pts, video_pts );
+
+/*			qint64 audio_timestamp = (audioStream->pts.val * (qint64) audioStream->time_base.num * 1000) / audioStream->time_base.den;
 
 			if ( audio_timestamp >= time )
+				break;
+*/
+			if ( video_pts < audio_pts )
 				break;
 
 			AVPacket pkt;
@@ -626,6 +634,17 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
 				// Prepare the packet
 				av_init_packet( &pkt );
 
+				// audioFrame->pts
+				//audioFrame->pts = audioFrameNumber;
+				//audioFrameNumber += audioFrame->nb_samples;
+				//audioFrame->pts = av_rescale_q( time,AV_TIME_BASE_Q, audioCodecCtx->time_base );
+
+				qDebug("Audio time: %g", ((double) audioFrameNumber * audioCodecCtx->time_base.num) / audioCodecCtx->time_base.den );
+
+				//audioFrame->pts = audioFrameNumber;
+				//audioFrameNumber += audioFrame->nb_samples;
+				//destaudio->pts = first_pts + (int)((double)audio_samples * (90000.0/out_acodec->sample_rate));
+
 				// and encode the audio into the audiopkt
 				avcodec_encode_audio2( audioCodecCtx, &pkt, audioFrame, &got_packet );
 
@@ -638,16 +657,17 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
 					pkt.flags |= AV_PKT_FLAG_KEY;
 
 					if ( audioCodecCtx->coded_frame && audioCodecCtx->coded_frame->pts != AV_NOPTS_VALUE )
-					{
 						pkt.pts = av_rescale_q( audioCodecCtx->coded_frame->pts, audioCodecCtx->time_base, audioStream->time_base );
-						qDebug( "audio stream %d pkt pts %"PRId64" frame pts %"PRId64, audioStream->index, pkt.pts, audioCodecCtx->coded_frame->pts );
-					}
 
 					// And write the file
 					av_interleaved_write_frame( outputFormatCtx, &pkt );
 					outsize += pkt.size;
 
 					av_free_packet( &pkt );
+				}
+				else
+				{
+					qDebug("Frame was not encoded");
 				}
 			}
 		}
@@ -659,6 +679,8 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
 	// Setup frame data
 	videoFrame->interlaced_frame = (m_videoformat->flags & VIFO_INTERLACED) ? 1 : 0;
 	videoFrame->pts = videoFrameNumber++;
+
+	qDebug("Video time: %g", ((double) videoFrameNumber * videoCodecCtx->time_base.num) / videoCodecCtx->time_base.den );
 
 	av_init_packet( &pkt );
 	pkt.data = NULL;
@@ -681,6 +703,9 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
 		if ( pkt.dts != AV_NOPTS_VALUE )
 			pkt.dts = av_rescale_q( pkt.dts, videoCodecCtx->time_base, videoStream->time_base );
 
+		if ( pkt.duration > 0 )
+			pkt.duration = av_rescale_q( pkt.duration, videoCodecCtx->time_base, videoStream->time_base );
+
 		if ( videoCodecCtx->coded_frame->key_frame )
 			pkt.flags |= AV_PKT_FLAG_KEY;
 
@@ -692,7 +717,6 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 time )
 			return -1;
 
 		outsize += pkt.size;
-
 		av_free_packet( &pkt );
 	}
 

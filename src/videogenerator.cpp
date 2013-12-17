@@ -144,7 +144,7 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 
 			ui.lblFrames->setText( QString("%1 of %2") .arg( frames ) .arg( totalframes ) );
 			ui.lblOutput->setText( QString( "%1 Mb" ) .arg( size / (1024*1024) ) );
-			ui.lblTime->setText( markToTime( timing.elapsed() / 10 ) );
+			ui.lblTime->setText( markToTime( timing.elapsed() ) );
 			ui.image->setPixmap( QPixmap::fromImage( image ).scaled( ui.image->size() ) );
 
 			qApp->processEvents( QEventLoop::ExcludeUserInputEvents );
