@@ -330,10 +330,10 @@ void DialogExportOptions::videoShowDetails()
 					  "<tr><td>Codec:</td><td>$videoCodec</td></tr>"
 					  "<tr><td>Container:</td><td>$videoContainer</td></tr>"
 					  "<tr><td>Resolution:</td><td>$videoResolution</td></tr>"
-					  "<tr><td>Frame rate:</td><td>$frameRate</td></tr>"
+					  "<tr><td>Frame rate:</td><td>$frameRate FPS</td></tr>"
 					  "<tr><td>Bitrate:</td><td>$videoBitrate</td></tr>"
-					  "<tr><td>Display aspect ratio:</td><td>$displayAspectRatio</td></tr>"
-					  "<tr><td>Sample aspect ratio:</td><td>$sampleAspectRatio</td></tr>"
+					  "<tr><td>Display&nbsp;aspect&nbsp;ratio:</td><td>$displayAspectRatio</td></tr>"
+					  "<tr><td>Sample&nbsp;aspect&nbsp;ratio:</td><td>$sampleAspectRatio</td></tr>"
 					  "<tr><td>Progressive:</td><td>$progressive</td></tr>"
 					  "<tr colspan=2><td>&nbsp;</td></tr>"
 					  "<tr colspan=2><td><b>Audio parameters</b></td></tr>"
@@ -347,10 +347,10 @@ void DialogExportOptions::videoShowDetails()
 	variables["$videoCodec"] = m_currentProfile->videoCodec;
 	variables["$videoContainer"] = m_currentProfile->videoContainer;
 	variables["$videoResolution"] = QString("%1x%2") .arg(m_currentVideoFormat->width) .arg(m_currentVideoFormat->height);
-	variables["$frameRate"] = QString::number( (double) m_currentVideoFormat->display_aspect_den * 1000 / m_currentVideoFormat->display_aspect_num, 'f', 2 );
+	variables["$frameRate"] = QString::number( (double) m_currentVideoFormat->frame_rate_den / m_currentVideoFormat->frame_rate_num, 'g', 2 );
 	variables["$videoBitrate"] = QString("%1Kbps") .arg( m_currentProfile->bitratesVideo[m_quality] );
 	variables["$displayAspectRatio"] = QString("%1:%2") .arg( m_currentVideoFormat->display_aspect_num ) .arg( m_currentVideoFormat->display_aspect_den );
-	variables["$sampleAspectRatio"] = QString("%1:%2") .arg( m_currentVideoFormat->display_aspect_num ) .arg( m_currentVideoFormat->display_aspect_den );
+	variables["$sampleAspectRatio"] = QString("%1:%2") .arg( m_currentVideoFormat->sample_aspect_num ) .arg( m_currentVideoFormat->sample_aspect_den );
 	variables["$progressive"] = m_currentVideoFormat->progressive ? "true" : "false";
 	variables["$audioCodec"] = m_currentProfile->audioCodec;
 	variables["$audioSampleRate"] = QString::number( m_currentProfile->sampleRate );
