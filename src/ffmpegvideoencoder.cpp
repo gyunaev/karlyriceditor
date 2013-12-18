@@ -135,6 +135,100 @@ FFMpegVideoEncoderPriv::~FFMpegVideoEncoderPriv()
 	close();
 }
 
+bool FFMpegVideoEncoderPriv::close()
+{
+	if ( outputFormatCtx )
+	{
+		if ( outputFileOpened )
+		{
+			av_write_trailer( outputFormatCtx );
+
+			// close video and audio
+			avcodec_close( videoStream->codec );
+			avcodec_close( audioStream->codec );
+
+			// Close the file
+			avio_close( outputFormatCtx->pb );
+		}
+
+		// free the streams
+		for ( unsigned int i = 0; i < outputFormatCtx->nb_streams; i++ )
+		{
+			av_freep(&outputFormatCtx->streams[i]->codec);
+			av_freep(&outputFormatCtx->streams[i]);
+		}
+
+		// Free the format
+		av_free( outputFormatCtx );
+	}
+
+	delete[] videoImageBuffer;
+	delete[] audioSampleBuffer;
+
+	if ( videoFrame )
+		av_free(videoFrame);
+
+	if ( audioFrame )
+		av_free( audioFrame );
+
+	outputFormatCtx = 0;
+	outputFormat = 0;
+	videoCodecCtx = 0;
+	videoStream = 0;
+	audioStream = 0;
+	videoCodec = 0;
+	videoFrame = 0;
+	audioFrame = 0;
+	videoImageBuffer = 0;
+	audioSampleBuffer = 0;
+	videoConvertCtx = 0;
+
+	return true;
+}
+
+FFMpegVideoEncoder::FFMpegVideoEncoder()
+{
+	d = new FFMpegVideoEncoderPriv();
+}
+
+FFMpegVideoEncoder::~FFMpegVideoEncoder()
+{
+	delete d;
+}
+
+bool FFMpegVideoEncoder::close()
+{
+	return d->close();
+}
+
+int FFMpegVideoEncoder::encodeImage( const QImage & img, qint64 time )
+{
+	return d->encodeImage( img, time );
+}
+
+
+QString FFMpegVideoEncoder::createFile( const QString &filename,
+										const VideoEncodingProfile *profile,
+										const VideoFormat * videoformat,
+										unsigned int quality,
+										bool  convert_audio,
+										AudioPlayer *audio )
+{
+	d->m_aplayer = audio ? audio->impl() : 0;
+	d->m_profile = profile;
+	d->m_videoformat = videoformat;
+	d->m_convertaudio = convert_audio;
+
+	d->m_videobitrate = profile->bitratesVideo[quality] * 1000;
+	d->m_audiobitrate = profile->bitratesAudio[quality] * 1000;
+
+	if ( d->createFile( filename ) )
+		return QString();
+
+	return d->m_errorMsg;
+}
+
+
 bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 {
 	int err, size;
@@ -501,56 +595,6 @@ cleanup:
 	return false;
 }
 
-bool FFMpegVideoEncoderPriv::close()
-{
-	if ( outputFormatCtx )
-	{
-		if ( outputFileOpened )
-		{
-			av_write_trailer( outputFormatCtx );
-
-			// close video and audio
-			avcodec_close( videoStream->codec );
-			avcodec_close( audioStream->codec );
-
-			// Close the file
-			avio_close( outputFormatCtx->pb );
-		}
-
-		// free the streams
-		for ( unsigned int i = 0; i < outputFormatCtx->nb_streams; i++ )
-		{
-			av_freep(&outputFormatCtx->streams[i]->codec);
-			av_freep(&outputFormatCtx->streams[i]);
-		}
-
-		// Free the format
-		av_free( outputFormatCtx );
-	}
-
-	delete[] videoImageBuffer;
-	delete[] audioSampleBuffer;
-
-	if ( videoFrame )
-		av_free(videoFrame);
-
-	if ( audioFrame )
-		av_free( audioFrame );
-
-	outputFormatCtx = 0;
-	outputFormat = 0;
-	videoCodecCtx = 0;
-	videoStream = 0;
-	audioStream = 0;
-	videoCodec = 0;
-	videoFrame = 0;
-	audioFrame = 0;
-	videoImageBuffer = 0;
-	audioSampleBuffer = 0;
-	videoConvertCtx = 0;
-
-	return true;
-}
 
 int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 {
@@ -780,48 +824,4 @@ bool FFMpegVideoEncoderPriv::convertImage_sws(const QImage &img)
 
 	sws_scale( videoConvertCtx, srcplanes, srcstride,0, m_videoformat->height, videoFrame->data, videoFrame->linesize);
 	return true;
-}
-
-
-
-FFMpegVideoEncoder::FFMpegVideoEncoder()
-{
-	d = new FFMpegVideoEncoderPriv();
-}
-
-FFMpegVideoEncoder::~FFMpegVideoEncoder()
-{
-	delete d;
-}
-
-bool FFMpegVideoEncoder::close()
-{
-	return d->close();
-}
-
-int FFMpegVideoEncoder::encodeImage( const QImage & img, qint64 time )
-{
-	return d->encodeImage( img, time );
-}
-
-
-QString FFMpegVideoEncoder::createFile( const QString &filename,
-										const VideoEncodingProfile *profile,
-										const VideoFormat * videoformat,
-										unsigned int quality,
-										bool  convert_audio,
-										AudioPlayer *audio )
-{
-	d->m_aplayer = audio ? audio->impl() : 0;
-	d->m_profile = profile;
-	d->m_videoformat = videoformat;
-	d->m_convertaudio = convert_audio;
-
-	d->m_videobitrate = profile->bitratesVideo[quality] * 1000;
-	d->m_audiobitrate = profile->bitratesAudio[quality] * 1000;
-
-	if ( d->createFile( filename ) )
-		return QString();
-
-	return d->m_errorMsg;
 }
