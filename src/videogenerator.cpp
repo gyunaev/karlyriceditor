@@ -113,7 +113,7 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	qint64 dialog_step = total_length / 100;
 	qint64 time_step = (1000 * format->frame_rate_num) / format->frame_rate_den;
 
-	int frames = 0, size = 0, totalframes = total_length / time_step;
+	int frames = 0, totalframes = total_length / time_step;
 	QTime timing;
 	timing.start();
 
@@ -135,15 +135,13 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 			return;
 		}
 
-		size += ret;
-
 		// Should we update the progress dialog?
 		if ( time / dialog_step > ui.progressBar->value() )
 		{
 			ui.progressBar->setValue( time / dialog_step );
 
 			ui.lblFrames->setText( QString("%1 of %2") .arg( frames ) .arg( totalframes ) );
-			ui.lblOutput->setText( QString( "%1 Mb" ) .arg( size / (1024*1024) ) );
+			ui.lblOutput->setText( QString( "%1 Mb" ) .arg( ret / (1024*1024) ) );
 			ui.lblTime->setText( markToTime( timing.elapsed() ) );
 			ui.image->setPixmap( QPixmap::fromImage( image ).scaled( ui.image->size() ) );
 

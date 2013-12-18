@@ -91,7 +91,10 @@ class FFMpegVideoEncoderPriv
 
 		// Video frame PTS
 		unsigned int			videoFrameNumber;
-		unsigned int			audioFrameNumber;
+		unsigned int			audioPTStracker;
+
+		// Total output size
+		unsigned int			outputTotalSize;
 };
 
 
@@ -232,7 +235,43 @@ QString FFMpegVideoEncoder::createFile( const QString &filename,
 
 void FFMpegVideoEncoderPriv::flush()
 {
+	int err, got_output;
 
+	AVPacket pkt;
+	av_init_packet( &pkt );
+
+	// packet data will be allocated by the encoder - av_init_packet() does NOT do that!
+	pkt.data = 0;
+	pkt.size = 0;
+
+	// Get the delayed frames
+	for ( got_output = 1; got_output; )
+	{
+		if ( (err = avcodec_encode_audio2( audioCodecCtx, &pkt, 0, &got_output )) < 0 )
+			return;
+
+		if ( got_output )
+		{
+			// Set up the packet index
+			pkt.stream_index = audioStream->index;
+
+			// Newer ffmpeg versions do it anyway, but just in case
+			pkt.flags |= AV_PKT_FLAG_KEY;
+
+			if ( audioCodecCtx->coded_frame && audioCodecCtx->coded_frame->pts != AV_NOPTS_VALUE )
+				pkt.pts = av_rescale_q( audioCodecCtx->coded_frame->pts, audioCodecCtx->time_base, audioStream->time_base );
+
+			// And write the file
+			if ( (err = av_interleaved_write_frame( outputFormatCtx, &pkt )) < 0 )
+			{
+				qWarning("Failed to write the audio packet: error %d", err );
+				return;
+			}
+
+			outputTotalSize += pkt.size;
+			av_free_packet( &pkt );
+		}
+	}
 }
 
 bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
@@ -577,7 +616,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 	}
 
 	avformat_write_header( outputFormatCtx, 0 );
-
+/*
 	// Dump output streams
 	for ( unsigned int i = 0; i < outputFormatCtx->nb_streams; i++)
 	{
@@ -593,12 +632,12 @@ av_log_set_level(AV_LOG_VERBOSE);
 					outputFormatCtx->streams[i]->codec->sample_rate,
 					outputFormatCtx->streams[i]->codec->bit_rate );
 	}
-
-	videoFrame->pts = 0;
-
+*/
 	videoFrameNumber = 0;
-	audioFrameNumber = 0;
+	audioPTStracker = 0;
+	outputTotalSize = 0;
 	outputFileOpened = true;
+
 	return true;
 
 cleanup:
@@ -609,7 +648,7 @@ cleanup:
 
 int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 {
-	int err, outsize = 0;
+	int err;
 	AVPacket pkt;
 	int got_packet;
 
@@ -623,11 +662,6 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 
 			//qDebug( "PTS check: A: %g V: %g", audio_pts, video_pts );
 
-/*			qint64 audio_timestamp = (audioStream->pts.val * (qint64) audioStream->time_base.num * 1000) / audioStream->time_base.den;
-
-			if ( audio_timestamp >= time )
-				break;
-*/
 			if ( video_pts < audio_pts )
 				break;
 
@@ -689,16 +723,16 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 				// Prepare the packet
 				av_init_packet( &pkt );
 
-				// audioFrame->pts
-				//audioFrame->pts = audioFrameNumber;
-				//audioFrameNumber += audioFrame->nb_samples;
-				//audioFrame->pts = av_rescale_q( time,AV_TIME_BASE_Q, audioCodecCtx->time_base );
+				// packet data will be allocated by the encoder - av_init_packet() does NOT do that!
+				pkt.data = 0;
+				pkt.size = 0;
 
-				//qDebug("Audio time: %g", ((double) audioFrameNumber * audioCodecCtx->time_base.num) / audioCodecCtx->time_base.den );
-
-				//audioFrame->pts = audioFrameNumber;
-				//audioFrameNumber += audioFrame->nb_samples;
-				//destaudio->pts = first_pts + (int)((double)audio_samples * (90000.0/out_acodec->sample_rate));
+				// this only works for theora+vorbis
+				if ( videoCodec->id == AV_CODEC_ID_THEORA && audioCodec->id == AV_CODEC_ID_VORBIS )
+				{
+					audioFrame->pts = audioPTStracker;
+					audioPTStracker += audioFrame->nb_samples;
+				}
 
 				// and encode the audio into the audiopkt
 				if ( (err = avcodec_encode_audio2( audioCodecCtx, &pkt, audioFrame, &got_packet )) < 0 )
@@ -725,13 +759,9 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 						return -1;
 					}
 
-					outsize += pkt.size;
+					outputTotalSize += pkt.size;
 
 					av_free_packet( &pkt );
-				}
-				else
-				{
-					qDebug("Frame was not encoded");
 				}
 			}
 		}
@@ -747,7 +777,9 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 	//qDebug("Video time: %g", ((double) videoFrameNumber * videoCodecCtx->time_base.num) / videoCodecCtx->time_base.den );
 
 	av_init_packet( &pkt );
-	pkt.data = NULL;
+
+	// packet data will be allocated by the encoder - av_init_packet() does NOT do that!
+	pkt.data = 0;
 	pkt.size = 0;
 
 	err = avcodec_encode_video2( videoCodecCtx, &pkt, videoFrame, &got_packet );
@@ -780,11 +812,11 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 		if ( err < 0 )
 			return -1;
 
-		outsize += pkt.size;
+		outputTotalSize += pkt.size;
 		av_free_packet( &pkt );
 	}
 
-	return outsize;
+	return outputTotalSize;
 }
 
 
