@@ -728,9 +728,9 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 				pkt.size = 0;
 
 				// this only works for theora+vorbis
-				if ( videoCodec->id == AV_CODEC_ID_THEORA && audioCodec->id == AV_CODEC_ID_VORBIS )
+//				if ( videoCodec->id == AV_CODEC_ID_THEORA && audioCodec->id == AV_CODEC_ID_VORBIS )
 				{
-					audioFrame->pts = audioPTStracker;
+					audioFrame->pts = av_rescale_q( audioPTStracker, (AVRational){1, audioCodecCtx->sample_rate}, audioCodecCtx->time_base);
 					audioPTStracker += audioFrame->nb_samples;
 				}
 
@@ -749,8 +749,10 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 					// Newer ffmpeg versions do it anyway, but just in case
 					pkt.flags |= AV_PKT_FLAG_KEY;
 
-					if ( audioCodecCtx->coded_frame && audioCodecCtx->coded_frame->pts != AV_NOPTS_VALUE )
-						pkt.pts = av_rescale_q( audioCodecCtx->coded_frame->pts, audioCodecCtx->time_base, audioStream->time_base );
+					// Rescale output packet timestamp values from codec to stream timebase
+					pkt.pts = av_rescale_q_rnd( pkt.pts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
+					pkt.dts = av_rescale_q_rnd( pkt.dts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
+					pkt.duration = av_rescale_q( pkt.duration, audioCodecCtx->time_base, audioStream->time_base);
 
 					// And write the file
 					if ( (err = av_interleaved_write_frame( outputFormatCtx, &pkt )) < 0 )
