@@ -560,7 +560,7 @@ void VideoEncodingProfiles::initInternalProfiles()
 
 	m_videoProfiles[ "AVI (mpeg2)" ] = p;
 
-/*
+
 	// WEBM (vpx)
 	p.type = VideoEncodingProfile::TYPE_FILE;
 	p.name = "WEBM (vpx)";
@@ -583,7 +583,7 @@ void VideoEncodingProfiles::initInternalProfiles()
 	p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 192;
 
 	m_videoProfiles[ "WEBM (vpx)" ] = p;
-*/
+
 
 	// FLV (h.264)
 	p.type = VideoEncodingProfile::TYPE_FILE;
