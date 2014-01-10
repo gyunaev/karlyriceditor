@@ -10,6 +10,10 @@ win32-g++-cross: {
 	LIBS += -lwsock32 -ldxguid
 }
 
+linux-g++-32: {
+	LIBS += -L.
+}
+
 # Input
 HEADERS += mainwindow.h \
     wizard_newproject.h \
