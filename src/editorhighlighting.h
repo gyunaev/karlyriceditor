@@ -21,6 +21,7 @@
 #define EDITORHIGHLIGHTING_H
 
 #include <QSyntaxHighlighter>
+#include <QTextEdit>
 
 class EditorHighlighting : public QSyntaxHighlighter
 {

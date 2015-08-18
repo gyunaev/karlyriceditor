@@ -46,6 +46,7 @@
 #include "cdggenerator.h"
 #include "videoencodingprofiles.h"
 #include "licensing.h"
+#include "util.h"
 #include "ui_dialog_registration.h"
 
 MainWindow * pMainWindow;
@@ -256,6 +257,7 @@ void MainWindow::act_fileNewProject()
 			return;
 	}
 
+	m_projectFile.clear();
 	Project * newproj = new Project( editor );
 
 	// Show the new project wizard
@@ -342,9 +344,14 @@ bool MainWindow::act_fileSaveProject()
 
 bool MainWindow::act_fileSaveProjectAs()
 {
+	QString suggestedFile = m_projectFile;
+
+	if ( suggestedFile.isEmpty() )
+		suggestedFile = Util::removeFileExtention( m_project->musicFile() ) + ".kleproj";
+
 	QString fileName = QFileDialog::getSaveFileName( this,
 			tr("Save as a project file"),
-			QString::null,
+			suggestedFile,
 			tr("Project files (*.kleproj)") );
 
 	if ( fileName.isEmpty() )

@@ -575,7 +575,7 @@ int CDGRenderer::UpdateBuffer( unsigned int packets_due )
 	{
 		SubCode& sc = m_cdgStream[ m_streamIdx ].subcode;
 
-		//dumpPacket( &m_cdgStream[ m_streamIdx ] );
+        //dumpPacket( &m_cdgStream[ m_streamIdx ] );
 
 		// Execute the instruction
 		switch ( sc.instruction & CDG_MASK )

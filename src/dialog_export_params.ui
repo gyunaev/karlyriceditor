@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>607</width>
-    <height>579</height>
+    <width>592</width>
+    <height>581</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -157,7 +157,7 @@
          <property name="title">
           <string>Lyrics rendering</string>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_8">
+         <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_4">
             <item>
@@ -344,11 +344,38 @@
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="cbVideoPreamble">
-            <property name="text">
-             <string>Draw squares showing where singing starts</string>
-            </property>
-           </widget>
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <item>
+             <widget class="QCheckBox" name="cbVideoPreamble">
+              <property name="text">
+               <string>Draw squares showing where singing starts</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_9">
+              <property name="text">
+               <string>Font antialiasing:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="boxFontAntialiasing"/>
+            </item>
+           </layout>
           </item>
          </layout>
         </widget>
@@ -520,7 +547,6 @@
   <tabstop>btnVideoColorInactive</tabstop>
   <tabstop>btnVideoColorInfo</tabstop>
   <tabstop>btnVideoColorActive</tabstop>
-  <tabstop>cbVideoPreamble</tabstop>
   <tabstop>leArtist</tabstop>
   <tabstop>leTitle</tabstop>
   <tabstop>leTitleCreatedBy</tabstop>

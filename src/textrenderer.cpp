@@ -253,7 +253,7 @@ void TextRenderer::setColorAlpha( int alpha )
 {
 	m_colorTitle.setAlpha( alpha );
 	m_colorToSing.setAlpha( alpha );
-	m_colorSang.setAlpha( alpha );
+    m_colorSang.setAlpha( alpha );
 }
 
 void TextRenderer::setTitlePageData( const QString& artist, const QString& title, const QString& userCreatedBy, unsigned int msec )
@@ -757,6 +757,7 @@ int TextRenderer::update( qint64 timing )
 		// Do the new lyrics fit into the image without resizing?
 		QRect imgrect = boundingRect( blockid, m_renderFont );
 
+        qDebug("rect %d %d", imgrect.width(), imgrect.height());
 		if ( imgrect.width() > m_image.width() || imgrect.height() > m_image.height() )
 		{
 			QSize newsize = QSize( qMax( imgrect.width() + 10, m_image.width() ),

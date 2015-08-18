@@ -110,6 +110,11 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 		leTitleCreatedBy->setEnabled( false );
 		leTitleCreatedBy->setText( "Application not registered, this field cannot be modified" );
 	}
+
+    // Font antialiasing
+    boxFontAntialiasing->addItem( "Full antialiasing", (int) QFont::PreferAntialias );
+    boxFontAntialiasing->addItem( "Moderate antialiasing", (int) QFont::NoSubpixelAntialias );
+    boxFontAntialiasing->addItem( "Disabled", (int) QFont::NoAntialias );
 }
 
 
@@ -135,13 +140,18 @@ void DialogExportOptions::setBoxIndex( Project::Tag tag, QComboBox * box )
 void DialogExportOptions::autodetectFontSize()
 {
 	QFont font = fontVideo->currentFont();
-
-	if ( !m_videomode )
-		font.setStyleStrategy( QFont::NoAntialias );
+    font.setStyleStrategy( (QFont::StyleStrategy) boxFontAntialiasing->currentData().toInt() );
 
 	// Ask the renderer
 	TextRenderer renderer( 100, 100 );
 	renderer.setLyrics( m_lyrics );
+    renderer.setRenderFont( font );
+
+    renderer.setTitlePageData( leArtist->text(),
+                               leTitle->text(),
+                               leTitleCreatedBy->text(),
+                               m_project->tag( Project::Tag_CDG_titletime, "5" ).toInt() * 1000 );
+
 	int fsize = renderer.autodetectFontSize( getVideoSize(), font );
 
 	fontVideoSize->setValue( fsize );
@@ -149,14 +159,19 @@ void DialogExportOptions::autodetectFontSize()
 
 bool DialogExportOptions::testFontSize()
 {
-	QFont font = fontVideo->currentFont();
-	font.setPointSize( fontVideoSize->value() );
+    QFont font = fontVideo->currentFont();
+    font.setStyleStrategy( (QFont::StyleStrategy) boxFontAntialiasing->currentData().toInt() );
+    font.setPointSize( fontVideoSize->value() );
 
-	if ( !m_videomode )
-		font.setStyleStrategy( QFont::NoAntialias );
+    // Ask the renderer
+    TextRenderer renderer( 100, 100 );
+    renderer.setLyrics( m_lyrics );
+    renderer.setRenderFont( font );
 
-	TextRenderer renderer( 100, 100 );
-	renderer.setLyrics( m_lyrics );
+    renderer.setTitlePageData( leArtist->text(),
+                               leTitle->text(),
+                               leTitleCreatedBy->text(),
+                               m_project->tag( Project::Tag_CDG_titletime, "5" ).toInt() * 1000 );
 
 	if ( !renderer.verifyFontSize( getVideoSize(), font ) )
 	{

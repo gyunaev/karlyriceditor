@@ -113,4 +113,4 @@ FORMS += mainwindow.ui \
     dialog_timeadjustment.ui \
     video_profile_dialog.ui
 
-
+QT += widgets

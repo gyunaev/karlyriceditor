@@ -328,9 +328,16 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	// Prepare the renderer
 	TextRenderer lyricrenderer( CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT );
 
-	lyricrenderer.setLyrics( lyrics );
-	lyricrenderer.setRenderFont( QFont( m_project->tag(Project::Tag_CDG_font), m_project->tag(Project::Tag_CDG_fontsize).toInt()) );
+    // Lyrics must be set before anything else as it overrides the data
+    lyricrenderer.setLyrics( lyrics );
 
+    // Rendering font
+    QFont renderFont( m_project->tag(Project::Tag_CDG_font) );
+    renderFont.setStyleStrategy( (QFont::StyleStrategy) dlg.boxFontAntialiasing->currentData().toInt() );
+    renderFont.setPointSize( m_project->tag(Project::Tag_CDG_fontsize).toInt() );
+    lyricrenderer.setRenderFont( renderFont );
+
+    // Colors
 	lyricrenderer.setColorBackground( m_colorBackground );
 	lyricrenderer.setColorTitle( m_colorInfo );
 	lyricrenderer.setColorSang( m_colorInactive );
