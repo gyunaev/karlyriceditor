@@ -937,7 +937,15 @@ void Editor::insertColorChangeTag( const QString& name )
 	QTextCursor cur = textCursor();
 	cur.beginEditBlock();
 	cur.insertText( "@@" + name );
-	cur.endEditBlock();
+    cur.endEditBlock();
+}
+
+void Editor::insertBackgroundColorChangeTag(const QString &name)
+{
+    QTextCursor cur = textCursor();
+    cur.beginEditBlock();
+    cur.insertText( "{ COLOR=" + name + " }" );
+    cur.endEditBlock();
 }
 
 void Editor::addMissingTimingMarks()

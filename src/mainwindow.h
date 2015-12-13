@@ -60,6 +60,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	act_editInsertPicture();
 		void	act_editInsertVideo();
 		void	act_editInsertColorChange();
+        void	act_editInsertBackgroundColorChange();
 		void	act_addMissingTimingMarks();
 		void	act_adjustTiming();
 

@@ -140,7 +140,7 @@ void DialogExportOptions::setBoxIndex( Project::Tag tag, QComboBox * box )
 void DialogExportOptions::autodetectFontSize()
 {
 	QFont font = fontVideo->currentFont();
-    font.setStyleStrategy( (QFont::StyleStrategy) boxFontAntialiasing->currentData().toInt() );
+    font.setStyleStrategy( getFontStyleStrategy() );
 
 	// Ask the renderer
 	TextRenderer renderer( 100, 100 );
@@ -160,7 +160,7 @@ void DialogExportOptions::autodetectFontSize()
 bool DialogExportOptions::testFontSize()
 {
     QFont font = fontVideo->currentFont();
-    font.setStyleStrategy( (QFont::StyleStrategy) boxFontAntialiasing->currentData().toInt() );
+    font.setStyleStrategy( getFontStyleStrategy() );
     font.setPointSize( fontVideoSize->value() );
 
     // Ask the renderer
@@ -405,7 +405,15 @@ bool DialogExportOptions::videoParams(const VideoEncodingProfile **profile, cons
 	*audioMode = m_audioEncodingMode;
 	*qualty = m_quality;
 
-	return true;
+    return true;
+}
+
+QFont::StyleStrategy DialogExportOptions::getFontStyleStrategy()
+{
+    if ( boxFontAntialiasing->currentIndex() == -1 )
+        return QFont::PreferAntialias;
+
+    return (QFont::StyleStrategy) boxFontAntialiasing->itemData( boxFontAntialiasing->currentIndex() ).toInt();
 }
 
 

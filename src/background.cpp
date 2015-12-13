@@ -40,8 +40,8 @@ void Background::reset()
 BackgroundImage::BackgroundImage( const QString& filename )
 	: Background()
 {
-	if ( !m_image.load( filename ) )
-		qWarning("Cannot load image file %s", qPrintable(filename));
+    if ( !m_image.load( filename ) )
+        qWarning("Cannot load image file %s", qPrintable(filename));
 }
 
 bool BackgroundImage::isValid() const
@@ -91,4 +91,23 @@ qint64 BackgroundVideo::doDraw( QImage& image, qint64 timing )
 
 	// We use our own cache
 	return 0;
+}
+
+
+BackgroundColor::BackgroundColor(const QString &arg)
+    : m_color( arg )
+{
+}
+
+bool BackgroundColor::isValid() const
+{
+    return m_color.isValid();
+}
+
+qint64 BackgroundColor::doDraw(QImage &image, qint64 timing)
+{
+    image.fill( m_color );
+
+    // No updates
+    return -1;
 }

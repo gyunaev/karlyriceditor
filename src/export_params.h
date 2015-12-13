@@ -48,6 +48,8 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 							 unsigned int * audioMode,
 							 unsigned int * qualty );
 
+        QFont::StyleStrategy getFontStyleStrategy();
+
 	private slots:
 		void	activateTab( int index );
 		void	autodetectFontSize();

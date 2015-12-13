@@ -18,6 +18,7 @@
  **************************************************************************/
 
 #include <QFile>
+#include <QColor>
 #include <QRegExp>
 #include <QPainter>
 
@@ -26,8 +27,10 @@
 
 enum
 {
+    TYPE_DEFAULT,
 	TYPE_IMAGE,
 	TYPE_VIDEO,
+    TYPE_COLOR,
 };
 
 LyricsEvents::LyricsEvents()
@@ -82,12 +85,18 @@ QString LyricsEvents::validateEvent( const QString& text )
 bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * errmsg )
 {
 	QRegExp check("^(\\w+)=(.*)$");
+    QString key, value;
 
-	if ( text.trimmed().indexOf( check ) == -1 )
-		return "Invalid event format; must be like IMAGE=path";
+    if ( text.trimmed() != "DEFAULT" )
+    {
+        if ( text.trimmed().indexOf( check ) == -1 )
+            return "Invalid event format; must be like IMAGE=path";
 
-	QString key = check.cap( 1 );
-	QString value = check.cap( 2 );
+        key = check.cap( 1 );
+        value = check.cap( 2 );
+    }
+    else
+        key = text.trimmed();
 
 	if ( key == "IMAGE" )
 	{
@@ -151,6 +160,34 @@ bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * err
 
 		return true;
 	}
+    else if ( key == "DEFAULT" )
+    {
+        if ( event )
+        {
+            event->type = TYPE_DEFAULT;
+            event->data.clear();
+        }
+
+        return true;
+    }
+    else if ( key == "COLOR" )
+    {
+        if ( !QColor::isValidColor(value) )
+        {
+            if ( errmsg )
+                *errmsg = QString("Color %1 is not valid") .arg(value);
+
+            return false;
+        }
+
+        if ( event )
+        {
+            event->type = TYPE_COLOR;
+            event->data = value;
+        }
+
+        return true;
+    }
 
 	if ( errmsg )
 		*errmsg = QString("Invalid event name '%1'") .arg(key);
@@ -183,20 +220,30 @@ bool LyricsEvents::prepare( QString * errmsg )
 			case TYPE_VIDEO:
 				bgev = new BackgroundVideo( it.value().data );
 				break;
+
+            case TYPE_COLOR:
+                bgev = new BackgroundColor( it.value().data );
+                break;
+
+            case TYPE_DEFAULT:
+                break;
+
+            default:
+                continue;
 		}
 
-		if ( !bgev )
-			continue;
+        if ( bgev )
+        {
+            if ( !bgev->isValid() )
+            {
+                delete bgev;
 
-		if ( !bgev->isValid() )
-		{
-			delete bgev;
+                if ( errmsg )
+                    *errmsg = "Invalid event";
 
-			if ( errmsg )
-				*errmsg = "Invalid event";
-
-			return false;
-		}
+                return false;
+            }
+        }
 
 		m_preparedEvents[ it.key() ] = bgev;
 	}
@@ -247,6 +294,9 @@ void LyricsEvents::draw( qint64 timing, QImage& image )
 		return;
 
 	Background * bg = found.value();
+
+    if ( !bg )
+        return;
 
 	// Same event as before?
 	if ( found.key() != m_eventTiming )

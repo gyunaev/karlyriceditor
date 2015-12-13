@@ -73,6 +73,7 @@ class Editor : public QTextEdit
 		void	insertImageTag( const QString& file );
 		void	insertVideoTag( const QString& file );
 		void	insertColorChangeTag( const QString& name );
+        void	insertBackgroundColorChangeTag( const QString& name );
 		void	removeLastTimeTag();
 		void	addMissingTimingMarks();
 		void	removeAllTimeTags();

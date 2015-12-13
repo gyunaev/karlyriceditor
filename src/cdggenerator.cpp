@@ -333,7 +333,7 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 
     // Rendering font
     QFont renderFont( m_project->tag(Project::Tag_CDG_font) );
-    renderFont.setStyleStrategy( (QFont::StyleStrategy) dlg.boxFontAntialiasing->currentData().toInt() );
+    renderFont.setStyleStrategy( dlg.getFontStyleStrategy() );
     renderFont.setPointSize( m_project->tag(Project::Tag_CDG_fontsize).toInt() );
     lyricrenderer.setRenderFont( renderFont );
 

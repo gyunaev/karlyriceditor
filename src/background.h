@@ -35,7 +35,7 @@ class Background
 		// it should not be called at all. If 0 is returned, doDraw() will be called
 		// again the next update. If -1 is returned, doDraw() will never be called
 		// again, and the cached image will be used.
-		virtual qint64 doDraw( QImage& image, qint64 timing ) = 0;
+        virtual qint64 doDraw( QImage& image, qint64 timing ) = 0;
 
 		// This function is called if timing went backward (user seek back), in which
 		// case it will be called before doDraw() with a new time. Video players, for
@@ -71,5 +71,16 @@ class BackgroundVideo : public Background
 		bool				m_valid;
 };
 
-#endif // BACKGROUND_H
+class BackgroundColor : public Background
+{
+    public:
+        BackgroundColor( const QString& arg );
 
+        bool isValid() const;
+        qint64 doDraw( QImage& image, qint64 timing );
+
+    private:
+        QColor              m_color;
+};
+
+#endif // BACKGROUND_H

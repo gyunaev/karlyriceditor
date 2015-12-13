@@ -188,11 +188,12 @@ void MainWindow::connectActions()
 	connect( actionTest_lyric_file, SIGNAL( triggered()), this, SLOT( act_projectTest()) );
 	connect( actionTest_CDG_lyrics, SIGNAL( triggered()), this, SLOT( act_projectTestCDG()) );
 	connect( actionShow_Player_dock_wingow, SIGNAL(triggered(bool)), this, SLOT(act_settingsShowPlayer(bool)) );
-	connect( actionInsert_picture, SIGNAL(triggered(bool)), this, SLOT(act_editInsertPicture() ) );
-	connect( actionInsert_video, SIGNAL(triggered(bool)), this, SLOT(act_editInsertVideo() ) );
+    connect( actionInsert_picture, SIGNAL(triggered()), this, SLOT(act_editInsertPicture() ) );
+    connect( actionInsert_video, SIGNAL(triggered()), this, SLOT(act_editInsertVideo() ) );
 	connect( actionInsert_color_change, SIGNAL(triggered(bool)), this, SLOT(act_editInsertColorChange() ) );
-	connect( actionAdd_eol_timing_marks, SIGNAL(triggered(bool)), this, SLOT(act_addMissingTimingMarks() ) );
-	connect( actionTime_adjustment, SIGNAL(triggered(bool)), this, SLOT(act_adjustTiming() ) );
+    connect( actionInsert_background_color_change, SIGNAL(triggered()), this, SLOT(act_editInsertBackgroundColorChange()) );
+    connect( actionAdd_eol_timing_marks, SIGNAL(triggered()), this, SLOT(act_addMissingTimingMarks() ) );
+    connect( actionTime_adjustment, SIGNAL(triggered()), this, SLOT(act_adjustTiming() ) );
 
 	// docks
 	connect( m_player,SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPlayer(bool)) );
@@ -477,7 +478,15 @@ void MainWindow::act_editInsertColorChange()
 	QColor newcolor = QColorDialog::getColor();
 
 	if ( newcolor.isValid() )
-		editor->insertColorChangeTag( newcolor.name() );
+        editor->insertColorChangeTag( newcolor.name() );
+}
+
+void MainWindow::act_editInsertBackgroundColorChange()
+{
+    QColor newcolor = QColorDialog::getColor();
+
+    if ( newcolor.isValid() )
+        editor->insertBackgroundColorChangeTag( newcolor.name() );
 }
 
 void MainWindow::act_editClearText()
