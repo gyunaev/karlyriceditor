@@ -113,7 +113,11 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 
     // Font antialiasing
     boxFontAntialiasing->addItem( "Full antialiasing", (int) QFont::PreferAntialias );
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
     boxFontAntialiasing->addItem( "Moderate antialiasing", (int) QFont::NoSubpixelAntialias );
+#endif
+
     boxFontAntialiasing->addItem( "Disabled", (int) QFont::NoAntialias );
 }
 
