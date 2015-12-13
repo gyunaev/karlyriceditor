@@ -136,12 +136,12 @@ void MainWindow::checkNewVersionAvailable()
 	// Create a New version available object if necessary. This object will auto-delete itself
 	CheckNewVersion * pNewVer = new CheckNewVersion();
 
-	connect( pNewVer, SIGNAL(error(int)), this, SLOT(newVerAvailError(int)) );
-	connect( pNewVer, SIGNAL(newVersionAvailable( NewVersionMetaMap )), this, SLOT(newVerAvailable(NewVersionMetaMap)) );
+    connect( pNewVer, SIGNAL(error(int)), this, SLOT(newVerAvailError(int)), Qt::QueuedConnection );
+    connect( pNewVer, SIGNAL(newVersionAvailable( NewVersionMetaMap )), this, SLOT(newVerAvailable(NewVersionMetaMap)), Qt::QueuedConnection );
 
-	pNewVer->setUrl( "http://www.ulduzsoft.com.com/karlyriceditor_latestversion.txt" );
+    pNewVer->setUrl( "http://www.ulduzsoft.com/karlyriceditor_latestversion.txt" );
 	pNewVer->setCurrentVersion( QString("%1.%2").arg( APP_VERSION_MAJOR ) . arg( APP_VERSION_MINOR ) );
-	pNewVer->start();
+    pNewVer->start();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

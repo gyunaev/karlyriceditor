@@ -325,7 +325,6 @@ void CheckNewVersion::run()
 		emit newVersionAvailable( contentMap );
 
 	reportStatus( Status_Finished );
-	deleteLater();
 }
 
 
