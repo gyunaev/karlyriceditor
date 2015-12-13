@@ -67,8 +67,19 @@
 		SetOutPath "$INSTDIR"
 		
 		; Our files
-		File karlyriceditor.exe
-		File karlyriceditor.exe.manifest
+        CreateDirectory "$INSTDIR\imageformats"
+        CreateDirectory "$INSTDIR\codecs"
+        CreateDirectory "$INSTDIR\iconengines"
+        File /oname=$INSTDIR\imageformats\qgif4.dll qgif4.dll
+        File /oname=$INSTDIR\imageformats\qico4.dll qico4.dll
+        File /oname=$INSTDIR\imageformats\qjpeg4.dll qjpeg4.dll
+        File /oname=$INSTDIR\imageformats\qsvg4.dll qsvg4.dll
+        File /oname=$INSTDIR\imageformats\qtiff4.dll qtiff4.dll
+        File /oname=$INSTDIR\iconengines\qsvgicon4.dll qsvgicon4.dll
+        File QtGui4.dll  
+        File QtCore4.dll
+        File karlyriceditor.exe
+        File karlyriceditor.exe.manifest
 
 		;Store installation folder
 		WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Ulduzsoft\KarLyricEditor" "" "$INSTDIR"
@@ -91,6 +102,19 @@
 	Section "Uninstall"
 
 		; Our files
+        Delete "$INSTDIR\imageformats\qgif4.dll"
+        Delete "$INSTDIR\imageformats\qico4.dll"
+        Delete "$INSTDIR\imageformats\qjpeg4.dll"
+        Delete "$INSTDIR\imageformats\qmng4.dll"
+        Delete "$INSTDIR\imageformats\qsvg4.dll"
+        Delete "$INSTDIR\imageformats\qtiff4.dll"
+        Delete "$INSTDIR\iconengines\qsvgicon4.dll"
+        Delete "$INSTDIR\codecs\qcncodecs4.dll"
+        Delete "$INSTDIR\codecs\qjpcodecs4.dll"
+        Delete "$INSTDIR\codecs\qkrcodecs4.dll"
+        Delete "$INSTDIR\codecs\qtwcodecs4.dll"
+        Delete "$INSTDIR\QtGui4.dll"
+        Delete "$INSTDIR\QtCore4.dll"
 		Delete "$INSTDIR\karlyriceditor.exe"
 		Delete "$INSTDIR\karlyriceditor.exe.manifest"
 		Delete "$INSTDIR\uninst.exe"

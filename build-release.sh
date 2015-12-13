@@ -2,12 +2,7 @@
 
 RELEASEDIR="releases"
 
-# Path to (cross-platform) mingw compiler
-MINGWPATH=/usr/toolchains/windows-x86-mingw-qtsdl/bin
-QMAKE=i686-pc-mingw32-qmake
-
 FILE_VERSION="src/version.h"
-RPM_ARCH="i586"
 RPM_OUTDIR="$HOME/rpmbuild/RPMS/"
 
 # Get current version
@@ -36,65 +31,101 @@ rm -rf "$BUILDDIR/example"
 # Source package without examples
 tar zcf "$OUTDIR/$BUILDDIR.tar.gz" $BUILDDIR || exit 1
 
-# Making an RPM
-rm -rf "$BUILDDIR/buildroot"
-mkdir -p "$BUILDDIR/buildroot/usr/bin"
-mkdir -p "$BUILDDIR/buildroot/usr/share/applications"
-mkdir -p "$BUILDDIR/buildroot/usr/share/pixmaps"
-cp packages/karlyriceditor.desktop "$BUILDDIR/buildroot/usr/share/applications"
-cp packages/karlyriceditor.png "$BUILDDIR/buildroot/usr/share/pixmaps"
+# win32
+sh build-win32-mingw.sh -nsis || exit 1
+mv build.win32/nsis/InstallKarLyricEditor*.exe $OUTDIR/ || exit 1
+rm -rf "build.win32"
 
-# Prepare a spec file
-sed "s/^Version: [0-9.]\\+/Version: $CURRENTVER/" packages/rpm.spec > $BUILDDIR/rpm.spec
+# Linux RPMs
+for target in qt5-32 qt5-64 qt4-32 qt4-64; do
 
-# Build a 64-bit version 
-(cd "$BUILDDIR" && qmake -r -spec linux-g++-64 && make -j4) || exit 1
-strip --strip-all "$BUILDDIR/bin/karlyriceditor" -o "$BUILDDIR/buildroot/usr/bin/karlyriceditor" || exit 1
+    echo "Building for $target"
+    rm -rf "$BUILDDIR"
+    svn export . "$BUILDDIR/" || exit 1
 
-# Build a 64-bit RPM
-rpmbuild -bb --target=x86_64 --buildroot `pwd`"/$BUILDDIR/buildroot/" $BUILDDIR/rpm.spec || exit 1
-mv $RPM_OUTDIR/x86_64/*.rpm "$OUTDIR/" || exit 1
+    # Get the Qt version
+    case $target in
+        qt4-*)
+            QMAKE=qmake
+            QTLIBS="QtGui QtCore"
+            RPMSUFFIX="qt4"
+            ;;
 
-# Clean up
-pushd "$BUILDDIR"
-make distclean
+        qt5-*)
+            QMAKE=qmake-qt5
+            QTLIBS="Qt5Widgets Qt5Gui Qt5Core"
+            RPMSUFFIX="qt5"
+            ;;
 
-for lib in crypto avformat avcodec swscale avresample avutil SDL QtGui QtCore; do
+        *)
+            echo "Invalid target"
+            exit 1
+    esac
 
-	libpath=`find /lib /usr/lib/ -name lib$lib\* | sort -r | head -n1`
-	if [ -z "$libpath" ]; then
-		echo "No library $lib found"
-		exit
-	fi
-	
-	ln -s $libpath "src/lib$lib.so"
+    # Get the arch
+    case $target in
+        *-32)
+            QMAKESPEC="linux-g++-32"
+            RPMARCH="i586"
+            LINKLIBS="pthread crypto avformat avcodec swscale avresample avutil SDL $QTLIBS"
+
+            ;;
+
+        *-64)
+            QMAKESPEC="linux-g++-64"
+            RPMARCH="x86_64"
+            ;;
+
+        *)
+            echo "Invalid arch"
+            exit 1
+    esac
+
+    # Hack the libs
+    if [ -n "$LINKLIBS" ]; then
+        pushd $BUILDDIR
+
+        # Link the libraries so the linker finds the 32-bit libs instead of 64-bit ones
+        for lib in $LINKLIBS; do
+
+            libpath=`find /lib /usr/lib/ -maxdepth 1 -name lib$lib.so | sort -r | head -n1`
+            if [ -z "$libpath" ]; then
+                libpath=`find /lib /usr/lib/ -maxdepth 1 -name lib$lib.so\.[0-9] | sort -r | head -n1`
+                if [ -z "$libpath" ]; then
+                    libpath=`find /lib /usr/lib/ -maxdepth 1 -name lib$lib.so\.[0-9.]* | sort -r | head -n1`
+
+                    if [ -z "$libpath" ]; then
+                        echo "No library $lib found"
+                        exit
+                    fi
+                fi
+            fi
+    
+            ln -s $libpath "src/lib$lib.so"
+        done
+        popd
+    fi
+
+    # Build it  
+    (cd "$BUILDDIR" && $QMAKE -r -spec $QMAKESPEC "CONGIF+=release" && make -j4) || exit 1
+
+    # Making an RPM
+    rm -rf "$BUILDDIR/buildroot"
+    mkdir -p "$BUILDDIR/buildroot/usr/bin"
+    mkdir -p "$BUILDDIR/buildroot/usr/share/applications"
+    mkdir -p "$BUILDDIR/buildroot/usr/share/pixmaps"
+    cp packages/karlyriceditor.desktop "$BUILDDIR/buildroot/usr/share/applications"
+    cp packages/karlyriceditor.png "$BUILDDIR/buildroot/usr/share/pixmaps"
+    strip --strip-all "$BUILDDIR/bin/karlyriceditor" -o "$BUILDDIR/buildroot/usr/bin/karlyriceditor" || exit 1
+
+    # Prepare a spec file
+    sed "s/^Version: [0-9.]\\+/Version: $CURRENTVER/" packages/rpm.spec > $BUILDDIR/rpm.spec
+
+    # Build an RPM
+    rpmbuild -bb --target=$RPMARCH --buildroot `pwd`"/$BUILDDIR/buildroot/" $BUILDDIR/rpm.spec || exit 1
+    mv $RPM_OUTDIR/$RPMARCH/karlyriceditor-$CURRENTVER-1.$RPMARCH.rpm "$OUTDIR/karlyriceditor-$CURRENTVER-1.${RPMARCH}-${RPMSUFFIX}.rpm" || exit 1
+    rm -rf "$BUILDDIR"
 done
-popd
 
-# Build a 32-bit version 
-rm -rf "$BUILDDIR/buildroot"
-mkdir -p "$BUILDDIR/buildroot/usr/bin"
-mkdir -p "$BUILDDIR/buildroot/usr/share/applications"
-mkdir -p "$BUILDDIR/buildroot/usr/share/pixmaps"
-cp packages/karlyriceditor.desktop "$BUILDDIR/buildroot/usr/share/applications"
-cp packages/karlyriceditor.png "$BUILDDIR/buildroot/usr/share/pixmaps"
-
-(cd "$BUILDDIR" && qmake -r -spec linux-g++-32 && make -j4) || exit 1
-strip --strip-all "$BUILDDIR/bin/karlyriceditor" -o "$BUILDDIR/buildroot/usr/bin/karlyriceditor" || exit 1
-
-# Build a 32-bit RPM
-rpmbuild -bb --target=i586 --buildroot `pwd`"/$BUILDDIR/buildroot/" $BUILDDIR/rpm.spec || exit 1
-mv $RPM_OUTDIR/i586/*.rpm "$OUTDIR/" || exit 1
-
-
-rm -rf "$BUILDDIR"
-
-# Win32 build
-svn export . "$BUILDDIR/" || exit 1
-export PATH=$MINGWPATH:$PATH
-(cd $BUILDDIR && $QMAKE -r "CONFIG += release" && make -j4)  || exit 1
-
-# installer
-(cd $BUILDDIR/nsis && sh create_installer.sh "$CURRENTVER") || exit 1
-mv $BUILDDIR/nsis/*.exe "$OUTDIR/"
-
+rm -rf /home/tim/rpmbuild
+echo "Done! Version $CURRENTVER released!"
