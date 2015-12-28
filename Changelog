@@ -1,3 +1,17 @@
+2015-12-13 gyunaev <gyunaev@ulduzsoft.com>
+  - Released version 2.0
+  - Added option to enable or disable font anti-aliasing for CD+G export
+  - Added option to switch back to default background (use { DEFAULT } ), and to set background to a specific color
+  - Added Qt5 support
+  
+2014-01-09 gyunaev <gyunaev@ulduzsoft.com>
+  - Released version 1.11
+  - Webm video export fixed
+
+2013-12-20 gyunaev <gyunaev@ulduzsoft.com>
+  - Released version 1.10
+  - Video export offers more options now
+  
 2013-11-10 gyunaev <gyunaev@ulduzsoft.com>
   - Released version 1.9
   - Fixed jittering sound output when a newer version of ffmped is installed;

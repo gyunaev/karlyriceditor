@@ -315,6 +315,7 @@ void LyricsEvents::draw( qint64 timing, QImage& image )
 
 	if ( cache_changed || ( m_nextUpdate != -1 && ( m_nextUpdate == 0 || timing >= m_nextUpdate ) ) )
 	{
+        m_cachedImage = image;
 		m_cachedImage.fill( 0 );
 		m_nextUpdate = bg->doDraw( m_cachedImage, timing - m_eventTiming );
 	}
