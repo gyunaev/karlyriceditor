@@ -18,6 +18,7 @@
  **************************************************************************/
 
 #include <QFile>
+#include <QDebug>
 #include <QPainter>
 #include <QMessageBox>
 #include <QApplication>
@@ -35,7 +36,8 @@ static int COLOR_IDX_BACKGROUND = 0;	// background
 
 CDGGenerator::CDGGenerator( Project * proj )
 {
-	m_project = proj;
+    m_project = proj;
+    m_enableAntiAlias = true;
 }
 
 void CDGGenerator::init()
@@ -77,6 +79,13 @@ int CDGGenerator::getColor( QRgb rgbcolor )
 	// See http://stackoverflow.com/questions/4057475/rounding-colour-values-to-the-nearest-of-a-small-set-of-colours
 	QColor targetcolor( rgbcolor );
 
+    // If we have room in the color table and this color is not there yet, just add it
+    if ( m_colors.size() < 16 && m_colors.indexOf( targetcolor ) == -1 )
+    {
+        m_colors.push_back( targetcolor );
+        return m_colors.size() - 1;
+    }
+
 	int smallest_dist_idx = -1;
 	double smallest_dist = 0.0;
 
@@ -84,6 +93,7 @@ int CDGGenerator::getColor( QRgb rgbcolor )
 	for ( int i = 0; i < m_colors.size(); i++ )
 	{
 		const QColor& origcolor = m_colors.at( i );
+
 		double dist = sqrt( pow( origcolor.redF() - targetcolor.redF(), 2.0)
 							+ pow( origcolor.greenF() - targetcolor.greenF(), 2.0 )
 							+ pow( origcolor.blueF() - targetcolor.blueF(), 2.0 ) );
@@ -108,10 +118,20 @@ void CDGGenerator::initColors()
 	m_colors.clear();
 	m_colors.push_back( m_colorBackground );
 
-	// We can't have more than two gradations here, CD+G format has too limited throughput
-	addColorGradations( m_colorInfo, 2 );
-	addColorGradations( m_colorInactive, 2 );
-	addColorGradations( m_colorActive, 2 );
+    // We can't have more than two gradations here, CD+G format has too limited throughput
+    if ( m_enableAntiAlias )
+    {
+        addColorGradations( m_colorInfo, 2 );
+        addColorGradations( m_colorInactive, 2 );
+        addColorGradations( m_colorActive, 2 );
+    }
+    else
+    {
+        // Only add three colors here
+        m_colors.push_back( m_colorInfo );
+        m_colors.push_back( m_colorInactive );
+        m_colors.push_back( m_colorActive );
+    }
 
 	m_streamColorIndex = -1;
 }
@@ -322,6 +342,9 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	if ( dlg.exec() != QDialog::Accepted )
 		return;
 
+    // Get our parameters
+    m_enableAntiAlias = dlg.boxEnableAntialiasing->isChecked();
+
 	// Initialize the buffer and colors
 	init();
 
@@ -333,8 +356,14 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 
     // Rendering font
     QFont renderFont( m_project->tag(Project::Tag_CDG_font) );
-    renderFont.setStyleStrategy( dlg.getFontStyleStrategy() );
     renderFont.setPointSize( m_project->tag(Project::Tag_CDG_fontsize).toInt() );
+
+    // Is anti-aliasing enabled?
+    if ( m_enableAntiAlias )
+        renderFont.setStyleStrategy( QFont::PreferAntialias );
+    else
+        renderFont.setStyleStrategy( QFont::NoAntialias );
+
     lyricrenderer.setRenderFont( renderFont );
 
     // Colors
@@ -382,7 +411,7 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 
 	qint64 dialog_step = total_length / 100;
 
-	// Preallocate the array
+    // Preallocate the arrays
 	init();
 	m_stream.reserve( total_length * 300 / 1000 );
 

@@ -66,6 +66,8 @@ class CDGGenerator
 		QVector< QColor >		m_colors;			// 16 colors used in CD+G
 		int						m_streamColorIndex; // Reserved space for colors
 		Project		*			m_project;
+
+        bool                    m_enableAntiAlias;
 };
 
 

@@ -110,15 +110,6 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 		leTitleCreatedBy->setEnabled( false );
 		leTitleCreatedBy->setText( "Application not registered, this field cannot be modified" );
 	}
-
-    // Font antialiasing
-    boxFontAntialiasing->addItem( "Full antialiasing", (int) QFont::PreferAntialias );
-
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
-    boxFontAntialiasing->addItem( "Moderate antialiasing", (int) QFont::NoSubpixelAntialias );
-#endif
-
-    boxFontAntialiasing->addItem( "Disabled", (int) QFont::NoAntialias );
 }
 
 
@@ -144,7 +135,6 @@ void DialogExportOptions::setBoxIndex( Project::Tag tag, QComboBox * box )
 void DialogExportOptions::autodetectFontSize()
 {
 	QFont font = fontVideo->currentFont();
-    font.setStyleStrategy( getFontStyleStrategy() );
 
 	// Ask the renderer
 	TextRenderer renderer( 100, 100 );
@@ -164,7 +154,6 @@ void DialogExportOptions::autodetectFontSize()
 bool DialogExportOptions::testFontSize()
 {
     QFont font = fontVideo->currentFont();
-    font.setStyleStrategy( getFontStyleStrategy() );
     font.setPointSize( fontVideoSize->value() );
 
     // Ask the renderer
@@ -411,15 +400,6 @@ bool DialogExportOptions::videoParams(const VideoEncodingProfile **profile, cons
 
     return true;
 }
-
-QFont::StyleStrategy DialogExportOptions::getFontStyleStrategy()
-{
-    if ( boxFontAntialiasing->currentIndex() == -1 )
-        return QFont::PreferAntialias;
-
-    return (QFont::StyleStrategy) boxFontAntialiasing->itemData( boxFontAntialiasing->currentIndex() ).toInt();
-}
-
 
 void DialogExportOptions::activateTab( int index )
 {

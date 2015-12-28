@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>592</width>
-    <height>581</height>
+    <height>583</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -366,14 +366,14 @@
              </spacer>
             </item>
             <item>
-             <widget class="QLabel" name="label_9">
+             <widget class="QCheckBox" name="boxEnableAntialiasing">
               <property name="text">
-               <string>Font antialiasing:</string>
+               <string>Enable anti-aliasing</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
               </property>
              </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="boxFontAntialiasing"/>
             </item>
            </layout>
           </item>

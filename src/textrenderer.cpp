@@ -39,6 +39,7 @@ static const int SMALL_FONT_DIFF = 4; // 4px less
 TextRenderer::TextRenderer( int width, int height )
 	: LyricsRenderer()
 {
+    m_cdgMode = false;
 	m_image = QImage( width, height, QImage::Format_ARGB32 );
 	init();
 }
@@ -330,6 +331,7 @@ void TextRenderer::setPreambleData( unsigned int height, unsigned int timems, un
 void TextRenderer::forceCDGmode()
 {
 	m_forceRedraw = true;
+    m_cdgMode = true;
 }
 
 void TextRenderer::setDurations( unsigned int before, unsigned int after )
@@ -547,6 +549,9 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
 	QPainter painter( &m_image );
 	painter.setFont( m_renderFont );
 
+    if ( m_cdgMode )
+        painter.setRenderHints( QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing | QPainter::HighQualityAntialiasing, false );
+
 	// Used in calculations only
 	QFont curFont( m_renderFont );
 	QFontMetrics metrics( curFont );
@@ -660,6 +665,9 @@ void TextRenderer::drawPreamble()
 	QPainter painter( &m_image );
 	painter.setPen( Qt::black );
 	painter.setBrush( m_colorTitle );
+
+    if ( m_cdgMode )
+        painter.setRenderHints( QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing | QPainter::HighQualityAntialiasing, false );
 
 	// Draw a square for each PREAMBLE_SQUARE; we do not draw anything for the last one, and speed up it 0.15sec
 	for ( int i = 0; i < (int) m_preambleCount; i++ )

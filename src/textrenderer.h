@@ -118,6 +118,9 @@ class TextRenderer : public LyricsRenderer
 		// True if the image must be redrawn even if lyrics didn't change
 		bool					m_forceRedraw;
 
+        // True if CD+G mode - no antialiasing
+        bool                    m_cdgMode;
+
 		// Rendering params
 		QColor					m_colorBackground;
 		QColor					m_colorTitle;
