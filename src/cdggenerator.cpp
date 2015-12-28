@@ -79,13 +79,6 @@ int CDGGenerator::getColor( QRgb rgbcolor )
 	// See http://stackoverflow.com/questions/4057475/rounding-colour-values-to-the-nearest-of-a-small-set-of-colours
 	QColor targetcolor( rgbcolor );
 
-    // If we have room in the color table and this color is not there yet, just add it
-    if ( m_colors.size() < 16 && m_colors.indexOf( targetcolor ) == -1 )
-    {
-        m_colors.push_back( targetcolor );
-        return m_colors.size() - 1;
-    }
-
 	int smallest_dist_idx = -1;
 	double smallest_dist = 0.0;
 
@@ -104,6 +97,13 @@ int CDGGenerator::getColor( QRgb rgbcolor )
 			smallest_dist = dist;
 		}
 	}
+
+    // If we have room in the color table and the distance is too big, add it
+    if ( m_colors.size() < 16 && smallest_dist > 1.0  )
+    {
+        m_colors.push_back( targetcolor );
+        smallest_dist_idx = m_colors.size() - 1;
+    }
 
 	return smallest_dist_idx;
 }
