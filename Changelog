@@ -1,3 +1,6 @@
+2016-12-23 gyunaev <gyunaev@ulduzsoft.com>
+  - Made "test lyrics" button reload lyrics without restarting the song (thx Dario Abatianni)
+
 2015-12-13 gyunaev <gyunaev@ulduzsoft.com>
   - Released version 2.0
   - Added option to enable or disable font anti-aliasing for CD+G export

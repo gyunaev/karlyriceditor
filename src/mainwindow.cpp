@@ -754,6 +754,9 @@ void MainWindow::act_projectTest()
 	m_testWindow->setLyricWidget( lw );
 	m_testWindow->show();
 
+	// Added the pause to make the test lyrics button simply reload the lyrics and continue
+	// playing where it is at, making testing easier
+	m_player->btn_playerPlayPause();
 	m_player->startPlaying();
 }
 
