@@ -149,8 +149,8 @@ bool FFMpegVideoEncoderPriv::close()
 			av_write_trailer( outputFormatCtx );
 
 			// close video and audio
-			avcodec_close( videoStream->codec );
-			avcodec_close( audioStream->codec );
+            avcodec_close( videoStream->codec );
+            avcodec_close( audioStream->codec );
 
 			// Close the file
 			avio_close( outputFormatCtx->pb );
@@ -159,7 +159,7 @@ bool FFMpegVideoEncoderPriv::close()
 		// free the streams
 		for ( unsigned int i = 0; i < outputFormatCtx->nb_streams; i++ )
 		{
-			av_freep(&outputFormatCtx->streams[i]->codec);
+            av_freep(&outputFormatCtx->streams[i]->codecpar);
 			av_freep(&outputFormatCtx->streams[i]);
 		}
 
@@ -322,7 +322,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 	}
 
 	// Set the video encoding parameters
-	videoCodecCtx->codec_type = AVMEDIA_TYPE_VIDEO;
+    videoCodecCtx->codec_type = AVMEDIA_TYPE_VIDEO;
 	videoCodecCtx->width = m_videoformat->width;
 	videoCodecCtx->height = m_videoformat->height;
 	videoCodecCtx->sample_aspect_ratio.den = m_videoformat->sample_aspect_den;
@@ -330,7 +330,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 	videoCodecCtx->time_base.num = m_videoformat->frame_rate_num;
 	videoCodecCtx->time_base.den = m_videoformat->frame_rate_den;
 	videoCodecCtx->gop_size = (m_videoformat->frame_rate_den / m_videoformat->frame_rate_num) / 2;	// GOP size is framerate / 2
-	videoCodecCtx->pix_fmt = PIX_FMT_YUV420P;
+    videoCodecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
 	videoCodecCtx->bit_rate = m_videobitrate;
 	videoCodecCtx->bit_rate_tolerance = m_videobitrate * av_q2d(videoCodecCtx->time_base);
 
@@ -380,7 +380,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 	}
 
 	// Create the video stream, index
-	videoStream = avformat_new_stream( outputFormatCtx, videoCodecCtx->codec );
+    videoStream = avformat_new_stream( outputFormatCtx, videoCodecCtx->codec );
 
 	if ( !videoStream )
 	{
@@ -389,7 +389,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 	}
 
 	// Specify the coder for the stream
-	videoStream->codec = videoCodecCtx;
+    videoStream->codec = videoCodecCtx;
 
 	// Set the video stream timebase if not set
 	if ( videoStream->time_base.den == 0 )
@@ -417,15 +417,15 @@ av_log_set_level(AV_LOG_VERBOSE);
 			audioStream->pts.num = origAudioStream->pts.num;
 			audioStream->pts.den = origAudioStream->pts.den;
 
-			AVCodecContext * newCtx = audioStream->codec;
+            AVCodecContext * newCtx = audioStream->codec;
 
 			// We're copying the stream
 			memcpy( newCtx, m_aplayer->aCodecCtx, sizeof(AVCodecContext) );
 
-			if ( newCtx->block_align == 1 && newCtx->codec_id == CODEC_ID_MP3 )
+            if ( newCtx->block_align == 1 && newCtx->codec_id == AV_CODEC_ID_MP3 )
 				newCtx->block_align= 0;
 
-			if ( newCtx->codec_id == CODEC_ID_AC3 )
+            if ( newCtx->codec_id == AV_CODEC_ID_AC3 )
 				newCtx->block_align= 0;
 		}
 		else
@@ -440,7 +440,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 			}
 
 			// Hack to use the fixed AC3 codec if available
-			if ( audioCodec->id == CODEC_ID_AC3 && avcodec_find_encoder_by_name( "ac3_fixed" ) )
+            if ( audioCodec->id == AV_CODEC_ID_AC3 && avcodec_find_encoder_by_name( "ac3_fixed" ) )
 				audioCodec = avcodec_find_encoder_by_name( "ac3_fixed" );
 
 			// Allocate the audio context
@@ -541,7 +541,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 				goto cleanup;
 			}
 
-			audioFrame = avcodec_alloc_frame();
+            audioFrame = av_frame_alloc();
 
 			if ( !audioFrame )
 			{
@@ -570,10 +570,10 @@ av_log_set_level(AV_LOG_VERBOSE);
 				goto cleanup;
 			}
 
-			if ( audioStream->codec->block_align == 1 && audioStream->codec->codec_id == CODEC_ID_MP3 )
+            if ( audioStream->codec->block_align == 1 && audioStream->codec->codec_id == AV_CODEC_ID_MP3 )
 				audioStream->codec->block_align= 0;
 
-			if ( audioStream->codec->codec_id == CODEC_ID_AC3 )
+            if ( audioStream->codec->codec_id == AV_CODEC_ID_AC3 )
 				audioStream->codec->block_align= 0;
 		}
 
@@ -592,7 +592,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 	}
 
 	// Allocate the YUV frame
-	videoFrame = avcodec_alloc_frame();
+    videoFrame = av_frame_alloc();
 
 	if ( !videoFrame )
 	{
@@ -620,8 +620,8 @@ av_log_set_level(AV_LOG_VERBOSE);
 	// Dump output streams
 	for ( unsigned int i = 0; i < outputFormatCtx->nb_streams; i++)
 	{
-		qDebug( "Output stream %d: %s %.02f FPS, ", i, outputFormatCtx->streams[i]->codec->codec->name,
-				((double) outputFormatCtx->streams[i]->codec->time_base.den / outputFormatCtx->streams[i]->codec->time_base.num) );
+        qDebug( "Output stream %d: %s %.02f FPS, ", i, outputFormatCtx->streams[i]->name,
+                ((double) outputFormatCtx->streams[i]->time_base.den / outputFormatCtx->streams[i]->time_base.num) );
 
 		if ( outputFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
 			qDebug("width %d height %d bitrate %d\n", outputFormatCtx->streams[i]->codec->width,
@@ -679,7 +679,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 
 			// Initialize the frame
 			AVFrame srcaudio;
-			avcodec_get_frame_defaults( &srcaudio );
+            av_frame_unref( &srcaudio );
 
 			// Decode the original audio into the srcaudio frame
 			int got_audio;
@@ -852,10 +852,10 @@ bool FFMpegVideoEncoderPriv::convertImage_sws(const QImage &img)
 	videoConvertCtx = sws_getCachedContext( videoConvertCtx,
 										   m_videoformat->width,
 										   m_videoformat->height,
-										   PIX_FMT_BGRA,
+                                           AV_PIX_FMT_BGRA,
 										   m_videoformat->width,
 										   m_videoformat->height,
-										   PIX_FMT_YUV420P,
+                                           AV_PIX_FMT_YUV420P,
 										   SWS_BICUBIC,
 										   NULL,
 										   NULL,
