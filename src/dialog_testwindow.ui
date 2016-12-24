@@ -36,6 +36,23 @@
       <enum>QLayout::SetMinimumSize</enum>
      </property>
      <item>
+      <widget class="QToolButton" name="btnLocateTimemark">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Locates the start timing mark for the currently played lyrics in the editor, and moves the editor cursor to this mark.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="icon">
+        <iconset resource="resources.qrc">
+         <normaloff>:/images/draw-arrow-forward.png</normaloff>:/images/draw-arrow-forward.png</iconset>
+       </property>
+       <property name="checkable">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QLabel" name="lblCurrent">
        <property name="text">
         <string/>
@@ -63,6 +80,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

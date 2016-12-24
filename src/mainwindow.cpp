@@ -740,12 +740,13 @@ void MainWindow::act_projectTest()
 	if ( !m_testWindow )
 	{
 		m_testWindow = new TestWindow( this );
+
 		connect( m_player, SIGNAL(tick(qint64)), m_testWindow, SLOT(tick(qint64)) );
 		connect( m_testWindow, SIGNAL(closed()), this, SLOT( testWindowClosed() ) );
+        connect( m_testWindow, SIGNAL(editorTick(qint64)), editor, SLOT(followingTick(qint64)) );
 	}
 
 	LyricsWidget * lw = new LyricsWidget( m_testWindow );
-
 
 	lw->setLyrics( lyrics,
 					 m_project->tag( Project::Tag_Artist ),

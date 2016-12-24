@@ -17,6 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
+#include <QSettings>
+
 #include "testwindow.h"
 #include "lyricswidget.h"
 #include "audioplayer.h"
@@ -28,7 +30,10 @@ TestWindow::TestWindow( QWidget *parent )
 	setupUi( this );
 
 	m_widget = 0;
+    m_lastTick = 0;
 	m_layout = new QVBoxLayout( frame );
+
+    connect( btnLocateTimemark, SIGNAL(clicked()), this, SLOT(locateButtonClicked()) );
 }
 
 void TestWindow::setLyricWidget( LyricsWidget * lw )
@@ -61,5 +66,12 @@ void TestWindow::tick( qint64 value )
 	int pval = value * progressBar->maximum() / pAudioPlayer->totalTime();
 
 	if ( progressBar->value() != pval )
-		progressBar->setValue( pval );
+        progressBar->setValue( pval );
+
+    m_lastTick = value;
+}
+
+void TestWindow::locateButtonClicked()
+{
+    emit editorTick( m_lastTick );
 }
