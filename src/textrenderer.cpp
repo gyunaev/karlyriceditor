@@ -39,7 +39,8 @@ static const int SMALL_FONT_DIFF = 4; // 4px less
 TextRenderer::TextRenderer( int width, int height )
 	: LyricsRenderer()
 {
-    m_cdgMode = false;
+	m_currentAlignment = VerticalBottom;
+	m_cdgMode = false;
 	m_image = QImage( width, height, QImage::Format_ARGB32 );
 	init();
 }
@@ -166,7 +167,7 @@ void TextRenderer::compileLine( const QString& line, qint64 starttime, qint64 en
 		// Parse the special sequences
 		if ( lchar == '@' )
 		{
-			// Title start/end
+            // Title start/end: @$title
 			if ( ch + 1 < line.length() && line[ch+1] == '$' )
 			{
 				*intitle = !*intitle;
@@ -174,7 +175,7 @@ void TextRenderer::compileLine( const QString& line, qint64 starttime, qint64 en
 				continue;
 			}
 
-			// Color change
+            // Color change: $#00C0C0
 			if ( ch + 7 < line.length() && line[ch+1] == '#' )
 			{
 				// Store the new 'unsung' color for this position
@@ -184,7 +185,7 @@ void TextRenderer::compileLine( const QString& line, qint64 starttime, qint64 en
 				continue;
 			}
 
-			// Font size change down
+            // Font size change down: @<
 			if ( ch + 1 < line.length() && line[ch+1] == '<' )
 			{
 				binfo->fonts[ blocktextstart + drawntext.length() ] = -SMALL_FONT_DIFF; // make the font smaller
@@ -192,12 +193,34 @@ void TextRenderer::compileLine( const QString& line, qint64 starttime, qint64 en
 				continue;
 			}
 
-			// Font size change up
+            // Font size change up: @>
 			if ( ch + 1 < line.length() && line[ch+1] == '>' )
 			{
 				binfo->fonts[ blocktextstart + drawntext.length() ] = SMALL_FONT_DIFF; // make the font larger
 				ch += 1;
 				continue;
+			}
+
+            // Vertical text alignment: @%T - top, @%M - middle, @%B - bottom
+            if ( ch + 2 < line.length() && line[ch+1] == '%' )
+			{
+                switch ( line[ch+2].unicode() )
+                {
+                    case 'T':
+                        m_currentAlignment = VerticalTop;
+                        break;
+
+                    case 'M':
+                        m_currentAlignment = VerticalMiddle;
+                        break;
+
+                    case 'B':
+                        m_currentAlignment = VerticalMiddle;
+                        break;
+                }
+
+                ch += 2;
+                continue;
 			}
 		}
 
@@ -218,6 +241,7 @@ void TextRenderer::compileLine( const QString& line, qint64 starttime, qint64 en
 	}
 
 	binfo->text += drawntext;
+	binfo->verticalAlignment = m_currentAlignment;
 }
 
 void TextRenderer::setRenderFont( const QFont& font )
@@ -563,11 +587,14 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
 		painter.setPen( m_colorSang );
 
 	// Get the height offset from the rect.
-	int start_y;
+	int start_y = 0;
+	int verticalAlignment = m_lyricBlocks[blockid].verticalAlignment;
 
-	// Draw title in the center, the rest at bottom
-	if ( blockid == 0 )
+	// Draw title in the center, the rest according to the current vertical alignment
+	if ( blockid == 0 || verticalAlignment == VerticalMiddle )
 		start_y = (m_image.height() - boundingRect.height()) / 2 + painter.fontMetrics().height();
+	else if ( verticalAlignment == VerticalTop )
+		start_y = painter.fontMetrics().height() + m_image.width() / 50;	// see drawPreamble() for the offset
 	else
 		start_y = (m_image.height() - boundingRect.height());
 

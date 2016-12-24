@@ -73,6 +73,14 @@ class TextRenderer : public LyricsRenderer
 		// Verifies that all lyrics could be rendered into a specific image size using the provided font
 		bool	verifyFontSize( const QSize& imagesize, const QFont& font );
 
+		enum VerticalAlignment
+		{
+			// default = 0
+			VerticalBottom = 0,
+			VerticalMiddle = 1,
+			VerticalTop = 2
+		};
+
 	private:
 		// Returns the lyrics bounding box for a line or for paragraph using the font specified,
 		// or the default font if not specified
@@ -107,6 +115,8 @@ class TextRenderer : public LyricsRenderer
 			// Per-character font size changes for following (non-sung) characters in the block.
 			// if none, the default color is used
 			QMap< unsigned int, int > fonts;
+
+			int	verticalAlignment;
 
 		} LyricBlockInfo;
 
@@ -145,6 +155,9 @@ class TextRenderer : public LyricsRenderer
 
 		// Background events
 		LyricsEvents			m_lyricEvents;
+
+		// Vertical alignment
+		int						m_currentAlignment;
 };
 
 #endif // TEXTRENDERER_H
