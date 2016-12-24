@@ -4,6 +4,7 @@
   - Added a button on the test window to find the start timing mark for the currently played lyrics. Based on Dario Abatianni idea.
   - When incorrect timing sequence is detected, we now print not just the line number, but also the timing mark value.
   - When exporting CDG/Video, the editor now remembers the exported CDG and video file names.
+  - Added commands to change the block text vertical alignment: @%T for top, @%M for middle, @%B for bottom; thanks Dario Abatianni
 
 2015-12-13 gyunaev <gyunaev@ulduzsoft.com>
   - Released version 2.0
