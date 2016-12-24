@@ -98,6 +98,7 @@ class Editor : public QTextEdit
 	public slots:
 		void	textModified();
 		void	splitLine();
+        void    followingTick( qint64 tick );
 
 	protected:
 		bool canInsertFromMimeData ( const QMimeData * source ) const;

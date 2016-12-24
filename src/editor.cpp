@@ -889,7 +889,39 @@ void Editor::splitLine()
 	cur.insertText( "[" + markToTime( timing ) + "]" );
 	cur.insertText( "\n" );
 	cur.insertText( "[" + markToTime( timing + 10 ) + "]" );
-	cur.endEditBlock();
+    cur.endEditBlock();
+}
+
+void Editor::followingTick(qint64 tick)
+{
+    // Iterate through all the timing marks
+    QString text = toPlainText();
+
+    QRegExp pattern( "\\[(\\d+:\\d+\\.\\d+)\\]");
+    int pos = 0, lastpos = 0;
+
+    while ( (pos = pattern.indexIn( text, pos )) != -1 )
+    {
+        qint64 timing = timeToMark( pattern.cap( 1 ) );
+
+        if ( tick < timing )
+        {
+            // Move the cursor
+            QTextCursor cur = textCursor();
+            cur.movePosition( QTextCursor::Start );
+            cur.movePosition( QTextCursor::Right, QTextCursor::MoveAnchor, lastpos );
+            setTextCursor( cur );
+
+            // And show it in the editor
+            ensureCursorMiddle();
+            activateWindow();
+            setFocus();
+            break;
+        }
+
+        lastpos = pos;
+        pos = pos + pattern.cap(1).length();
+    }
 }
 
 bool Editor::event ( QEvent * event )

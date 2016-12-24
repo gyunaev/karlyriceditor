@@ -34,5 +34,6 @@
         <file>images/application_icon.png</file>
         <file>images/piano.png</file>
         <file>images/page_swap.png</file>
+        <file>images/draw-arrow-forward.png</file>
     </qresource>
 </RCC>

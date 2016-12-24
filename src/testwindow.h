@@ -33,20 +33,23 @@ class TestWindow : public QDialog, public Ui::DialogTestWindow
 	public:
 		TestWindow( QWidget *parent = 0 );
 
-		void setLyricWidget( LyricsWidget * lw );
+        void    setLyricWidget( LyricsWidget * lw );
 
 	signals:
-		void closed();
+        void    closed();
+        void    editorTick( qint64 tick );
 
 	public slots:
-		void tick( qint64 value );
+        void    tick( qint64 value );
+        void    locateButtonClicked();
 
 	protected:
 		void	closeEvent( QCloseEvent * event );
 
 	private:
-		QVBoxLayout * m_layout;
+        QVBoxLayout * m_layout;
 		LyricsWidget* m_widget;
+        qint64        m_lastTick;
 };
 
 
