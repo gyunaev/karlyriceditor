@@ -90,7 +90,10 @@ enum
 	PD_TAG_VIDEO_PROFILE,	// video profile name
 	PD_TAG_VIDEO_FORMAT,	// video format name
 	PD_TAG_VIDEO_QUALITY,
-	PD_TAG_VIDEO_AUDIOMODE
+    PD_TAG_VIDEO_AUDIOMODE,
+
+    PD_TAG_EXPORT_FILENAME_CDG,  // if specified
+    PD_TAG_EXPORT_FILENAME_VIDEO,  // if specified
 };
 
 
@@ -349,7 +352,15 @@ int	Project::tagToId( Tag tag  ) const
 		case Tag_Video_preamble:
 			tagid = PD_TAG_VIDEO_PREAMBLE;
 			break;
-	}
+
+        case Tag_ExportFilenameCDG:
+            tagid = PD_TAG_EXPORT_FILENAME_CDG;
+            break;
+
+        case Tag_ExportFilenameVideo:
+            tagid = PD_TAG_EXPORT_FILENAME_VIDEO;
+            break;
+    }
 
 	return tagid;
 }
