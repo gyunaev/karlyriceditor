@@ -1,6 +1,8 @@
 2016-12-23 gyunaev <gyunaev@ulduzsoft.com>
   - Made "test lyrics" button reload lyrics without restarting the song (thx Dario Abatianni)
   - Fixed compilating using modern FFmpeg
+  - Added a button on the test window to find the start timing mark for the currently played lyrics. Based on Dario Abatianni idea.
+  - When incorrect timing sequence is detected, we now print not just the line number, but also the timing mark value.
 
 2015-12-13 gyunaev <gyunaev@ulduzsoft.com>
   - Released version 2.0
