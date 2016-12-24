@@ -41,6 +41,10 @@ class EditorHighlighting : public QSyntaxHighlighter
 		QTextCharFormat		m_hlInvalidTiming;
 		QTextCharFormat		m_hlPlaceholder;
 		QTextCharFormat		m_hlComment;
+
+		// highlight colors, text size changes and vertical alignments
+		QTextCharFormat		m_hlModifiers;
+		QTextCharFormat		m_hlInvalidModifiers;
 };
 
 #endif // EDITORHIGHLIGHTING_H
