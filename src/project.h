@@ -70,7 +70,10 @@ class Project
 			Tag_Video_font,
 			Tag_Video_fontsize,
 			Tag_Video_titletime,
-			Tag_Video_preamble
+            Tag_Video_preamble,
+
+            Tag_ExportFilenameCDG,
+            Tag_ExportFilenameVideo,
 		};
 
 		Project( Editor * editor );

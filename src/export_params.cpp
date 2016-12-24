@@ -72,6 +72,7 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 		cbVideoPreamble->setChecked( m_project->tag( Project::Tag_Video_preamble, "1" ).toInt() );
 
 		setWindowTitle( tr("Specify video parameters") );
+        leOutputFile->setText( m_project->tag( Project::Tag_ExportFilenameVideo, "" ) );
 	}
 	else
 	{
@@ -89,7 +90,12 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 
 		setWindowTitle( tr("Specify CDG parameters") );
 		lblOutput->setText( tr("Write CD+G data to file:") );
-		leOutputFile->setText( Util::removeFileExtention( m_project->musicFile() ) + "cdg" );
+
+        // Was filename specified before?
+        if ( !m_project->tag( Project::Tag_ExportFilenameCDG, "" ).isEmpty() )
+            leOutputFile->setText( m_project->tag( Project::Tag_ExportFilenameCDG, "" ) );
+        else
+            leOutputFile->setText( Util::removeFileExtention( m_project->musicFile() ) + "cdg" );
 
 		// resize as we hid the video part
 		resize( width(), 1 );
@@ -246,7 +252,10 @@ void DialogExportOptions::accept()
 		m_project->setTag( Project::Tag_Video_fontsize, QString::number( fontVideoSize->value() ) );
 		m_project->setTag( Project::Tag_Video_titletime, QString::number( titleVideoMin->value() ) );
 		m_project->setTag( Project::Tag_Video_preamble, cbVideoPreamble->isChecked() ? "1" : "0" );
-	}
+
+        // Store the export file name
+        m_project->setTag( Project::Tag_ExportFilenameVideo, leOutputFile->text() );
+    }
 	else
 	{
 		// Store rendering params
@@ -258,6 +267,9 @@ void DialogExportOptions::accept()
 		m_project->setTag( Project::Tag_CDG_fontsize, QString::number( fontVideoSize->value() ) );
 		m_project->setTag( Project::Tag_CDG_titletime, QString::number( titleVideoMin->value() ) );
 		m_project->setTag( Project::Tag_CDG_preamble, cbVideoPreamble->isChecked() ? "1" : "0" );
+
+        // Store the export file name
+        m_project->setTag( Project::Tag_ExportFilenameCDG, leOutputFile->text() );
 	}
 
 	QDialog::accept();
