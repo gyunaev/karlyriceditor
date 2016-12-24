@@ -17,6 +17,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
+#include <QObject>
 #include "videoencodingprofiles.h"
 
 VideoEncodingProfiles * pVideoEncodingProfiles = 0;

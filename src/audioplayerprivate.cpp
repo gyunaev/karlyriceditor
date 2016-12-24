@@ -224,7 +224,7 @@ bool AudioPlayerPrivate::open( const QString& filename )
 	}
 
 	// Allocate the buffer
-	m_frame = avcodec_alloc_frame();
+    m_frame = av_frame_alloc();
 
 	if ( !m_frame )
 	{

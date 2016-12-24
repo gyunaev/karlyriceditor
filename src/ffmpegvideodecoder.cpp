@@ -103,7 +103,7 @@ bool FFMpegVideoDecoder::openFile( const QString& filename, unsigned int seekto 
 
 	for ( unsigned i = 0; i < d->pFormatCtx->nb_streams; i++ )
 	{
-		if ( d->pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO )
+        if ( d->pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO )
 		{
 			d->videoStream = i;
 			break;
@@ -120,7 +120,7 @@ bool FFMpegVideoDecoder::openFile( const QString& filename, unsigned int seekto 
 		d->m_fps_den = 30000;
 	
 	// Get a pointer to the codec context for the video stream
-	d->pCodecCtx = d->pFormatCtx->streams[d->videoStream]->codec;
+    d->pCodecCtx = d->pFormatCtx->streams[d->videoStream]->codec;
 
 	// Find the decoder for the video stream
 	d->pCodec = avcodec_find_decoder( d->pCodecCtx->codec_id );
@@ -138,11 +138,10 @@ bool FFMpegVideoDecoder::openFile( const QString& filename, unsigned int seekto 
 	   return false;
 	}
 
-	// Allocate video frame
-	d->pFrame = avcodec_alloc_frame();
-
-	// Allocate an AVFrame structure
-	d->pFrameRGB = avcodec_alloc_frame();
+    // Allocate video frame and AVFrame structure
+    // Credits: http://stackoverflow.com/questions/24057248/ffmpeg-undefined-references-to-av-frame-alloc
+    d->pFrame = av_frame_alloc();
+    d->pFrameRGB = av_frame_alloc();
 
 	if ( !d->pFrame || !d->pFrameRGB )
 	{
@@ -151,12 +150,12 @@ bool FFMpegVideoDecoder::openFile( const QString& filename, unsigned int seekto 
 	}
 
 	// Determine required buffer size and allocate buffer
-	int numBytes = avpicture_get_size( PIX_FMT_RGB24, d->pCodecCtx->width, d->pCodecCtx->height );
+    int numBytes = av_image_get_buffer_size( AV_PIX_FMT_RGB24, d->pCodecCtx->width, d->pCodecCtx->height, 32 );
 	d->m_buffer.resize( numBytes );
 
 	// Assign appropriate parts of buffer to image planes in pFrameRGB
 	avpicture_fill( (AVPicture *) d->pFrameRGB, (uint8_t*) d->m_buffer.data(),
-					PIX_FMT_RGB24, d->pCodecCtx->width, d->pCodecCtx->height );
+                    AV_PIX_FMT_RGB24, d->pCodecCtx->width, d->pCodecCtx->height );
 
 	d->skipFrames = seekto;
 	return true;
@@ -215,7 +214,7 @@ bool FFMpegVideoDecoderPriv::readFrame( int frame )
 					int w = pCodecCtx->width;
 					int h = pCodecCtx->height;
 
-					img_convert_ctx = sws_getCachedContext(img_convert_ctx,w, h, pCodecCtx->pix_fmt, w, h, PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
+                    img_convert_ctx = sws_getCachedContext(img_convert_ctx,w, h, pCodecCtx->pix_fmt, w, h, AV_PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
 
 					if ( img_convert_ctx == NULL )
 					{

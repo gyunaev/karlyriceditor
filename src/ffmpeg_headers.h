@@ -34,6 +34,7 @@ extern "C"
 #include <libswscale/swscale.h>
 #include <libavresample/avresample.h>
 #include <libavutil/opt.h>
+#include <libavutil/imgutils.h>
 
 };
 
