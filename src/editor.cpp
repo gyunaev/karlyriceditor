@@ -486,7 +486,8 @@ cont_paragraph:
 										ValidatorError(
 												linenumber,
 												time_tag_start,
-												tr("Time goes backward, previous time value is greater than current value.") ) );
+                                                tr("Time goes backward, previous time value %1 is greater than current value %2.")
+                                                    .arg( markToTime( last_time )) .arg( markToTime( timing )) ) );
 							}
 
 							last_time = timing;
