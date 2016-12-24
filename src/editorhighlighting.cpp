@@ -44,6 +44,10 @@ void EditorHighlighting::updateSettings()
 	m_hlPlaceholder.setForeground( pSettings->m_timeMarkPlaceholderText );
 
 	m_hlComment.setForeground( Qt::cyan );
+
+	// highlight colors, text size changes and vertical alignments
+	m_hlModifiers.setBackground( Qt::cyan );
+	m_hlInvalidModifiers.setBackground( Qt::red );
 }
 
 void EditorHighlighting::highlightBlock ( const QString & line )
@@ -58,6 +62,31 @@ void EditorHighlighting::highlightBlock ( const QString & line )
 		return;
 	}
 
+	// highlight colors, text size changes and vertical alignments
+    QRegExp modifiers( "(@[<>\\$])|(@%[TMB])|(@#[0-9a-f]{6})" );
+	int pos = 0;
+
+	while ( (pos = modifiers.indexIn( line, pos ) ) != -1)
+	{
+		int len = modifiers.matchedLength();
+
+		if( !len )
+		{
+			pos++;		// failsafe to avoid endless loop when the regex fails
+		}
+		else
+		{
+			if ( len == 1 )
+			{
+				setFormat( pos, len, m_hlInvalidModifiers );
+			}
+			else
+			{
+				setFormat( pos, len, m_hlModifiers );
+			}
+			pos += len;
+		}
+	}
 
 	// from Editor::validate
 	int time_tag_start = 0;
