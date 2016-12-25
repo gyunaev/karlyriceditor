@@ -1001,11 +1001,13 @@ bool Project::importLyricsTxt( const QStringList & readlyrics, Lyrics& lyrics )
 	if ( readlyrics.isEmpty() )
 		return false;
 
-	// TXT could be UltraStar or PowerKaraoke
+    // TXT could be UltraStar or PowerKaraoke or KBP
 	if ( readlyrics.first().indexOf( QRegExp( "^#[a-zA-Z]+:\\s*.*\\s*$" ) ) != -1 )
 		return importLyricsUStar( readlyrics, lyrics );
 	else if ( readlyrics.first().indexOf( QRegExp( "^([0-9.]+) ([0-9.]+) (.+)" ) ) != -1 )
 		return importLyricsPowerKaraoke( readlyrics, lyrics );
+    else if ( readlyrics.contains( "PAGEV2") != -1 )
+        return importLyricsKaraokeBuilder( readlyrics, lyrics );
 
 	QMessageBox::critical( 0,
 						   QObject::tr("Invalid text file"),
@@ -1111,6 +1113,66 @@ bool Project::importLyricsPowerKaraoke( const QStringList & readlyrics, Lyrics& 
 	}
 
 	return true;
+}
+
+bool Project::importLyricsKaraokeBuilder( const QStringList & readlyrics, Lyrics& lyrics )
+{
+    // Lyric match regex like ZA/            592/622/0
+    QRegExp regex("(.*)/ +([0-9]+)/([0-9]+)/([0-9]+)");
+
+    // We split blocks by PAGEV2, and ignore the first one (it is header)
+    int blockcount = 0;
+
+    // Analyze each block
+    for ( int i = 0; i < readlyrics.size(); i++ )
+    {
+        QString line = readlyrics[i];
+
+        if ( line == "PAGEV2" )
+        {
+            if ( blockcount != 0 )
+            {
+                lyrics.curLyricAddEndOfLine();
+                lyrics.curLyricAddEndOfLine();
+            }
+
+            blockcount++;
+            continue;
+        }
+
+        // Ignore everything before the first block
+        if ( blockcount == 0 )
+            continue;
+
+        // Ignore block separators and C/A statements
+        if ( line.startsWith( "--------" ) || line.startsWith( "C/A/" ) )
+            continue;
+
+        // Empty line is end of line
+        if ( line.isEmpty() )
+        {
+            lyrics.curLyricAddEndOfLine();
+            continue;
+        }
+
+        // Try to match the sync first
+        if ( line.indexOf( regex ) == -1 )
+        {
+            QMessageBox::critical( 0,
+                                   QObject::tr("Invalid KaraokeBuilder file"),
+                                   QObject::tr("This file is not a valid KaraokeBuilder lyric file, error at line %1:\n%2") .arg( i + 1 ) .arg( line ) );
+            return false;
+        }
+
+        int start = regex.cap( 2 ).toInt() * 10;
+        QString text = regex.cap( 1 );
+
+        lyrics.curLyricSetTime( start );
+        lyrics.curLyricAppendText( text );
+        lyrics.curLyricAdd();
+    }
+
+    return true;
 }
 
 bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics )

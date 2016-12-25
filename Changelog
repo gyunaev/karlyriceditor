@@ -6,6 +6,7 @@
   - When exporting CDG/Video, the editor now remembers the exported CDG and video file names.
   - Added commands to change the block text vertical alignment: @%T for top, @%M for middle, @%B for bottom; thanks Dario Abatianni
   - Added highlighting for special character sequences starting with @. Patch by Dario Abatianni.
+  - Added support for importing KaraokeBuilder lyric files (thanks Ivan for providing examples).
 
 2015-12-13 gyunaev <gyunaev@ulduzsoft.com>
   - Released version 2.0
