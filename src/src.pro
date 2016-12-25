@@ -4,7 +4,7 @@ DEPENDPATH += .
 LIBS += -lcrypto
 DEFINES += USE_LICENSING
 CONFIG += link_pkgconfig
-PKGCONFIG += libavformat libavcodec libswscale  libavresample libavutil sdl
+PKGCONFIG += libavformat libavcodec libswscale  libavresample libavutil
 
 win32-g++-cross: {
 	LIBS += -lwsock32 -ldxguid
@@ -113,4 +113,4 @@ FORMS += mainwindow.ui \
     dialog_timeadjustment.ui \
     video_profile_dialog.ui
 
-QT += widgets
+QT += widgets multimedia

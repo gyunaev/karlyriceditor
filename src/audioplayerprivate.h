@@ -22,6 +22,7 @@
 
 #include <QMutex>
 #include <QString>
+#include <QAudioOutput>
 
 #include "ffmpeg_headers.h"
 
@@ -29,16 +30,16 @@ class FFMpegVideoEncoderPriv;
 
 typedef uint8_t		Uint8;
 
-class AudioPlayerPrivate
+class AudioPlayerPrivate : public QIODevice
 {
 	public:
 		AudioPlayerPrivate();
 
 		bool	init();
-		bool	open( const QString& filename );
-		void	close();
+        bool	openAudio( const QString& filename );
+        void	closeAudio();
 		void	play();
-		void	reset();
+        void	resetAudio();
 		void	stop();
 		void	seekTo( qint64 value );
 		bool	isPlaying() const;
@@ -46,13 +47,14 @@ class AudioPlayerPrivate
 		qint64	totalTime() const;
 		QString	errorMsg() const;
 
-		// Called from SDL in a different thread
-		void	SDL_audio_callback( Uint8 *stream, int len);
-
 		// Meta tags
 		QString			m_metaTitle;
 		QString			m_metaArtist;
 		QString			m_metaAlbum;
+
+    protected:
+        virtual qint64 readData(char *data, qint64 maxlen);
+        virtual qint64 writeData(const char *data, qint64 len);
 
 	private:
 		// Called from the callback
@@ -64,10 +66,11 @@ class AudioPlayerPrivate
 		friend class FFMpegVideoEncoderPriv;
 
 		QString			m_errorMsg;
-		bool			m_audioOpened;
 
 		// Access to everything below is guarded by mutex
 		mutable QMutex	m_mutex;
+
+        QAudioOutput   * m_audioDevice;
 
 		AVFormatContext *pFormatCtx;
 		int				 audioStream;
