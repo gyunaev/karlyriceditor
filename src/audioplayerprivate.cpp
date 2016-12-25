@@ -244,7 +244,9 @@ void AudioPlayerPrivate::stop()
 {
 	QMutexLocker m( &m_mutex );
 	m_playing = false;
-    m_audioDevice->stop();
+
+    if ( m_audioDevice )
+        m_audioDevice->stop();
 }
 
 void AudioPlayerPrivate::seekTo( qint64 value )
