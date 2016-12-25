@@ -1,3 +1,7 @@
+2016-12-24 gyunaev <gyunaev@ulduzsoft.com>
+  - Added support for importing KaraokeBuilder lyric files (thanks Ivan for providing examples).
+  - Switched to QAudioOutput instead of SDL, and thus got rid of SDL use.
+
 2016-12-23 gyunaev <gyunaev@ulduzsoft.com>
   - Made "test lyrics" button reload lyrics without restarting the song (thx Dario Abatianni)
   - Fixed compilating using modern FFmpeg
@@ -6,7 +10,6 @@
   - When exporting CDG/Video, the editor now remembers the exported CDG and video file names.
   - Added commands to change the block text vertical alignment: @%T for top, @%M for middle, @%B for bottom; thanks Dario Abatianni
   - Added highlighting for special character sequences starting with @. Patch by Dario Abatianni.
-  - Added support for importing KaraokeBuilder lyric files (thanks Ivan for providing examples).
 
 2015-12-13 gyunaev <gyunaev@ulduzsoft.com>
   - Released version 2.0

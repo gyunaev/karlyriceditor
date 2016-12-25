@@ -74,6 +74,8 @@ PlayerWidget::PlayerWidget(QWidget *parent)
 			 this,
 			 SLOT( slotAudioTick(qint64)) );
 
+    connect( pAudioPlayer, SIGNAL(finished()), this, SLOT(btn_playerStop()) );
+
 	// Connect the seek slider
 	connect( seekSlider, SIGNAL(sliderMoved(int)), this, SLOT(seekSliderMoved(int)) );
 	connect( seekSlider, SIGNAL(sliderPressed()), this, SLOT(seekSliderDown()) );

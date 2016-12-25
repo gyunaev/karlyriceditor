@@ -4,7 +4,7 @@
 MINGWPATH=/usr/toolchains/windows-x86-complete
 
 # We cannot build statically because Webkit is not statically linkable
-QMAKE=$MINGWPATH/i686-w64-mingw32.static/qt4-shared/bin/qmake
+QMAKE=$MINGWPATH/i686-w64-mingw32.static/qt5/bin/qmake
 
 
 BUILDDIR="build.win32"

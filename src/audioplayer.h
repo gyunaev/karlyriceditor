@@ -69,6 +69,9 @@ class AudioPlayer : public QObject
 		// Emitted every time the new audio packet is processed
 		void	tick( qint64 tickvalue );
 
+        // Play finished
+        void    finished();
+
 	public slots:
 		// Start or continues playing
 		void	play();
@@ -84,7 +87,6 @@ class AudioPlayer : public QObject
 
 	private slots:
 		friend class AudioPlayerPrivate;
-		void	emitTickSignal( qint64 tickvalue );
 
 	private:
 		AudioPlayerPrivate *	d;

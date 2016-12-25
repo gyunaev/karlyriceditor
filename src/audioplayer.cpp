@@ -45,7 +45,7 @@ bool AudioPlayer::init()
 
 bool AudioPlayer::open( const QString& filename )
 {
-	return d->open( filename );
+    return d->openAudio( filename );
 }
 
 void AudioPlayer::play()
@@ -55,7 +55,7 @@ void AudioPlayer::play()
 
 void AudioPlayer::reset()
 {
-	d->reset();
+    d->resetAudio();
 }
 
 void AudioPlayer::stop()
@@ -88,14 +88,9 @@ QString	AudioPlayer::errorMsg() const
 	return d->errorMsg();
 }
 
-void AudioPlayer::emitTickSignal( qint64 tickvalue )
-{
-	emit tick( tickvalue );
-}
-
 void AudioPlayer::close()
 {
-	d->close();
+    d->closeAudio();
 }
 
 AudioPlayerPrivate * AudioPlayer::impl()
