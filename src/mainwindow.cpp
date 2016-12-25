@@ -201,6 +201,7 @@ void MainWindow::connectActions()
 	// Text editor
 	connect( actionUndo, SIGNAL( triggered()), editor, SLOT( undo()) );
 	connect( actionRedo, SIGNAL( triggered()), editor, SLOT( redo()) );
+    connect( editor, SIGNAL(lyricsChanged(qint64)), this, SLOT(lyricsChanged(qint64)) );
 
 	// Registration
 	connect( actionRegistration, SIGNAL( triggered()), this, SLOT( act_helpRegistration()) );
@@ -240,7 +241,31 @@ void MainWindow::editor_undoAvail(bool available)
 
 void MainWindow::editor_redoAvail(bool available)
 {
-	actionRedo->setEnabled( available );
+    actionRedo->setEnabled( available );
+}
+
+void MainWindow::lyricsChanged(qint64 time)
+{
+    if ( !pSettings->m_editorAutoUpdateTestWindows )
+        return;
+
+    if ( m_testWindow )
+    {
+        Lyrics lyrics;
+
+        if ( !editor->exportLyrics( &lyrics ) )
+            return;
+
+        LyricsWidget * lw = new LyricsWidget( m_testWindow );
+        lw->setLyrics( lyrics,
+                         m_project->tag( Project::Tag_Artist ),
+                         m_project->tag( Project::Tag_Title ) );
+
+        m_testWindow->setLyricWidget( lw );
+
+        if ( m_player->isPlaying() && pSettings->m_editorAutoUpdatePlayerBackseek > 0 )
+            m_player->seekToTime( time - pSettings->m_editorAutoUpdatePlayerBackseek * 1000 );
+    }
 }
 
 void MainWindow::act_fileNewProject()

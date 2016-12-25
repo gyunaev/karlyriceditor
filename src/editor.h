@@ -95,6 +95,9 @@ class Editor : public QTextEdit
 		bool	importFromString( const QString& lyricstr );
 		bool	importFromOldString( const QString& lyricstr );
 
+    signals:
+        void    lyricsChanged( qint64 time );
+
 	public slots:
 		void	textModified();
 		void	splitLine();
