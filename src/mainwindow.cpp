@@ -534,7 +534,7 @@ void MainWindow::act_projectOpenLyricFile()
 	QString fileName = QFileDialog::getOpenFileName( this,
 			tr("Open a lyric file"),
 			QString::null,
-			tr("LRC files (*.lrc);;UltraStar/PowerKaraoke files (*.txt);;KAR/MIDI files (*.mid *.midi *.kar);;KaraFun files (*.kfn);;DEL Karaoke files (*.kok)") );
+            tr("LRC files (*.lrc);;UltraStar/PowerKaraoke/KaraokeBuilder files (*.txt);;KAR/MIDI files (*.mid *.midi *.kar);;KaraFun files (*.kfn);;DEL Karaoke files (*.kok)") );
 
 	if ( fileName.isEmpty() )
 		return;
