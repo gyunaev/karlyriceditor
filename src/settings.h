@@ -65,6 +65,12 @@ class Settings
 		// at the same position.
 		bool		m_editorDoubleTimeMark;
 
+        // If true, any change in the editor will automatically update the test window
+        // (if the test window is active). Also the player, if playing, will seek back
+        // m_editorAutoUpdatePlayerBackseek seconds if playing.
+        bool        m_editorAutoUpdateTestWindows;
+        int         m_editorAutoUpdatePlayerBackseek;
+
 		// Time mark font family and size
 		QString		m_timeMarkFontFamily;
 		int			m_timeMarkFontSize;

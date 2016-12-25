@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>574</width>
-    <height>351</height>
+    <width>566</width>
+    <height>362</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -111,17 +111,72 @@ p, li { white-space: pre-wrap; }
               <property name="whatsThis">
                <string>If blocks are enabled, this parameter specifies the maximum number of lines allowed in block. Most players cannot show more than 8 lines, so before using a larger parameter, please make sure your player supports it.</string>
               </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_3">
-              <property name="text">
-               <string>lines</string>
+              <property name="suffix">
+               <string> lines</string>
+              </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="value">
+               <number>1</number>
               </property>
              </widget>
             </item>
             <item>
              <spacer name="horizontalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>79</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_10">
+            <item>
+             <widget class="QCheckBox" name="boxEditorRealtimeTesting">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;By default when you test the lyrics using &amp;quot;Test Lyrics&amp;quot; button, any change you made in the editor is ignored until you press the &amp;quot;Test Lyrics&amp;quot; button again. &lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;However if this option is checked, any change in the Editor, which happens while the Test Lyrics Window is shown and the song is playing, will automatically update and refresh the window. The player will also seek the specified number of seconds backward from the changed timing mark (unless set to 0 seconds), effectively letting you to see right away the result of your editing.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="text">
+               <string>Enable realtime test window update; seek</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="leEditorSecondsBackward">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="whatsThis">
+               <string>If blocks are enabled, this parameter specifies the maximum number of lines allowed in block. Most players cannot show more than 8 lines, so before using a larger parameter, please make sure your player supports it.</string>
+              </property>
+              <property name="suffix">
+               <string> sec</string>
+              </property>
+              <property name="minimum">
+               <number>0</number>
+              </property>
+              <property name="maximum">
+               <number>20</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_3">
+              <property name="text">
+               <string>backward</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_5">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -726,8 +781,8 @@ p, li { white-space: pre-wrap; }
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>252</x>
-     <y>329</y>
+     <x>261</x>
+     <y>352</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -742,8 +797,8 @@ p, li { white-space: pre-wrap; }
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>320</x>
-     <y>329</y>
+     <x>329</x>
+     <y>352</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
@@ -758,12 +813,12 @@ p, li { white-space: pre-wrap; }
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>62</x>
-     <y>258</y>
+     <x>86</x>
+     <y>289</y>
     </hint>
     <hint type="destinationlabel">
-     <x>484</x>
-     <y>256</y>
+     <x>476</x>
+     <y>291</y>
     </hint>
    </hints>
   </connection>
@@ -778,8 +833,24 @@ p, li { white-space: pre-wrap; }
      <y>118</y>
     </hint>
     <hint type="destinationlabel">
-     <x>345</x>
-     <y>132</y>
+     <x>386</x>
+     <y>131</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>boxEditorRealtimeTesting</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>leEditorSecondsBackward</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>137</x>
+     <y>156</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>339</x>
+     <y>150</y>
     </hint>
    </hints>
   </connection>

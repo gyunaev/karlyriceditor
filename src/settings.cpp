@@ -42,6 +42,8 @@ Settings::Settings()
 	m_editorFontFamily = settings.value( "editor/fontfamily", "arial" ).toString();
 	m_editorFontSize = settings.value( "editor/fontsize", 14 ).toInt();
 	m_editorDoubleTimeMark = settings.value( "editor/doubletimemark", true ).toBool();
+    m_editorAutoUpdateTestWindows = settings.value( "editor/autoupdatetestwindow", false ).toBool();
+    m_editorAutoUpdatePlayerBackseek = settings.value( "editor/autoupdateplayerbackseek", 0 ).toInt();
 
 	m_timeMarkFontFamily = settings.value( "timemark/fontfamily", "arial" ).toString();
 	m_timeMarkFontSize = settings.value( "timemark/fontsize", 10 ).toInt();
@@ -79,6 +81,9 @@ void Settings::edit()
 	ui.fontEditor->setCurrentFont( QFont( m_editorFontFamily ) );
 	ui.fontEditorSize->setValue( m_editorFontSize );
 
+    ui.boxEditorRealtimeTesting->setChecked( m_editorAutoUpdateTestWindows );
+    ui.leEditorSecondsBackward->setValue( m_editorAutoUpdatePlayerBackseek );
+
 	ui.fontTimeMark->setCurrentFont( QFont( m_timeMarkFontFamily ) );
 	ui.fontTimeMarkSize->setValue( m_timeMarkFontSize );
 	ui.btnTimingColorPhBg->setColor( m_timeMarkPlaceholderBackground );
@@ -108,7 +113,7 @@ void Settings::edit()
 	m_checkForUpdates = ui.cbCheckForUpdates->isChecked();
 
 	m_editorWordChars = ui.leEditorWordCount->text().toInt();
-	m_editorMaxBlock = ui.leEditorBlockLines->text().toInt();
+    m_editorMaxBlock = ui.leEditorBlockLines->value();
 
 	m_editorStopAtLineEnd = ui.cbEditorStopAtEnd->isChecked();
 	m_editorStopNextWord = ui.cbEditorStopAtWords->isChecked();
@@ -116,6 +121,9 @@ void Settings::edit()
 	m_editorSupportBlocks = ui.cbEditorSupportBlocks->isChecked();
 	m_editorFontFamily = ui.fontEditor->currentFont().family();
 	m_editorFontSize = ui.fontEditorSize->value();
+
+    m_editorAutoUpdateTestWindows = ui.boxEditorRealtimeTesting->isChecked();
+    m_editorAutoUpdatePlayerBackseek = ui.leEditorSecondsBackward->value();
 
 	m_timeMarkFontFamily = ui.fontTimeMark->currentFont().family();
 	m_timeMarkFontSize = ui.fontTimeMarkSize->value();
@@ -145,6 +153,8 @@ void Settings::edit()
 	settings.setValue( "editor/fontfamily", m_editorFontFamily );
 	settings.setValue( "editor/fontsize", m_editorFontSize );
 	settings.setValue( "editor/doubletimemark", m_editorDoubleTimeMark );
+    settings.setValue( "editor/autoupdatetestwindow", m_editorAutoUpdateTestWindows );
+    settings.setValue( "editor/autoupdateplayerbackseek", m_editorAutoUpdatePlayerBackseek );
 
 	settings.setValue( "timemark/fontfamily", m_timeMarkFontFamily );
 	settings.setValue( "timemark/fontsize", m_timeMarkFontSize );

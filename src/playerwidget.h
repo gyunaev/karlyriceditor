@@ -59,6 +59,7 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 		void	btn_playerPlayPause();
 		void	btn_playerSeekForward();
 		void	btn_playerSeekBackward();
+        void	seekToTime( qint64 time );
 
 	private slots:
 		void	slotAudioTick( qint64 tickvalue );

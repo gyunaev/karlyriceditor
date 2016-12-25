@@ -76,6 +76,52 @@ void Editor::textModified()
 		return;
 
 	m_project->setModified();
+
+    // Validate the text silently; will use it later to show current status
+    QList<ValidatorError> errors;
+
+    validate( errors );
+
+    if ( !errors.isEmpty() )
+    {
+        pMainWindow->statusBar()->showMessage( tr("Lyric error: %1" ).arg( errors[0].error ));
+        return;
+    }
+
+    pMainWindow->statusBar()->showMessage( "" );
+
+    // Get the current line text
+    QString line = textCursor().block().text();
+
+    // And look up backward for a timing block divider
+    int timeend, timestart = textCursor().columnNumber();
+
+    // If we edit right before the time tag, this is relevant to prior time tag
+    if ( line[timestart] == '[' && timestart > 0 )
+        timestart--;
+
+    for ( ; timestart > 0; timestart-- )
+        if ( line[timestart] == '[' || line[timestart] == ']' )
+            break;
+
+    // If we found an open time tag [, this means the cursor is in time tag already.
+    // Find a closing tag
+    if ( line[timestart] == '[' )
+        timeend = line.indexOf( ']', timestart );
+    else
+    {
+        timeend = timestart;
+
+        for ( ; timestart > 0 && line[timestart] != '['; timestart-- )
+            ;
+    }
+
+    // Couldn't happen, but just in case
+    if ( timeend == -1 || timestart == -1 || timestart >= timeend )
+        return;
+
+    QString prevtime = line.mid( timestart + 1, timeend - timestart - 1 );
+    emit lyricsChanged( timeToMark( prevtime ) );
 }
 
 QString	Editor::exportToString()

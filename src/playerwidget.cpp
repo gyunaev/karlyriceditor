@@ -160,14 +160,23 @@ void PlayerWidget::btn_playerPlayPause()
 
 void PlayerWidget::btn_playerSeekForward()
 {
-	if ( pAudioPlayer->isPlaying() )
-		pAudioPlayer->seekTo( pAudioPlayer->currentTime() + 5000 );
+    seekToTime( pAudioPlayer->currentTime() + 5000 );
 }
 
 void PlayerWidget::btn_playerSeekBackward()
 {
-	if ( pAudioPlayer->isPlaying() )
-		pAudioPlayer->seekTo( pAudioPlayer->currentTime() - 5000 );
+    seekToTime( pAudioPlayer->currentTime() - 5000 );
+}
+
+void PlayerWidget::seekToTime(qint64 time)
+{
+    if ( pAudioPlayer->isPlaying() )
+    {
+        if ( time < 0 )
+            time = 0;
+
+        pAudioPlayer->seekTo( time );
+    }
 }
 
 void PlayerWidget::startPlaying()

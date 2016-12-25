@@ -1,6 +1,8 @@
 2016-12-24 gyunaev <gyunaev@ulduzsoft.com>
   - Added support for importing KaraokeBuilder lyric files (thanks Ivan for providing examples).
   - Switched to QAudioOutput instead of SDL, and thus got rid of SDL use.
+  - Added an option to see the changes made in Editor in the test window in real-time, with optional seek backward
+    for a specified number of seconds if the player is running. This allows easy fine-tuning of lyrics.
 
 2016-12-23 gyunaev <gyunaev@ulduzsoft.com>
   - Made "test lyrics" button reload lyrics without restarting the song (thx Dario Abatianni)
