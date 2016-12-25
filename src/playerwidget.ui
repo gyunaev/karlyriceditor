@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>559</width>
-    <height>84</height>
+    <height>111</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -20,7 +20,7 @@
    <set>Qt::BottomDockWidgetArea|Qt::TopDockWidgetArea</set>
   </property>
   <property name="windowTitle">
-   <string>Player controls</string>
+   <string>P&amp;layer controls</string>
   </property>
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -115,6 +115,11 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="font">
+          <font>
+           <family>Liberation Mono</family>
+          </font>
+         </property>
          <property name="toolTip">
           <string>Playing time</string>
          </property>
@@ -144,6 +149,11 @@ p, li { white-space: pre-wrap; }
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="font">
+          <font>
+           <family>Liberation Mono</family>
+          </font>
          </property>
          <property name="toolTip">
           <string>Remaining time</string>
