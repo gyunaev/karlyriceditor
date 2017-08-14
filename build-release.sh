@@ -32,42 +32,28 @@ rm -rf "$BUILDDIR/example"
 tar zcf "$OUTDIR/$BUILDDIR.tar.gz" $BUILDDIR || exit 1
 
 # win32
-sh build-win32-mingw.sh -nsis || exit 1
-mv build.win32/nsis/InstallKarLyricEditor*.exe $OUTDIR/ || exit 1
+sh build-win32-mingw.sh || exit 1
+mv build.win32/src/bin/karlyriceditor.exe $OUTDIR/karlyriceditor-$CURRENTVER.exe || exit 1
 rm -rf "build.win32"
 
 # Linux RPMs
-for target in qt5-32 qt5-64 qt4-32 qt4-64; do
+for target in qt5-64; do
 
     echo "Building for $target"
     rm -rf "$BUILDDIR"
     svn export . "$BUILDDIR/" || exit 1
 
     # Get the Qt version
-    case $target in
-        qt4-*)
-            QMAKE=qmake
-            QTLIBS="QtGui QtCore"
-            RPMSUFFIX="qt4"
-            ;;
-
-        qt5-*)
-            QMAKE=qmake-qt5
-            QTLIBS="Qt5Widgets Qt5Gui Qt5Core"
-            RPMSUFFIX="qt5"
-            ;;
-
-        *)
-            echo "Invalid target"
-            exit 1
-    esac
+    QMAKE=qmake-qt5
+    QTLIBS="Qt5Widgets Qt5Gui Qt5Core Qt5Multimedia"
+    RPMSUFFIX="qt5"
 
     # Get the arch
     case $target in
         *-32)
             QMAKESPEC="linux-g++-32"
             RPMARCH="i586"
-            LINKLIBS="pthread crypto avformat avcodec swscale avresample avutil SDL $QTLIBS"
+            LINKLIBS="pthread crypto avformat avcodec swscale avresample avutil $QTLIBS"
 
             ;;
 
