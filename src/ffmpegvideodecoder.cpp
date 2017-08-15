@@ -154,8 +154,8 @@ bool FFMpegVideoDecoder::openFile( const QString& filename, unsigned int seekto 
 	d->m_buffer.resize( numBytes );
 
 	// Assign appropriate parts of buffer to image planes in pFrameRGB
-	avpicture_fill( (AVPicture *) d->pFrameRGB, (uint8_t*) d->m_buffer.data(),
-                    AV_PIX_FMT_RGB24, d->pCodecCtx->width, d->pCodecCtx->height );
+    av_image_fill_arrays( d->pFrameRGB->data, d->pFrameRGB->linesize, (uint8_t*) d->m_buffer.data(),
+                    AV_PIX_FMT_RGB24, d->pCodecCtx->width, d->pCodecCtx->height, 1 );
 
 	d->skipFrames = seekto;
 	return true;
@@ -190,26 +190,26 @@ void FFMpegVideoDecoder::close()
 
 bool FFMpegVideoDecoderPriv::readFrame( int frame )
 {
-	AVPacket packet;
-	int frameFinished;
-
 	while ( m_currentFrameNumber < frame )
 	{
-		// Read a frame
-		if ( av_read_frame( pFormatCtx, &packet ) < 0 )
-			return false;  // Frame read failed (e.g. end of stream)
+        AVPacket packet;
 
+		// Read a frame
+        if ( av_read_frame( pFormatCtx, &packet ) < 0 )
+            return false;  // Frame read failed (e.g. end of stream)
+
+        // Is this a packet from the video stream -> decode video frame
 		if ( packet.stream_index == videoStream )
 		{
-			// Is this a packet from the video stream -> decode video frame
-			avcodec_decode_video2( pCodecCtx, pFrame, &frameFinished, &packet );
+            if ( avcodec_send_packet( pCodecCtx, &packet) < 0 )
+                return false;  // Frame read failed (e.g. end of stream)
 
-			// Did we get a video frame?
-			if ( frameFinished )
-			{
+            // Using new API: https://blogs.gentoo.org/lu_zero/2016/03/29/new-avcodec-api/
+            while ( avcodec_receive_frame( pCodecCtx, pFrame ) == 0 )
+            {
 				m_currentFrameNumber++;
 
-				if ( m_currentFrameNumber >= frame )
+                if ( m_currentFrameNumber >= frame )
 				{
 					int w = pCodecCtx->width;
 					int h = pCodecCtx->height;
@@ -233,7 +233,7 @@ bool FFMpegVideoDecoderPriv::readFrame( int frame )
 			}
 		}
 
-		av_free_packet( &packet );
+        av_packet_unref( &packet );
 	}
 
 	return true;

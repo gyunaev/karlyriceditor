@@ -103,7 +103,7 @@ static bool isAudioSampleFormatSupported( const enum AVSampleFormat * sample_for
 	while ( *sample_formats != AV_SAMPLE_FMT_NONE )
 	{
 		if ( *sample_formats == format )
-			return true;
+            return true;
 
 		sample_formats++;
 	}
@@ -730,7 +730,11 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 				// this only works for theora+vorbis
 //				if ( videoCodec->id == AV_CODEC_ID_THEORA && audioCodec->id == AV_CODEC_ID_VORBIS )
 				{
-					audioFrame->pts = av_rescale_q( audioPTStracker, (AVRational){1, audioCodecCtx->sample_rate}, audioCodecCtx->time_base);
+                    AVRational rate;
+                    rate.num = 1;
+                    rate.den = audioCodecCtx->sample_rate;
+
+                    audioFrame->pts = av_rescale_q( audioPTStracker, rate, audioCodecCtx->time_base);
 					audioPTStracker += audioFrame->nb_samples;
 				}
 

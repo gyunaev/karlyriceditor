@@ -168,9 +168,13 @@ bool AudioPlayerPrivate::openAudio( const QString& filename )
 		m_metaAlbum = getMetaTag( metadata, "album" );
 	}
 
+    AVRational baserate;
+    baserate.num = 1;
+    baserate.den = AV_TIME_BASE;
+
 	m_totalTime = av_rescale_q( pFormatCtx->streams[audioStream]->duration,
 							   pFormatCtx->streams[audioStream]->time_base,
-							   AV_TIME_BASE_Q ) / 1000;
+                               baserate ) / 1000;
 
 	aCodecCtx = pFormatCtx->streams[audioStream]->codec;
 	aCodecCtx->request_sample_fmt = AV_SAMPLE_FMT_S16;
@@ -316,9 +320,13 @@ bool AudioPlayerPrivate::MoreAudio()
 		m_sample_buf_size = 0;
 		m_sample_buffer.clear();
 
+        AVRational baserate;
+        baserate.num = 1;
+        baserate.den = AV_TIME_BASE;
+
 		m_currentTime = av_rescale_q( packet.pts,
 									 pFormatCtx->streams[audioStream]->time_base,
-									 AV_TIME_BASE_Q ) / 1000;
+                                     baserate ) / 1000;
 
         QMetaObject::invokeMethod( pAudioPlayer, "tick", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
 
