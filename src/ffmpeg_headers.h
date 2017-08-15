@@ -23,9 +23,6 @@
 #include <sys/types.h>
 
 
-#define UINT64_C(c) c ## ULL
-#define INT64_C(c) c ## LL
-
 extern "C"
 {
 
