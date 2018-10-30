@@ -3,7 +3,7 @@ TARGET = ../bin/karlyriceditor
 QT += core gui widgets concurrent
 DEFINES += USE_LICENSING
 
-win32-g++-cross: {
+win32: {
         LIBS += -lwsock32 -ldxguid -lcrypto
 }
 
