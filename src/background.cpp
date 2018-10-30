@@ -89,8 +89,8 @@ qint64 BackgroundVideo::doDraw( QImage& image, qint64 timing )
 
 	image = videoframe;
 
-	// We use our own cache
-    return 0;*/
+	// We use our own cache*/
+    return 0;
 }
 
 
