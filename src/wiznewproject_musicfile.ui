@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>449</width>
-    <height>322</height>
+    <width>598</width>
+    <height>380</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -90,19 +90,6 @@ Title and artist is required, but all other fields can be empty.</string>
       </item>
       <item row="2" column="1">
        <widget class="QLineEdit" name="leArtist"/>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Album</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QLineEdit" name="leAlbum"/>
       </item>
      </layout>
     </widget>

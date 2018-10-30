@@ -22,11 +22,9 @@
 #include <QMessageBox>
 #include <QTime>
 
-#include "audioplayer.h"
 #include "videogenerator.h"
 #include "textrenderer.h"
 #include "export_params.h"
-#include "ffmpegvideoencoder.h"
 #include "editor.h"
 
 #include "ui_dialog_encodingprogress.h"
@@ -40,6 +38,7 @@ VideoGenerator::VideoGenerator( Project * prj )
 
 void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 {
+    /*
 	// Show the dialog with video options
 	DialogExportOptions dlg( m_project, lyrics, true );
 
@@ -150,4 +149,5 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	}
 
 	encoder.close();
+    */
 }

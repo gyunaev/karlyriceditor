@@ -1,18 +1,28 @@
 TEMPLATE = app
 TARGET = ../bin/karlyriceditor
-DEPENDPATH += .
-LIBS += -lcrypto
+QT += core gui widgets concurrent
 DEFINES += USE_LICENSING
-CONFIG += link_pkgconfig
-PKGCONFIG += libavformat libavcodec libswscale  libavresample libavutil
 
 win32-g++-cross: {
-	LIBS += -lwsock32 -ldxguid
+        LIBS += -lwsock32 -ldxguid -lcrypto
 }
 
 linux-g++-32: {
 	LIBS += -L.
 }
+
+mac: {
+    INCLUDEPATH += /Library/Frameworks/GStreamer.framework/Headers
+    LIBS += -L/Library/Frameworks/GStreamer.framework/Libraries
+}
+
+unix:!mac:{
+   CONFIG += link_pkgconfig
+   PKGCONFIG += libzip gstreamer-1.0 gstreamer-app-1.0 openssl
+} else: {
+    LIBS += -lgstapp-1.0 -lgstreamer-1.0 -lglib-2.0 -lgobject-2.0 -lcrypto
+}
+
 
 # Input
 HEADERS += mainwindow.h \
@@ -40,21 +50,18 @@ HEADERS += mainwindow.h \
     lyricsrenderer.h \
     textrenderer.h \
     lyricswidget.h \
-    ffmpegvideodecoder.h \
-    ffmpegvideoencoder.h \
     videogenerator.h \
     lyricsevents.h \
     background.h \
-    audioplayer.h \
-    ffmpeg_headers.h \
-    audioplayerprivate.h \
-	export_params.h \
+    export_params.h \
     licensing.h \
     karaokelyricstextkar.h \
     kfn_file_parser.h \
     dialog_timeadjustment.h \
     util.h \
-    videoencodingprofiles.h
+    videoencodingprofiles.h \
+    mediaplayer.h \
+    logger.h
 SOURCES += mainwindow.cpp \
     main.cpp \
     wizard_newproject.cpp \
@@ -78,21 +85,18 @@ SOURCES += mainwindow.cpp \
     lyricsrenderer.cpp \
     textrenderer.cpp \
     lyricswidget.cpp \
-    ffmpegvideodecoder.cpp \
-    ffmpegvideoencoder.cpp \
     videogenerator.cpp \
     lyricsevents.cpp \
     background.cpp \
-    audioplayer.cpp \
-    audioplayerprivate.cpp \
-    ffmpeg_headers.cpp \
-	export_params.cpp \
+    export_params.cpp \
     licensing.cpp \
     karaokelyricstextkar.cpp \
     kfn_file_parser.cpp \
     dialog_timeadjustment.cpp \
     util.cpp \
-    videoencodingprofiles.cpp
+    videoencodingprofiles.cpp \
+    mediaplayer.cpp \
+    logger.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \
     wiznewproject_lyrictype.ui \
@@ -112,5 +116,3 @@ FORMS += mainwindow.ui \
     dialog_registration.ui \
     dialog_timeadjustment.ui \
     video_profile_dialog.ui
-
-QT += widgets multimedia

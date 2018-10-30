@@ -126,9 +126,9 @@ bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * err
 
 		return true;
 	}
-	else if ( key == "VIDEO" )
+/*	else if ( key == "VIDEO" )
 	{
-		QString filename = value;
+        QString filename = value;
 		QRegExp videopathstart("^(.*);STARTFRAME=(\\d+)$");
 
 		if ( value.indexOf( videopathstart ) != -1 )
@@ -159,8 +159,8 @@ bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * err
 		}
 
 		return true;
-	}
-    else if ( key == "DEFAULT" )
+    }
+*/    else if ( key == "DEFAULT" )
     {
         if ( event )
         {

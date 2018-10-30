@@ -21,11 +21,12 @@
 #define PLAYERWIDGET_H
 
 #include <QDockWidget>
+#include <QTimer>
 
 #include "playerbutton.h"
 #include "ui_playerwidget.h"
 
-class AudioPlayer;
+class MediaPlayer;
 class Project;
 
 class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
@@ -37,7 +38,7 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 		~PlayerWidget();
 
 		// Sets the current music file from a project.
-		bool	openMusicFile( Project * project );
+        void openMusicFile( Project * project );
 
 		// Is music file ready to play?
 		bool	isReady() const { return m_ready; }
@@ -51,7 +52,7 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 		static QString tickToString( qint64 tick );
 
 	signals:
-		void	tick( qint64 tickvalue );
+        void	tick( qint64 position, qint64 duration );
 
 	public slots:
 		void	startPlaying();
@@ -62,10 +63,15 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
         void	seekToTime( qint64 time );
 
 	private slots:
-		void	slotAudioTick( qint64 tickvalue );
+        void	updateTimer();
 		void	seekSliderMoved( int newvalue );
 		void	seekSliderUp();
 		void	seekSliderDown();
+
+        void    mediaLoaded();
+        void    mediaError( QString text );
+        void    mediaFinished();
+        void    mediaDurationAvailable();
 
 	private:
 		void	updatePlayerState( int state );
@@ -73,6 +79,18 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 	private:
 		bool			m_ready;
 		bool			m_sliderDown; // do not update position
+
+        // Timer to update the play status
+        QTimer          mUpdateTimer;
+
+        // Our audio player
+        MediaPlayer  *  mAudioPlayer;
+
+        // Song duration, when known
+        qint64          mDuration;
+
+        // Current slider value (to detect changes by user)
+        int             mCurrentSliderValue;
 };
 
 #endif // PLAYERWIDGET_H

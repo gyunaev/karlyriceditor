@@ -21,7 +21,6 @@
 
 #include "testwindow.h"
 #include "lyricswidget.h"
-#include "audioplayer.h"
 #include "playerwidget.h"
 
 TestWindow::TestWindow( QWidget *parent )
@@ -44,7 +43,24 @@ void TestWindow::setLyricWidget( LyricsWidget * lw )
 
 	m_widget = lw;
 	m_layout->addWidget( lw );
-	update();
+    update();
+}
+
+void TestWindow::slotUpdate(qint64 position, qint64 duration)
+{
+    m_widget->updateLyrics( position );
+
+    qint64 reminder = qMax( 0LL, duration - position );
+
+    lblCurrent->setText( PlayerWidget::tickToString( position ) );
+    lblTotal->setText( PlayerWidget::tickToString( reminder ) );
+
+    int pval = position * progressBar->maximum() / duration;
+
+    if ( progressBar->value() != pval )
+        progressBar->setValue( pval );
+
+    m_lastTick = position;
 }
 
 void TestWindow::closeEvent( QCloseEvent * event )
@@ -52,23 +68,6 @@ void TestWindow::closeEvent( QCloseEvent * event )
 	emit closed();
 
 	QDialog::closeEvent( event );
-}
-
-void TestWindow::tick( qint64 value )
-{
-	m_widget->updateLyrics( value );
-
-	qint64 reminder = pAudioPlayer->totalTime() - value;
-
-	lblCurrent->setText( PlayerWidget::tickToString( value ) );
-	lblTotal->setText( PlayerWidget::tickToString( reminder ) );
-
-	int pval = value * progressBar->maximum() / pAudioPlayer->totalTime();
-
-	if ( progressBar->value() != pval )
-        progressBar->setValue( pval );
-
-    m_lastTick = value;
 }
 
 void TestWindow::locateButtonClicked()

@@ -28,7 +28,6 @@
 #include <QDesktopServices>
 #include <QUrl>
 
-#include "audioplayer.h"
 #include "wizard_newproject.h"
 #include "mainwindow.h"
 #include "playerwidget.h"
@@ -48,6 +47,7 @@
 #include "licensing.h"
 #include "util.h"
 #include "ui_dialog_registration.h"
+#include "mediaplayer.h"
 
 MainWindow * pMainWindow;
 
@@ -146,7 +146,7 @@ void MainWindow::checkNewVersionAvailable()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-	pAudioPlayer->stop();
+    m_player->btn_playerStop();
 
 	if ( m_project && !tryCloseCurrentProject() )
 	{
@@ -266,6 +266,11 @@ void MainWindow::lyricsChanged(qint64 time)
         if ( m_player->isPlaying() && pSettings->m_editorAutoUpdatePlayerBackseek > 0 )
             m_player->seekToTime( time - pSettings->m_editorAutoUpdatePlayerBackseek * 1000 );
     }
+}
+
+Project *MainWindow::project() const
+{
+    return m_project;
 }
 
 void MainWindow::act_fileNewProject()
@@ -444,14 +449,8 @@ void MainWindow::setCurrentProject( Project * proj )
 
 	statusBar()->showMessage( tr("Loading the music file %1") .arg(m_project->musicFile()), 2000);
 
-	// Set the music file into player
-	if ( m_player->openMusicFile( m_project ) )
-	{
-		qint64 totaltime = m_player->totalTime();
-
-		if ( totaltime > 0 )
-			m_project->setSongLength( totaltime );
-	}
+    // Init the loading of the music file
+    m_player->openMusicFile( m_project );
 }
 
 void MainWindow::act_editInsertTag()
@@ -766,7 +765,7 @@ void MainWindow::act_projectTest()
 	{
 		m_testWindow = new TestWindow( this );
 
-		connect( m_player, SIGNAL(tick(qint64)), m_testWindow, SLOT(tick(qint64)) );
+        connect( m_player, &PlayerWidget::tick, m_testWindow, &TestWindow::slotUpdate );
 		connect( m_testWindow, SIGNAL(closed()), this, SLOT( testWindowClosed() ) );
         connect( m_testWindow, SIGNAL(editorTick(qint64)), editor, SLOT(followingTick(qint64)) );
 	}
@@ -817,7 +816,7 @@ void MainWindow::act_projectTestCDG()
 	if ( !m_testWindow )
 	{
 		m_testWindow = new TestWindow( this );
-		connect( m_player, SIGNAL(tick(qint64)), m_testWindow, SLOT(tick(qint64)) );
+        connect( m_player, &PlayerWidget::tick, m_testWindow, &TestWindow::slotUpdate );
 		connect( m_testWindow, SIGNAL(closed()), this, SLOT( testWindowClosed() ) );
 	}
 

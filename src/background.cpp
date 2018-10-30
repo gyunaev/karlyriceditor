@@ -65,14 +65,14 @@ qint64 BackgroundImage::doDraw( QImage& image, qint64 )
 BackgroundVideo::BackgroundVideo( const QString& filename )
 	: Background()
 {
-	QRegExp videopathstart("^(.*);STARTFRAME=(\\d+)$");
+/*	QRegExp videopathstart("^(.*);STARTFRAME=(\\d+)$");
 
 	if ( filename.indexOf( videopathstart ) != -1 )
 	{
 		m_valid = m_videoDecoder.openFile( videopathstart.cap(1), videopathstart.cap(2).toUInt() );
 	}
 	else
-		m_valid = m_videoDecoder.openFile( filename, 0 );
+        m_valid = m_videoDecoder.openFile( filename, 0 );*/
 }
 
 bool BackgroundVideo::isValid() const
@@ -82,7 +82,7 @@ bool BackgroundVideo::isValid() const
 
 qint64 BackgroundVideo::doDraw( QImage& image, qint64 timing )
 {
-	QImage videoframe = m_videoDecoder.frame( timing );
+/*	QImage videoframe = m_videoDecoder.frame( timing );
 
 	if ( videoframe.isNull() )
 		return 0;
@@ -90,7 +90,7 @@ qint64 BackgroundVideo::doDraw( QImage& image, qint64 timing )
 	image = videoframe;
 
 	// We use our own cache
-	return 0;
+    return 0;*/
 }
 
 

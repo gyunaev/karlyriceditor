@@ -1006,10 +1006,10 @@ bool Project::importLyricsTxt( const QStringList & readlyrics, Lyrics& lyrics )
 		return importLyricsUStar( readlyrics, lyrics );
 	else if ( readlyrics.first().indexOf( QRegExp( "^([0-9.]+) ([0-9.]+) (.+)" ) ) != -1 )
 		return importLyricsPowerKaraoke( readlyrics, lyrics );
-    else if ( readlyrics.contains( "PAGEV2") != -1 )
+    else if ( readlyrics.contains( "PAGEV2") )
         return importLyricsKaraokeBuilder( readlyrics, lyrics );
 
-	QMessageBox::critical( 0,
+    QMessageBox::critical( 0,
 						   QObject::tr("Invalid text file"),
 						   QObject::tr("This file is not a valid UltraStar nor PowerKaraoke lyric file") );
 	return false;

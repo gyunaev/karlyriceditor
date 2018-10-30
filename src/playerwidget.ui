@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>559</width>
+    <width>590</width>
     <height>111</height>
    </rect>
   </property>
@@ -137,6 +137,9 @@ p, li { white-space: pre-wrap; }
        </item>
        <item>
         <widget class="QSlider" name="seekSlider">
+         <property name="tracking">
+          <bool>false</bool>
+         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>

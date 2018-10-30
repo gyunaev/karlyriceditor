@@ -1,7 +1,6 @@
 /**************************************************************************
- *  Karlyriceditor - a lyrics editor and CD+G / video export for Karaoke  *
- *  songs.                                                                *
- *  Copyright (C) 2009-2013 George Yunaev, support@ulduzsoft.com          *
+ *  Spivak Karaoke PLayer - a free, cross-platform desktop karaoke player *
+ *  Copyright (C) 2015-2016 George Yunaev, support@ulduzsoft.com          *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
  *  it under the terms of the GNU General Public License as published by  *
@@ -17,40 +16,30 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#ifndef TESTWINDOW_H
-#define TESTWINDOW_H
+#ifndef LOGGER_H
+#define LOGGER_H
 
-#include <QDialog>
-#include "ui_dialog_testwindow.h"
+#include <QFile>
+#include <QMutex>
+#include <QObject>
 
-class LyricsWidget;
-
-
-class TestWindow : public QDialog, public Ui::DialogTestWindow
+class Logger
 {
-    Q_OBJECT
+    public:
+        static bool init();
 
-	public:
-		TestWindow( QWidget *parent = 0 );
+        static void debug( const QString& str );
+        static void debug( const char * fmt, ... );
 
-        void    setLyricWidget( LyricsWidget * lw );
+        static void error( const QString& str );
+        static void error( const char * fmt, ... );
 
-	signals:
-        void    closed();
-        void    editorTick( qint64 tick );
+    private:
+        explicit Logger();
+        void     add(const char *type, const char * str );
 
-	public slots:
-        void    slotUpdate( qint64 position, qint64 duration );
-        void    locateButtonClicked();
-
-	protected:
-		void	closeEvent( QCloseEvent * event );
-
-	private:
-        QVBoxLayout * m_layout;
-		LyricsWidget* m_widget;
-        qint64        m_lastTick;
+        QFile   m_logfile;
+        QMutex  m_logMutex;
 };
 
-
-#endif // TESTWINDOW_H
+#endif // LOGGER_H

@@ -46,6 +46,8 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	editor_redoAvail(bool);
         void    lyricsChanged( qint64 time );
 
+        Project * project() const;
+
 	private slots:
 		void	act_fileNewProject();
 		void	act_fileOpenProject();

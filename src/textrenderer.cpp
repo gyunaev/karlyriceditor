@@ -576,7 +576,7 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
     if ( m_cdgMode )
         painter.setRenderHints( QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing | QPainter::HighQualityAntialiasing, false );
 
-	// Used in calculations only
+    // Used in calculations only
 	QFont curFont( m_renderFont );
 	QFontMetrics metrics( curFont );
 	QColor fallbackColor = m_colorToSing;
@@ -696,7 +696,7 @@ void TextRenderer::drawPreamble()
     if ( m_cdgMode )
         painter.setRenderHints( QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing | QPainter::HighQualityAntialiasing, false );
 
-	// Draw a square for each PREAMBLE_SQUARE; we do not draw anything for the last one, and speed up it 0.15sec
+    // Draw a square for each PREAMBLE_SQUARE; we do not draw anything for the last one, and speed up it 0.15sec
 	for ( int i = 0; i < (int) m_preambleCount; i++ )
 	{
 		if ( i * PREAMBLE_SQUARE > cutoff_time )
