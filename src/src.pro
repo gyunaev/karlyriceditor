@@ -5,10 +5,9 @@ DEFINES += USE_LICENSING
 
 win32: {
         LIBS += -lwsock32 -ldxguid -lcrypto
-}
-
-linux-g++-32: {
-	LIBS += -L.
+	QMAKE_CXXFLAGS += $$(EXTRACFLAGS)
+	QMAKE_CFLAGS += $$(EXTRACFLAGS)
+	QMAKE_LFLAGS += $$(EXTRALFLAGS)
 }
 
 mac: {
@@ -20,7 +19,7 @@ unix:!mac:{
    CONFIG += link_pkgconfig
    PKGCONFIG += libzip gstreamer-1.0 gstreamer-app-1.0 openssl
 } else: {
-    LIBS += -lgstapp-1.0 -lgstreamer-1.0 -lglib-2.0 -lgobject-2.0 libeay32.lib
+    LIBS += -lgstapp-1.0 -lgstreamer-1.0 -lglib-2.0 -lgobject-2.0 -lcrypto
 }
 
 
