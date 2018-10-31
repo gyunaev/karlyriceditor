@@ -20,7 +20,7 @@ unix:!mac:{
    CONFIG += link_pkgconfig
    PKGCONFIG += libzip gstreamer-1.0 gstreamer-app-1.0 openssl
 } else: {
-    LIBS += -lgstapp-1.0 -lgstreamer-1.0 -lglib-2.0 -lgobject-2.0 -leay32
+    LIBS += -lgstapp-1.0 -lgstreamer-1.0 -lglib-2.0 -lgobject-2.0 libeay32.lib
 }
 
 
