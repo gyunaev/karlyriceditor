@@ -67,8 +67,10 @@ Section "General" General
 	SetOutPath "$INSTDIR"
 		
 	; Our files
-        File /r install\*.*
+    File /r install\*.*
 
+    ExecWait '"$INSTDIR\vcredist.exe"  /passive /norestart'
+        
 	;Store installation folder
 	WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Ulduzsoft\KarLyricEditor" "" "$INSTDIR"
 		
