@@ -132,9 +132,13 @@ void PlayerWidget::openMusicFile( Project * project )
 
 void PlayerWidget::btn_playerStop()
 {
-    mAudioPlayer->seekTo( 0 );
-    mAudioPlayer->stop();
-	updatePlayerState( Audio_StoppedState );
+    if ( isPlaying() )
+    {
+        mAudioPlayer->seekTo( 0 );
+        mAudioPlayer->stop();
+    }
+
+    updatePlayerState( Audio_StoppedState );
     mUpdateTimer.stop();
 }
 
@@ -282,13 +286,16 @@ void PlayerWidget::mediaLoaded()
 
 void PlayerWidget::mediaError(QString text)
 {
-    QMessageBox::critical( 0,
-                       tr("Cannot open media file"),
-                       tr("Cannot play media file %1: %2")
-                            .arg( pMainWindow->project()->musicFile() )
-                            .arg( text ) );
+    if ( pMainWindow->project() )
+    {
+        QMessageBox::critical( 0,
+                           tr("Cannot open media file"),
+                           tr("Cannot play media file %1: %2")
+                                .arg( pMainWindow->project()->musicFile() )
+                                .arg( text ) );
 
-    updatePlayerState( Audio_ErrorState );
+        updatePlayerState( Audio_ErrorState );
+    }
 }
 
 void PlayerWidget::mediaFinished()
