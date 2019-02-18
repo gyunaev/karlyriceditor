@@ -84,7 +84,7 @@ class FFMpegVideoEncoderPriv
 		SwsContext			*	videoConvertCtx;
 
 		// FIXME: Audio resample
-		AVAudioResampleContext* audioResampleCtx;
+        SwrContext* audioResampleCtx;
 
 		// File has been outputFileOpened successfully
 		bool					outputFileOpened;
@@ -124,7 +124,7 @@ FFMpegVideoEncoderPriv::FFMpegVideoEncoderPriv()
 	audioCodec = 0;
 	videoCodec = 0;
 	videoFrame = 0;
-	audioResampleCtx = 0;
+    //audioResampleCtx = 0;
 
 	audioFrame = 0;
 	audioCodecCtx = 0;
@@ -342,7 +342,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 
 	// Enable interlacing if needed
 	if ( m_videoformat->flags & VIFO_INTERLACED )
-		videoCodecCtx->flags |= CODEC_FLAG_INTERLACED_DCT;
+        videoCodecCtx->flags |= AV_CODEC_FLAG_INTERLACED_DCT;
 
 	// Enable multithreaded encoding: breaks FLV!
 	//videoCodecCtx->thread_count = 4;
@@ -370,7 +370,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 
 	// If we have a global header for the format, no need to duplicate the codec info in each keyframe
 	if ( outputFormatCtx->oformat->flags & AVFMT_GLOBALHEADER )
-		videoCodecCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
+        videoCodecCtx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
 	// Open the codec
 	if ( ( err = avcodec_open2( videoCodecCtx, videoCodec, 0 )) < 0 )
@@ -396,7 +396,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 		videoStream->time_base = videoCodecCtx->time_base;
 
 	// Do we also have audio stream?
-	if ( m_aplayer )
+    /*if ( m_aplayer )
 	{
 		// Are we copying the stream data?
 		if ( !m_convertaudio )
@@ -414,7 +414,9 @@ av_log_set_level(AV_LOG_VERBOSE);
 
 			audioStream->time_base = origAudioStream->time_base;
 			audioStream->disposition = origAudioStream->disposition;
-			audioStream->pts.num = origAudioStream->pts.num;
+            int64_t pts = av_stream_get_end_pts(origAudioStream);
+            av_stream_s
+            audioStream->pts.num = origAudioStream->pts.num;
 			audioStream->pts.den = origAudioStream->pts.den;
 
             AVCodecContext * newCtx = audioStream->codec;
@@ -462,7 +464,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 			audioCodecCtx->time_base.den = m_profile->sampleRate;
 
 			if ( outputFormatCtx->oformat->flags & AVFMT_GLOBALHEADER )
-				audioCodecCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
+                audioCodecCtx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
 			// Since different audio codecs support different sample formats, look up which one is supported by this specific codec
 			if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_FLTP ) )
@@ -512,7 +514,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 			audioStream->codec = audioCodecCtx;
 
 			// Setup the audio resampler
-			audioResampleCtx = avresample_alloc_context();
+            audioResampleCtx = swr_alloc();
 
 			if ( !audioResampleCtx )
 			{
@@ -534,7 +536,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 			av_opt_set_int( audioResampleCtx, "out_sample_rate",    audioCodecCtx->sample_rate, 0);
 			av_opt_set_int( audioResampleCtx, "out_channels",       audioCodecCtx->channels, 0);
 
-			err = avresample_open( audioResampleCtx );
+            err = swr_init( audioResampleCtx );
 			if ( err < 0 )
 			{
 				m_errorMsg = QString("Could not open the audio resampler: %1") . arg( err );
@@ -579,7 +581,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 
 		// Rewind the audio player
 		m_aplayer->reset();
-	}
+    } */
 
 	// Allocate the buffer for the picture
 	size = avpicture_get_size( videoCodecCtx->pix_fmt, videoCodecCtx->width, videoCodecCtx->height );
@@ -657,13 +659,13 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 	{
 		while ( true )
 		{
-			double audio_pts = (double) audioStream->pts.val * av_q2d( audioStream->time_base );
-			double video_pts = (double) videoStream->pts.val * av_q2d( videoStream->time_base );
+            //double audio_pts = (double) audioStream->pts.val * av_q2d( audioStream->time_base );
+            double video_pts = (double) av_stream_get_end_pts(videoStream) * av_q2d( videoStream->time_base );
 
 			//qDebug( "PTS check: A: %g V: %g", audio_pts, video_pts );
 
-			if ( video_pts < audio_pts )
-				break;
+            //if ( video_pts < audio_pts )
+            //	break;
 
 			AVPacket pkt;
 
@@ -695,30 +697,31 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 			av_free_packet( &pkt );
 
 			// Next packet if we didn't get audio
-			if ( !got_audio )
+            //if ( !got_audio )
 				continue;
-
+            /*
 			// Resample the input into the audioSampleBuffer until we proceed the whole decoded data
-			if ( (err = avresample_convert( audioResampleCtx,
-											NULL,
-											0,
-											0,
-											srcaudio.data,
-											0,
+            if ( (err = swr_convert( audioResampleCtx,
+                                            audioFrame->data,
+                                            audioFrame->nb_samples,
+                                            (const uint8_t **) srcaudio.data,
 											srcaudio.nb_samples )) < 0 )
 			{
 				qWarning( "Error resampling decoded audio: %d", err );
 				return -1;
 			}
 
-			while( avresample_available( audioResampleCtx ) >= audioFrame->nb_samples )
+            //while( avresample_available( audioResampleCtx ) >= audioFrame->nb_samples )
+            int64_t pts = INT64_MIN;
+            while(pts = swr_next_pts(audioResampleCtx, pts))
 			{
+                // TODO: convert sanity check (I presume) to swresample
 				// Read a frame audio data from the resample fifo
-				if ( avresample_read( audioResampleCtx, audioFrame->data, audioFrame->nb_samples ) != audioFrame->nb_samples )
-				{
-					qWarning( "Error reading resampled audio: %d", err );
-					return -1;
-				}
+                //if ( avresample_read( audioResampleCtx, audioFrame->data, audioFrame->nb_samples ) != audioFrame->nb_samples )
+                //{
+                //	qWarning( "Error reading resampled audio: %d", err );
+                //	return -1;
+                //}
 
 				// Prepare the packet
 				av_init_packet( &pkt );
@@ -768,8 +771,8 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 					outputTotalSize += pkt.size;
 
 					av_free_packet( &pkt );
-				}
-			}
+                }
+            }*/
 		}
 	}
 
