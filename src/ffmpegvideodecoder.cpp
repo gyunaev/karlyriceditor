@@ -103,14 +103,45 @@ bool FFMpegVideoDecoder::openFile( const QString& filename, unsigned int seekto 
 
 	for ( unsigned i = 0; i < d->pFormatCtx->nb_streams; i++ )
 	{
-        if ( d->pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO )
-		{
-			d->videoStream = i;
-			break;
-		}
-	}
+        AVStream *stream = d->pFormatCtx->streams[i];
+        AVCodec *dec = avcodec_find_decoder( stream->codecpar->codec_id );
 
-	if ( d->videoStream == -1 )
+        if ( !dec )
+            continue;
+
+        AVCodecContext * codec_ctx = avcodec_alloc_context3( dec );
+
+        if ( !codec_ctx )
+            continue;
+
+        if ( avcodec_parameters_to_context(codec_ctx, stream->codecpar ) < 0 )
+        {
+            avcodec_free_context( &codec_ctx );
+            continue;
+        }
+
+        // Must be video stream
+        if ( codec_ctx->codec_type != AVMEDIA_TYPE_VIDEO )
+        {
+            avcodec_free_context( &codec_ctx );
+            continue;
+        }
+
+        // Open a decoder
+        if ( avcodec_open2(codec_ctx, dec, NULL) < 0 )
+        {
+            avcodec_free_context( &codec_ctx );
+            continue;
+        }
+
+        // We got our stream
+        d->videoStream = i;
+        d->pCodecCtx = codec_ctx;
+        d->pCodec = dec;
+        break;
+    }
+
+    if ( d->videoStream == -1 )
 		return false; // Didn't find a video stream
 
 	d->m_fps_den = d->pFormatCtx->streams[d->videoStream]->r_frame_rate.den;
@@ -119,31 +150,12 @@ bool FFMpegVideoDecoder::openFile( const QString& filename, unsigned int seekto 
 	if ( d->m_fps_den == 60000 )
 		d->m_fps_den = 30000;
 	
-	// Get a pointer to the codec context for the video stream
-    d->pCodecCtx = d->pFormatCtx->streams[d->videoStream]->codec;
-
-	// Find the decoder for the video stream
-	d->pCodec = avcodec_find_decoder( d->pCodecCtx->codec_id );
-
-	if ( d->pCodec == NULL )
-	{
-	   d->m_errorMsg = "Could not find the decoder for the video file";
-	   return false;
-	}
-
-	// Open codec
-	if ( avcodec_open2( d->pCodecCtx, d->pCodec, 0 ) < 0 )
-	{
-	   d->m_errorMsg = "Could not open the codec for the video file";
-	   return false;
-	}
-
     // Allocate video frame and AVFrame structure
     // Credits: http://stackoverflow.com/questions/24057248/ffmpeg-undefined-references-to-av-frame-alloc
     d->pFrame = av_frame_alloc();
     d->pFrameRGB = av_frame_alloc();
 
-	if ( !d->pFrame || !d->pFrameRGB )
+    if ( !d->pFrame || !d->pFrameRGB )
 	{
 		d->m_errorMsg = "Could not allocate memory for video frames";
 		return false;
