@@ -276,7 +276,7 @@ void FFMpegVideoEncoderPriv::flush()
 
 bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 {
-	int err, size;
+/*	int err, size;
 
 	// If we had an open video, close it.
 	close();
@@ -342,7 +342,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 
 	// Enable interlacing if needed
 	if ( m_videoformat->flags & VIFO_INTERLACED )
-		videoCodecCtx->flags |= CODEC_FLAG_INTERLACED_DCT;
+        videoCodecCtx->flags |= AV_CODEC_FLAG_INTERLACED_DCT;
 
 	// Enable multithreaded encoding: breaks FLV!
 	//videoCodecCtx->thread_count = 4;
@@ -616,6 +616,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 	}
 
 	avformat_write_header( outputFormatCtx, 0 );
+
 /*
 	// Dump output streams
 	for ( unsigned int i = 0; i < outputFormatCtx->nb_streams; i++)
@@ -632,7 +633,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 					outputFormatCtx->streams[i]->codec->sample_rate,
 					outputFormatCtx->streams[i]->codec->bit_rate );
 	}
-*/
+/*
 	videoFrameNumber = 0;
 	audioPTStracker = 0;
 	outputTotalSize = 0;
@@ -641,8 +642,9 @@ av_log_set_level(AV_LOG_VERBOSE);
 	return true;
 
 cleanup:
-	close();
-	return false;
+    close();*/
+    return false;
+
 }
 
 
@@ -651,13 +653,13 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 	int err;
 	AVPacket pkt;
 	int got_packet;
-
+/*
 	// If we have audio, first add all audio packets for this time
 	if ( m_aplayer )
 	{
 		while ( true )
 		{
-			double audio_pts = (double) audioStream->pts.val * av_q2d( audioStream->time_base );
+            double audio_pts = (double) audioStream->pts.val * av_q2d( audioStream->time_base );
 			double video_pts = (double) videoStream->pts.val * av_q2d( videoStream->time_base );
 
 			//qDebug( "PTS check: A: %g V: %g", audio_pts, video_pts );
@@ -823,6 +825,8 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 	}
 
 	return outputTotalSize;
+    */
+    return -1;
 }
 
 

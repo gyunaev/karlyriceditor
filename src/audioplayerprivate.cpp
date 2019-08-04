@@ -17,6 +17,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
+#include <QFile>
 #include <QMessageBox>
 
 #include "audioplayer.h"
@@ -31,11 +32,13 @@ AudioPlayerPrivate::AudioPlayerPrivate()
 	aCodecCtx = 0;
 	pCodec = 0;
 
-	m_playing = false;
+    m_playing = 0;
 	m_currentTime = 0;
 	m_totalTime = 0;
 
-	m_frame = 0;
+    m_decodedFrame = 0;
+    pAudioResampler = 0;
+
 	m_sample_buf_size = 0;
 	m_sample_buf_idx = 0;
 
@@ -46,7 +49,7 @@ AudioPlayerPrivate::AudioPlayerPrivate()
 bool AudioPlayerPrivate::isPlaying() const
 {
 	QMutexLocker m( &m_mutex );
-	return m_playing;
+    return m_playing > 0;
 }
 
 qint64 AudioPlayerPrivate::currentTime() const
@@ -93,11 +96,15 @@ void AudioPlayerPrivate::closeAudio()
 	if ( pFormatCtx )
 		avformat_close_input( &pFormatCtx );
 
-	if ( m_frame )
-		av_free( m_frame );
+    if ( m_decodedFrame )
+        av_free( m_decodedFrame );
 
+    if ( pAudioResampler )
+        swr_free( &pAudioResampler );
+
+    pAudioResampler = 0;
     m_audioDevice = 0;
-	m_frame = 0;
+    m_decodedFrame = 0;
 	pFormatCtx = 0;
 	aCodecCtx = 0;
 	pCodec = 0;
@@ -134,17 +141,49 @@ bool AudioPlayerPrivate::openAudio( const QString& filename )
 		return false;
 	}
 
-	// Find the first audio stream
+    // Find the first decodable audio stream
 	audioStream = -1;
 
 	for ( unsigned i = 0; i < pFormatCtx->nb_streams; i++ )
 	{
-		if ( pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO )
-		{
-			audioStream = i;
-			break;
-		}
-	}
+        AVStream *stream = pFormatCtx->streams[i];
+        AVCodec *dec = avcodec_find_decoder( stream->codecpar->codec_id );
+
+        if ( !dec )
+            continue;
+
+        AVCodecContext * codec_ctx = avcodec_alloc_context3( dec );
+
+        if ( !codec_ctx )
+            continue;
+
+        if ( avcodec_parameters_to_context(codec_ctx, stream->codecpar ) < 0 )
+        {
+            avcodec_free_context( &codec_ctx );
+            continue;
+        }
+
+        // Must be audio stream
+        if ( codec_ctx->codec_type != AVMEDIA_TYPE_AUDIO )
+        {
+            avcodec_free_context( &codec_ctx );
+            continue;
+        }
+
+        // Open a decoder
+        if ( avcodec_open2(codec_ctx, dec, NULL) < 0 )
+        {
+            avcodec_free_context( &codec_ctx );
+            continue;
+        }
+
+        // We got our stream
+        audioStream = i;
+        aCodecCtx = codec_ctx;
+        pCodec = dec;
+
+        break;
+    }
 
 	if ( audioStream == -1 )
 	{
@@ -176,27 +215,15 @@ bool AudioPlayerPrivate::openAudio( const QString& filename )
 							   pFormatCtx->streams[audioStream]->time_base,
                                baserate ) / 1000;
 
-	aCodecCtx = pFormatCtx->streams[audioStream]->codec;
-	aCodecCtx->request_sample_fmt = AV_SAMPLE_FMT_S16;
-
-	// Open audio codec
-	AVCodec * aCodec = avcodec_find_decoder( aCodecCtx->codec_id );
-
-	if ( !aCodec )
-	{
-		m_errorMsg = "Unsupported audio codec";
-		return false;
-	}
-
-	avcodec_open2( aCodecCtx, aCodec, 0 );
-
     // Now initialize the audio device
     QAudioFormat format;
     format.setSampleRate( aCodecCtx->sample_rate );
-    format.setChannelCount( aCodecCtx->channels );
-    format.setSampleSize( 16 );
+    format.setChannelCount( 2 );
     format.setCodec("audio/pcm");
     format.setByteOrder( QAudioFormat::LittleEndian );
+
+    // We will convert the format into S16 anyway as this is played everywhere
+    format.setSampleSize( 16 );
     format.setSampleType( QAudioFormat::SignedInt );
 
     QAudioDeviceInfo info( QAudioDeviceInfo::defaultOutputDevice() );
@@ -209,14 +236,36 @@ bool AudioPlayerPrivate::openAudio( const QString& filename )
 
     m_audioDevice = new QAudioOutput( format );
 
-	// Allocate the buffer
-    m_frame = av_frame_alloc();
+    // Allocate the first frame
+    m_decodedFrame = av_frame_alloc();
 
-	if ( !m_frame )
+    if ( !m_decodedFrame )
 	{
 		m_errorMsg = QObject::tr("Cannot allocate frame memory buffer");
 		return false;
 	}
+
+    // Setup audio resampler
+    pAudioResampler = swr_alloc();
+
+    if ( !pAudioResampler )
+    {
+        m_errorMsg = QObject::tr("Cannot allocate audio resampler");
+        return false;
+    }
+
+    av_opt_set_channel_layout( pAudioResampler, "in_channel_layout",  aCodecCtx->channel_layout, 0);
+    av_opt_set_channel_layout( pAudioResampler, "out_channel_layout", AV_CH_LAYOUT_STEREO,  0);
+    av_opt_set_int( pAudioResampler, "in_sample_rate",     aCodecCtx->sample_rate, 0);
+    av_opt_set_int( pAudioResampler, "out_sample_rate",    aCodecCtx->sample_rate, 0);
+    av_opt_set_sample_fmt( pAudioResampler, "in_sample_fmt",  aCodecCtx->sample_fmt, 0);
+    av_opt_set_sample_fmt( pAudioResampler, "out_sample_fmt", AV_SAMPLE_FMT_S16,  0);
+
+    if ( swr_init(pAudioResampler) < 0 )
+    {
+        m_errorMsg = QObject::tr("Cannot initialize audio resampler");
+        return false;
+    }
 
 	// Init the packet queue
     queueClear();
@@ -235,7 +284,7 @@ void AudioPlayerPrivate::queueClear()
 void AudioPlayerPrivate::play()
 {
 	QMutexLocker m( &m_mutex );
-	m_playing = true;
+    m_playing = 1;
     m_audioDevice->start( this );
 }
 
@@ -247,7 +296,7 @@ void AudioPlayerPrivate::resetAudio()
 void AudioPlayerPrivate::stop()
 {
 	QMutexLocker m( &m_mutex );
-	m_playing = false;
+    m_playing = 0;
 
     if ( m_audioDevice )
         m_audioDevice->stop();
@@ -276,7 +325,7 @@ qint64 AudioPlayerPrivate::readData(char *data, qint64 maxSize)
 			// We have already sent all our data; get more
 			if ( !MoreAudio() )
             {
-                m_playing = false;
+                m_playing = 0;
                 return 0;
             }
 		}
@@ -299,22 +348,20 @@ qint64 AudioPlayerPrivate::writeData(const char *data, qint64 len)
 // Called from the callback - no GUI/Widget functions!
 bool AudioPlayerPrivate::MoreAudio()
 {
-	while ( m_playing )
-	{
-		AVPacket packet;
+    AVPacket * packet = av_packet_alloc();
 
+    while ( m_playing > 0 )
+	{
 		// Read a frame
-		if ( av_read_frame( pFormatCtx, &packet ) < 0 )
+        if ( av_read_frame( pFormatCtx, packet ) < 0 )
         {
             QMetaObject::invokeMethod( pAudioPlayer, "finished", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
+            av_packet_unref( packet );
 			return false;  // Frame read failed (e.g. end of stream)
         }
 
-		if ( packet.stream_index != audioStream )
-		{
-			av_free_packet( &packet );
+        if ( packet->stream_index != audioStream || packet->size == 0 )
 			continue;
-		}
 
 		m_sample_buf_idx = 0;
 		m_sample_buf_size = 0;
@@ -324,48 +371,56 @@ bool AudioPlayerPrivate::MoreAudio()
         baserate.num = 1;
         baserate.den = AV_TIME_BASE;
 
-		m_currentTime = av_rescale_q( packet.pts,
+        m_currentTime = av_rescale_q( packet->pts,
 									 pFormatCtx->streams[audioStream]->time_base,
                                      baserate ) / 1000;
 
         QMetaObject::invokeMethod( pAudioPlayer, "tick", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
 
-		// Save the orig data so we can call av_free_packet() on it
-		void * porigdata = packet.data;
+        // Send the packet with the compressed data to the decoder
+        if ( avcodec_send_packet( aCodecCtx, packet ) < 0)
+        {
+            qWarning( "Error while submitting packet to decoder" );
+            QMetaObject::invokeMethod( pAudioPlayer, "finished", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
+            return false;
+        }
 
-		while ( packet.size > 0 )
-		{
-			int got_frame_ptr;
-			int len = avcodec_decode_audio4( aCodecCtx, m_frame, &got_frame_ptr, &packet );
+        // Read all the output frames (in general there may be any number of them)
+        while ( true )
+        {
+            int ret = avcodec_receive_frame( aCodecCtx, m_decodedFrame );
 
-			if ( len < 0 )
-			{
-				// if error, skip frame
-				break;
-			}
+            if ( ret == AVERROR(EAGAIN) || ret == AVERROR_EOF )
+                break;
 
-			packet.data += len;
-			packet.size -= len;
+            if ( ret < 0 )
+            {
+                qWarning( "Error %d during decoding", ret );
+                QMetaObject::invokeMethod( pAudioPlayer, "finished", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
+                return false;
+            }
 
-			if ( !got_frame_ptr )
-				continue;
+            // For output we use AV_SAMPLE_FMT_S16 (2 bytes) and 2 channels
+            int total = m_decodedFrame->nb_samples * 2 * 2;
+            m_sample_buffer.resize( m_sample_buf_size + total );
 
-			void * samples = m_frame->data[0];
-			int decoded_data_size = av_samples_get_buffer_size( NULL,
-																aCodecCtx->channels,
-																m_frame->nb_samples,
-																aCodecCtx->sample_fmt, 1 );
+            // We need the interleaved data, so we make it a single item array
+            uint8_t* outputdata[ 1 ];
+            outputdata[0] = (uint8_t*) (m_sample_buffer.data() + m_sample_buf_size);
 
-			int cur = m_sample_buf_size;
-			m_sample_buf_size += decoded_data_size;
-			m_sample_buffer.resize( m_sample_buf_size );
-			memcpy( m_sample_buffer.data() + cur, samples, decoded_data_size );
-		}
+            swr_convert( pAudioResampler,
+                         outputdata,
+                         m_decodedFrame->nb_samples,
+                         (const uint8_t**) m_decodedFrame->extended_data,
+                         m_decodedFrame->nb_samples );
 
-		packet.data = (uint8_t*) porigdata;
-		av_free_packet( &packet );
-		return true;
+            m_sample_buf_size += total;
+        }
+
+        // We should have data in our buffer
+        break;
 	}
 
-	return false;
+    av_packet_unref( packet );
+    return true;
 }

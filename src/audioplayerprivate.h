@@ -72,21 +72,26 @@ class AudioPlayerPrivate : public QIODevice
 
         QAudioOutput   * m_audioDevice;
 
+        // FFMpeg decoder specific data
 		AVFormatContext *pFormatCtx;
 		int				 audioStream;
 		AVCodecContext  *aCodecCtx;
 		AVCodec         *pCodec;
 
-		bool			m_playing;
+        // Software audio resampler
+        SwrContext      *pAudioResampler;
+
+        QAtomicInt      m_playing;
 		qint64			m_currentTime;
 		qint64			m_totalTime;
 
 		// Currently processed frame
-		QByteArray		m_sample_buffer;
-		unsigned int	m_sample_buf_size;
-		unsigned int	m_sample_buf_idx;
+        AVFrame		*	m_decodedFrame;
 
-		AVFrame		*	m_frame;
+        // Output buffer keeping the audio data
+        QByteArray		m_sample_buffer;
+        unsigned int	m_sample_buf_size;
+        unsigned int	m_sample_buf_idx;
 };
 
 #endif // AUDIOPLAYERPRIVATE_H

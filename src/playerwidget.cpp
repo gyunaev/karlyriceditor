@@ -111,7 +111,7 @@ QString PlayerWidget::tickToString( qint64 tickvalue )
 	int msecond = (tickvalue-minute*60000-second*1000) / 100; // round milliseconds to 0-9 range}
 
 	QTime ct( 0, minute, second, msecond );
-	return ct.toString( "mm:ss.z" );
+    return ct.toString( "mm:ss" );
 }
 
 bool PlayerWidget::openMusicFile( Project * project )

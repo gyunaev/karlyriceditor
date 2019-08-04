@@ -4,7 +4,7 @@ DEPENDPATH += .
 LIBS += -lcrypto
 DEFINES += USE_LICENSING
 CONFIG += link_pkgconfig
-PKGCONFIG += libavformat libavcodec libswscale  libavresample libavutil
+PKGCONFIG += libavformat libavcodec libswscale  libavresample libavutil libswresample
 
 win32-g++-cross: {
 	LIBS += -lwsock32 -ldxguid

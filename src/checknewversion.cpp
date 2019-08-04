@@ -201,20 +201,13 @@ void CheckNewVersion::run()
 	reportStatus( Status_SendingRequest );
 
 	const char * reqmsg = qPrintable( request );
-	unsigned int offset = 0, length = strlen( reqmsg );
+    unsigned int length = strlen( reqmsg );
 
-	while ( offset < length )
-	{
-		int sentamount = ::send( m_sockfd, reqmsg + offset, length - offset, 0 );
-
-		if ( sentamount <= 0 )
-		{
-			fatalError( Error_Sending );
-			return;
-		}
-
-		offset += sentamount;
-	}
+    if ( ::send( m_sockfd, reqmsg, length, 0 ) != length )
+    {
+        fatalError( Error_Receiving );
+        return;
+    }
 
 	// Receive the response
 	reportStatus( Status_ReceivingResponse );
