@@ -2,7 +2,6 @@ TEMPLATE = app
 TARGET = ../bin/karlyriceditor
 DEPENDPATH += .
 LIBS += -lcrypto
-DEFINES += USE_LICENSING
 CONFIG += link_pkgconfig
 PKGCONFIG += libavformat libavcodec libswscale  libavresample libavutil libswresample
 
