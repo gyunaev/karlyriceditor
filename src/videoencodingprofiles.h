@@ -56,8 +56,6 @@ class VideoEncodingProfile
 		{
 			TYPE_FILE,
 			TYPE_DEVICE,
-			TYPE_BLURAY,
-			TYPE_DVD,
 			TYPE_WEB
 		};
 

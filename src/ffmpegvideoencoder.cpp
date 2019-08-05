@@ -500,20 +500,11 @@ av_log_set_level(AV_LOG_VERBOSE);
 
 			// Since different audio codecs support different sample formats, look up which one is supported by this specific codec
 			if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_FLTP ) )
-			{
-				qDebug("Audio format %s: using AV_SAMPLE_FMT_FLTP", qPrintable( m_profile->audioCodec ) );
 				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_FLTP;
-			}
 			else if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_S16 ) )
-			{
-				qDebug("Audio format %s: using AV_SAMPLE_FMT_S16", qPrintable( m_profile->audioCodec ) );
 				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_S16;
-			}
 			else if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_S16P ) )
-			{
-				qDebug("Audio format %s: using AV_SAMPLE_FMT_S16P", qPrintable( m_profile->audioCodec ) );
 				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_S16P;
-			}
 			else
 			{
 				QString supported;
@@ -665,7 +656,8 @@ cleanup:
 int FFMpegVideoEncoderPriv::encodeMoreAudio()
 {
     AVPacket inpkt, outpkt;
-    AVFrame * decodedAudioFrame = 0;
+    AVFrame * decodedAudioFrame = 0, *resampledAudioframe = 0;
+    int ret = -1;
 
     // Read until we've read the audio frame
     while ( true )
@@ -675,7 +667,7 @@ int FFMpegVideoEncoderPriv::encodeMoreAudio()
 
         if ( av_read_frame( m_aplayer->pFormatCtx, &inpkt ) < 0 )
         {
-            //av_packet_unref( &inpkt );
+            av_packet_unref( &inpkt );
             return 0;  // Frame read failed (e.g. end of stream)
         }
 
@@ -688,39 +680,29 @@ int FFMpegVideoEncoderPriv::encodeMoreAudio()
     if ( avcodec_send_packet( m_aplayer->aCodecCtx, &inpkt ) < 0)
     {
         qWarning( "Error while submitting audio packet to decoder" );
-        return -1;
+        goto cleanup;
     }
 
     // Read all the output frames (in general there may be any number of them)
     decodedAudioFrame = av_frame_alloc();
 
+    // Output audio frame
+    resampledAudioframe = av_frame_alloc();
+
     while ( avcodec_receive_frame( m_aplayer->aCodecCtx, decodedAudioFrame ) >= 0 )
     {
-        // Output audio frame
-        AVFrame * resampledAudioframe = av_frame_alloc();
         av_frame_copy_props( resampledAudioframe, decodedAudioFrame );
-
-        decodedAudioFrame->format = m_aplayer->aCodecCtx->sample_fmt;
-        decodedAudioFrame->channel_layout = m_aplayer->aCodecCtx->channel_layout;
-        decodedAudioFrame->channels = m_aplayer->aCodecCtx->channels;
-        decodedAudioFrame->sample_rate = m_aplayer->aCodecCtx->sample_rate;
-
-        resampledAudioframe->nb_samples = audioCodecCtx->frame_size;
         resampledAudioframe->channel_layout = audioCodecCtx->channel_layout;
         resampledAudioframe->channels = audioCodecCtx->channels;
         resampledAudioframe->sample_rate = audioCodecCtx->sample_rate;
         resampledAudioframe->format = audioCodecCtx->sample_fmt;
 
-        //av_frame_get_buffer( resampledAudioframe, 0 );
-
         // Run the audio resampling
         if ( swr_convert_frame( audioResampleCtx, resampledAudioframe, decodedAudioFrame ) < 0 )
         {
             qWarning( "Error while converting the audio frame" );
-            return -1;
+            goto cleanup;
         }
-
-        qDebug("output frame: %d samples", resampledAudioframe->nb_samples );
 
         // Assign the PTS to the audio frame
         AVRational rate;
@@ -733,7 +715,7 @@ int FFMpegVideoEncoderPriv::encodeMoreAudio()
         if ( avcodec_send_frame( audioCodecCtx, resampledAudioframe ) < 0 )
         {
             qWarning( "Error sending the frame to the encoder");
-            return -1;
+            goto cleanup;
         }
 
         av_packet_unref( &inpkt );
@@ -752,7 +734,7 @@ int FFMpegVideoEncoderPriv::encodeMoreAudio()
             else if ( ret < 0 )
             {
                 qWarning( "Error encoding audio frame" );
-                return -1;
+                goto cleanup;
             }
 
             // Set up the packet index
@@ -763,25 +745,32 @@ int FFMpegVideoEncoderPriv::encodeMoreAudio()
             outpkt.dts = av_rescale_q_rnd( outpkt.dts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
             outpkt.duration = av_rescale_q( outpkt.duration, audioCodecCtx->time_base, audioStream->time_base);
 
+            outputTotalSize += outpkt.size;
+
             // And write the file
             if ( av_interleaved_write_frame( outputFormatCtx, &outpkt ) < 0 )
             {
                 qWarning("Failed to write the audio packet");
-                return -1;
+                goto cleanup;
             }
-
-            qDebug( "Audio packet out: %ld", outpkt.pts );
-            outputTotalSize += outpkt.size;
 
             av_packet_unref( &outpkt );
         }
 
         audioSamplesOut += resampledAudioframe->nb_samples;
-        // free resampledAudioframe
-        // free decodedAudioFrame
     }
 
-    return 1;
+    // We sent out the whole packet; return success
+    ret = 1;
+
+cleanup:
+    if ( resampledAudioframe )
+        av_frame_unref( resampledAudioframe );
+
+    if ( decodedAudioFrame )
+        av_frame_unref( decodedAudioFrame );
+
+    return ret;
 }
 
 
@@ -799,7 +788,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 
         while ( audio_time <= video_time )
         {
-            qDebug("Progress: A %g, V %g", audio_time, video_time );
+            //qDebug("Progress: A %g, V %g", audio_time, video_time );
 
             // Output more audio if we're behind video
             err = encodeMoreAudio();
@@ -811,7 +800,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 
             // Recalculate
             audio_time = ((double) audioSamplesOut * audioCodecCtx->time_base.num) / audioCodecCtx->time_base.den;
-            qDebug("After encode: A %g, V %g", audio_time, video_time );
+            //qDebug("After encode: A %g, V %g", audio_time, video_time );
         }
     }
 
@@ -822,13 +811,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 	videoFrame->interlaced_frame = (m_videoformat->flags & VIFO_INTERLACED) ? 1 : 0;
 	videoFrame->pts = videoFrameNumber++;
 
-    qDebug("Video time: %g", ((double) videoFrameNumber * videoCodecCtx->time_base.num) / videoCodecCtx->time_base.den );
-
-    av_init_packet( &outpkt );
-
-	// packet data will be allocated by the encoder - av_init_packet() does NOT do that!
-    outpkt.data = 0;
-    outpkt.size = 0;
+    //qDebug("Video time: %g", ((double) videoFrameNumber * videoCodecCtx->time_base.num) / videoCodecCtx->time_base.den );
 
     // Send the video frame for encoding
     if ( avcodec_send_frame( videoCodecCtx, videoFrame ) < 0 )
@@ -843,11 +826,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
         // Prepare the packet
         av_init_packet( &outpkt );
 
-        // packet data will be allocated by the encoder - av_init_packet() does NOT do that!
-        //FIXME?
-        outpkt.data = 0;
-        outpkt.size = 0;
-
+        // Get the packet from encoder
         int ret = avcodec_receive_packet( videoCodecCtx, &outpkt );
 
         if ( ret == AVERROR(EAGAIN) || ret == AVERROR_EOF )
@@ -870,13 +849,11 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
             outpkt.duration = av_rescale_q( outpkt.duration, videoCodecCtx->time_base, videoStream->time_base );
 
         outpkt.stream_index = videoStream->index;
+        outputTotalSize += outpkt.size;
 
-        err = av_interleaved_write_frame( outputFormatCtx, &outpkt );
-
-		if ( err < 0 )
+        if ( av_interleaved_write_frame( outputFormatCtx, &outpkt ) < 0 )
 			return -1;
 
-        outputTotalSize += outpkt.size;
         av_packet_unref( &outpkt );
 	}
 

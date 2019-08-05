@@ -96,7 +96,7 @@ QStringList VideoEncodingProfiles::videoMediumTypes() const
 {
 	// Should match enum Type order
 	QStringList list;
-	list << QObject::tr("Video file") << QObject::tr("Device") << QObject::tr("Blu Ray/AVCHD") << QObject::tr("DVD") << QObject::tr("Web");
+    list << QObject::tr("Video file") << QObject::tr("Device") << QObject::tr("Web");
 
 	return list;
 }
@@ -135,58 +135,6 @@ void VideoEncodingProfiles::initInternalProfiles()
 {
 	// This is auto-generated code loading openshot profile info
 	VideoEncodingProfile p;
-
-	// Metacafe
-	p.type = VideoEncodingProfile::TYPE_WEB;
-	p.name = "Metacafe";
-	p.videoContainer = "mp4";
-	p.videoCodec = "mpeg4";
-	p.audioCodec = "libmp3lame";
-	p.sampleRate = 44100;
-	p.channels = 2;
-	p.limitFormats.clear();
-	p.limitFormats << "VGA NTSC";
-
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_LOW ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_MEDIUM ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_HIGH ] = true;
-
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_LOW ] = 2048;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_MEDIUM ] = 5120;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_HIGH ] = 8192;
-
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_LOW ] = 128;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_MEDIUM ] = 256;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 320;
-
-	m_videoProfiles[ "Metacafe" ] = p;
-
-
-	// Vimeo-SD Widescreen
-	p.type = VideoEncodingProfile::TYPE_WEB;
-	p.name = "Vimeo-SD Widescreen";
-	p.videoContainer = "mp4";
-	p.videoCodec = "libx264";
-	p.audioCodec = "libmp3lame";
-	p.sampleRate = 44100;
-	p.channels = 2;
-	p.limitFormats.clear();
-	p.limitFormats << "VGA Widescreen NTSC";
-
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_LOW ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_MEDIUM ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_HIGH ] = true;
-
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_LOW ] = 2048;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_MEDIUM ] = 5120;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_HIGH ] = 8192;
-
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_LOW ] = 128;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_MEDIUM ] = 256;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 320;
-
-	m_videoProfiles[ "Vimeo-SD Widescreen" ] = p;
-
 
 	// OGG (theora/flac)
 	p.type = VideoEncodingProfile::TYPE_FILE;
@@ -385,33 +333,6 @@ void VideoEncodingProfiles::initInternalProfiles()
 
 	m_videoProfiles[ "AVI (h.264)" ] = p;
 
-
-	// AVCHD Disks
-	p.type = VideoEncodingProfile::TYPE_BLURAY;
-	p.name = "AVCHD Disks";
-	p.videoContainer = "mp4";
-	p.videoCodec = "libx264";
-	p.audioCodec = "ac3";
-	p.sampleRate = 48000;
-	p.channels = 2;
-	p.limitFormats.clear();
-	p.limitFormats << "HD 1080i 25 fps"<< "HD 1080i 30 fps"<< "HD 1080p 25 fps";
-
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_LOW ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_MEDIUM ] = false;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_HIGH ] = true;
-
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_LOW ] = 15360;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_MEDIUM ] = 0;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_HIGH ] = 40960;
-
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_LOW ] = 256;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_MEDIUM ] = 0;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 256;
-
-	m_videoProfiles[ "AVCHD Disks" ] = p;
-
-
 	// OGG (theora/vorbis)
 	p.type = VideoEncodingProfile::TYPE_FILE;
 	p.name = "OGG (theora/vorbis)";
@@ -511,33 +432,6 @@ void VideoEncodingProfiles::initInternalProfiles()
 
 	m_videoProfiles[ "MOV (h.264)" ] = p;
 
-
-	// DVD-NTSC
-	p.type = VideoEncodingProfile::TYPE_DVD;
-	p.name = "DVD-NTSC";
-	p.videoContainer = "dvd";
-	p.videoCodec = "mpeg2video";
-	p.audioCodec = "ac3";
-	p.sampleRate = 48000;
-	p.channels = 2;
-	p.limitFormats.clear();
-	p.limitFormats << "DV/DVD NTSC"<< "DV/DVD Widescreen NTSC";
-
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_LOW ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_MEDIUM ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_HIGH ] = true;
-
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_LOW ] = 1024;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_MEDIUM ] = 3072;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_HIGH ] = 5120;
-
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_LOW ] = 128;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_MEDIUM ] = 192;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 256;
-
-	m_videoProfiles[ "DVD-NTSC" ] = p;
-
-
 	// AVI (mpeg2)
 	p.type = VideoEncodingProfile::TYPE_FILE;
 	p.name = "AVI (mpeg2)";
@@ -634,59 +528,7 @@ void VideoEncodingProfiles::initInternalProfiles()
 	m_videoProfiles[ "MP4 (mpeg4)" ] = p;
 
 
-	// Nokia nHD
-	p.type = VideoEncodingProfile::TYPE_DEVICE;
-	p.name = "Nokia nHD";
-	p.videoContainer = "avi";
-	p.videoCodec = "libxvid";
-	p.audioCodec = "ac3";
-	p.sampleRate = 44100;
-	p.channels = 2;
-	p.limitFormats.clear();
-	p.limitFormats << "Mobile 360p";
-
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_LOW ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_MEDIUM ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_HIGH ] = true;
-
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_LOW ] = 1024;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_MEDIUM ] = 3072;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_HIGH ] = 5120;
-
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_LOW ] = 128;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_MEDIUM ] = 256;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 320;
-
-	m_videoProfiles[ "Nokia nHD" ] = p;
-
-
-	// Xbox 360
-	p.type = VideoEncodingProfile::TYPE_DEVICE;
-	p.name = "Xbox 360";
-	p.videoContainer = "avi";
-	p.videoCodec = "libxvid";
-	p.audioCodec = "ac3";
-	p.sampleRate = 44100;
-	p.channels = 2;
-	p.limitFormats.clear();
-	p.limitFormats << "DV/DVD Widescreen NTSC"<< "HD 720p 29.97 fps";
-
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_LOW ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_MEDIUM ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_HIGH ] = true;
-
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_LOW ] = 2048;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_MEDIUM ] = 5120;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_HIGH ] = 8192;
-
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_LOW ] = 128;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_MEDIUM ] = 256;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 320;
-
-	m_videoProfiles[ "Xbox 360" ] = p;
-
-
-	// AVI (mpeg4)
+    // AVI (mpeg4)
 	p.type = VideoEncodingProfile::TYPE_FILE;
 	p.name = "AVI (mpeg4)";
 	p.videoContainer = "avi";
@@ -784,32 +626,6 @@ void VideoEncodingProfiles::initInternalProfiles()
 	p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 192;
 
 	m_videoProfiles[ "MOV (mpeg4)" ] = p;
-
-
-	// DVD-PAL
-	p.type = VideoEncodingProfile::TYPE_DVD;
-	p.name = "DVD-PAL";
-	p.videoContainer = "dvd";
-	p.videoCodec = "mpeg2video";
-	p.audioCodec = "ac3";
-	p.sampleRate = 48000;
-	p.channels = 2;
-	p.limitFormats.clear();
-	p.limitFormats << "DV/DVD PAL"<< "DV/DVD Widescreen PAL";
-
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_LOW ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_MEDIUM ] = true;
-	p.bitratesEnabled[ VideoEncodingProfile::BITRATE_HIGH ] = true;
-
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_LOW ] = 1024;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_MEDIUM ] = 3072;
-	p.bitratesVideo[ VideoEncodingProfile::BITRATE_HIGH ] = 5120;
-
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_LOW ] = 128;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_MEDIUM ] = 192;
-	p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 256;
-
-	m_videoProfiles[ "DVD-PAL" ] = p;
 
 
 	// YouTube-HD
