@@ -235,10 +235,6 @@ void FFMpegVideoEncoderPriv::flush()
         // Prepare the packet
         av_init_packet( &outpkt );
 
-        //FIXME?
-        outpkt.data = 0;
-        outpkt.size = 0;
-
         int ret = avcodec_receive_packet( audioCodecCtx, &outpkt );
 
         if ( ret == AVERROR(EAGAIN) || ret == AVERROR_EOF )
@@ -270,11 +266,6 @@ void FFMpegVideoEncoderPriv::flush()
     {
         // Prepare the packet
         av_init_packet( &outpkt );
-
-        // packet data will be allocated by the encoder - av_init_packet() does NOT do that!
-        //FIXME?
-        outpkt.data = 0;
-        outpkt.size = 0;
 
         int ret = avcodec_receive_packet( videoCodecCtx, &outpkt );
 
@@ -776,7 +767,6 @@ cleanup:
 
 int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 {
-    // FIXME: cleanup
     int err;
     AVPacket outpkt;
 
