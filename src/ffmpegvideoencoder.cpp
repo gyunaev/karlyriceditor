@@ -59,7 +59,8 @@ class FFMpegVideoEncoderPriv
 		QString		m_errorMsg;
 
 	private:
-		bool convertImage_sws(const QImage &img);
+        int     encodeMoreAudio();
+        bool    convertImage_sws(const QImage &img);
 
 		// FFmpeg stuff
 		AVFormatContext		*	outputFormatCtx;
@@ -75,23 +76,18 @@ class FFMpegVideoEncoderPriv
 		AVFrame				*	videoFrame;
 		uint8_t				*	videoImageBuffer;
 
-		// Audio frame data
-		AVFrame				*	audioFrame;
-		uint8_t				*	audioSampleBuffer;
-		unsigned int			audioSampleBuffer_size;
-
-		// Conversion
+        // Video conversion context
 		SwsContext			*	videoConvertCtx;
 
-		// FIXME: Audio resample
-		AVAudioResampleContext* audioResampleCtx;
+        // Audio resample context
+        SwrContext          *   audioResampleCtx;
 
-		// File has been outputFileOpened successfully
+        // Output file has been opened successfully
 		bool					outputFileOpened;
 
 		// Video frame PTS
 		unsigned int			videoFrameNumber;
-		unsigned int			audioPTStracker;
+        unsigned int			audioSamplesOut;
 
 		// Total output size
 		unsigned int			outputTotalSize;
@@ -126,10 +122,8 @@ FFMpegVideoEncoderPriv::FFMpegVideoEncoderPriv()
 	videoFrame = 0;
 	audioResampleCtx = 0;
 
-	audioFrame = 0;
 	audioCodecCtx = 0;
 	videoImageBuffer = 0;
-	audioSampleBuffer = 0;
 	videoConvertCtx = 0;
 	outputFileOpened = false;
 }
@@ -148,12 +142,12 @@ bool FFMpegVideoEncoderPriv::close()
 			flush();
 			av_write_trailer( outputFormatCtx );
 
-			// close video and audio
-            avcodec_close( videoStream->codec );
-            avcodec_close( audioStream->codec );
-
 			// Close the file
 			avio_close( outputFormatCtx->pb );
+
+            // close video and audio codecs
+            avcodec_free_context( &videoCodecCtx );
+            avcodec_free_context( &audioCodecCtx );
 		}
 
 		// free the streams
@@ -164,17 +158,13 @@ bool FFMpegVideoEncoderPriv::close()
 		}
 
 		// Free the format
-		av_free( outputFormatCtx );
+        avformat_free_context( outputFormatCtx );
 	}
 
 	delete[] videoImageBuffer;
-	delete[] audioSampleBuffer;
 
 	if ( videoFrame )
 		av_free(videoFrame);
-
-	if ( audioFrame )
-		av_free( audioFrame );
 
 	outputFormatCtx = 0;
 	outputFormat = 0;
@@ -183,9 +173,7 @@ bool FFMpegVideoEncoderPriv::close()
 	audioStream = 0;
 	videoCodec = 0;
 	videoFrame = 0;
-	audioFrame = 0;
 	videoImageBuffer = 0;
-	audioSampleBuffer = 0;
 	videoConvertCtx = 0;
 
 	return true;
@@ -235,48 +223,90 @@ QString FFMpegVideoEncoder::createFile( const QString &filename,
 
 void FFMpegVideoEncoderPriv::flush()
 {
-	int err, got_output;
+    AVPacket outpkt;
 
-	AVPacket pkt;
-	av_init_packet( &pkt );
+    // Flush audio
+    if ( avcodec_send_frame( audioCodecCtx, nullptr ) < 0 )
+        return;
 
-	// packet data will be allocated by the encoder - av_init_packet() does NOT do that!
-	pkt.data = 0;
-	pkt.size = 0;
+    // Read all the available output packets (in general there may be any number of them)
+    while ( true  )
+    {
+        // Prepare the packet
+        av_init_packet( &outpkt );
 
-	// Get the delayed frames
-	for ( got_output = 1; got_output; )
-	{
-		if ( (err = avcodec_encode_audio2( audioCodecCtx, &pkt, 0, &got_output )) < 0 )
-			return;
+        //FIXME?
+        outpkt.data = 0;
+        outpkt.size = 0;
 
-		if ( got_output )
-		{
-			// Set up the packet index
-			pkt.stream_index = audioStream->index;
+        int ret = avcodec_receive_packet( audioCodecCtx, &outpkt );
 
-			// Newer ffmpeg versions do it anyway, but just in case
-			pkt.flags |= AV_PKT_FLAG_KEY;
+        if ( ret == AVERROR(EAGAIN) || ret == AVERROR_EOF )
+            break;
+        else if ( ret < 0 )
+            return;
 
-			if ( audioCodecCtx->coded_frame && audioCodecCtx->coded_frame->pts != AV_NOPTS_VALUE )
-				pkt.pts = av_rescale_q( audioCodecCtx->coded_frame->pts, audioCodecCtx->time_base, audioStream->time_base );
+        // Set up the packet index
+        outpkt.stream_index = audioStream->index;
 
-			// And write the file
-			if ( (err = av_interleaved_write_frame( outputFormatCtx, &pkt )) < 0 )
-			{
-				qWarning("Failed to write the audio packet: error %d", err );
-				return;
-			}
+        // Rescale output packet timestamp values from codec to stream timebase
+        outpkt.pts = av_rescale_q_rnd( outpkt.pts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
+        outpkt.dts = av_rescale_q_rnd( outpkt.dts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
+        outpkt.duration = av_rescale_q( outpkt.duration, audioCodecCtx->time_base, audioStream->time_base);
 
-			outputTotalSize += pkt.size;
-			av_free_packet( &pkt );
-		}
-	}
+        // And write the file
+        if ( av_interleaved_write_frame( outputFormatCtx, &outpkt ) < 0 )
+            return;
+
+        outputTotalSize += outpkt.size;
+        av_packet_unref( &outpkt );
+    }
+
+    // Flush the video
+    if ( avcodec_send_frame( videoCodecCtx, nullptr ) < 0 )
+        return;
+
+    while ( true )
+    {
+        // Prepare the packet
+        av_init_packet( &outpkt );
+
+        // packet data will be allocated by the encoder - av_init_packet() does NOT do that!
+        //FIXME?
+        outpkt.data = 0;
+        outpkt.size = 0;
+
+        int ret = avcodec_receive_packet( videoCodecCtx, &outpkt );
+
+        if ( ret == AVERROR(EAGAIN) || ret == AVERROR_EOF )
+            break;
+        else if ( ret < 0 )
+            return;
+
+        // Convert the PTS from the packet base to stream base
+        if ( outpkt.pts != AV_NOPTS_VALUE )
+            outpkt.pts = av_rescale_q( outpkt.pts, videoCodecCtx->time_base, videoStream->time_base );
+
+        // Convert the DTS from the packet base to stream base
+        if ( outpkt.dts != AV_NOPTS_VALUE )
+            outpkt.dts = av_rescale_q( outpkt.dts, videoCodecCtx->time_base, videoStream->time_base );
+
+        if ( outpkt.duration > 0 )
+            outpkt.duration = av_rescale_q( outpkt.duration, videoCodecCtx->time_base, videoStream->time_base );
+
+        outpkt.stream_index = videoStream->index;
+
+        if ( av_interleaved_write_frame( outputFormatCtx, &outpkt ) < 0 )
+            return;
+
+        outputTotalSize += outpkt.size;
+        av_packet_unref( &outpkt );
+    }
 }
 
 bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 {
-/*	int err, size;
+    int err, size;
 
 	// If we had an open video, close it.
 	close();
@@ -370,7 +400,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 
 	// If we have a global header for the format, no need to duplicate the codec info in each keyframe
 	if ( outputFormatCtx->oformat->flags & AVFMT_GLOBALHEADER )
-		videoCodecCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
+        videoCodecCtx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
 	// Open the codec
 	if ( ( err = avcodec_open2( videoCodecCtx, videoCodec, 0 )) < 0 )
@@ -388,8 +418,12 @@ av_log_set_level(AV_LOG_VERBOSE);
 		goto cleanup;
 	}
 
-	// Specify the coder for the stream
-    videoStream->codec = videoCodecCtx;
+    // Specify the coder for the stream
+    if ( avcodec_parameters_from_context(  videoStream->codecpar, videoCodecCtx ) < 0 )
+    {
+        m_errorMsg = "Failed to copy encoder parameters to output stream";
+        goto cleanup;
+    }
 
 	// Set the video stream timebase if not set
 	if ( videoStream->time_base.den == 0 )
@@ -414,19 +448,19 @@ av_log_set_level(AV_LOG_VERBOSE);
 
 			audioStream->time_base = origAudioStream->time_base;
 			audioStream->disposition = origAudioStream->disposition;
-			audioStream->pts.num = origAudioStream->pts.num;
-			audioStream->pts.den = origAudioStream->pts.den;
+            //audioStream->pts.num = origAudioStream->pts.num;
+            //audioStream->pts.den = origAudioStream->pts.den;
 
-            AVCodecContext * newCtx = audioStream->codec;
+            //AVCodecContext * newCtx = audioStream->codec;
 
 			// We're copying the stream
-			memcpy( newCtx, m_aplayer->aCodecCtx, sizeof(AVCodecContext) );
-
+            avcodec_parameters_copy( audioStream->codecpar, origAudioStream->codecpar );
+            /*
             if ( newCtx->block_align == 1 && newCtx->codec_id == AV_CODEC_ID_MP3 )
 				newCtx->block_align= 0;
 
             if ( newCtx->codec_id == AV_CODEC_ID_AC3 )
-				newCtx->block_align= 0;
+                newCtx->block_align= 0;*/
 		}
 		else
 		{
@@ -462,7 +496,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 			audioCodecCtx->time_base.den = m_profile->sampleRate;
 
 			if ( outputFormatCtx->oformat->flags & AVFMT_GLOBALHEADER )
-				audioCodecCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
+                audioCodecCtx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
 			// Since different audio codecs support different sample formats, look up which one is supported by this specific codec
 			if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_FLTP ) )
@@ -508,73 +542,47 @@ av_log_set_level(AV_LOG_VERBOSE);
 				goto cleanup;
 			}
 
-			// Remember the codec for the stream
-			audioStream->codec = audioCodecCtx;
+            // Specify the coder for the stream
+            if ( avcodec_parameters_from_context(  audioStream->codecpar, audioCodecCtx ) < 0 )
+            {
+                m_errorMsg = "Failed to copy encoder parameters to output audio stream";
+                goto cleanup;
+            }
 
 			// Setup the audio resampler
-			audioResampleCtx = avresample_alloc_context();
+            audioResampleCtx = swr_alloc();
 
-			if ( !audioResampleCtx )
-			{
-				m_errorMsg = QString("Could not open the audio resampler");
-				goto cleanup;
-			}
+            if ( !audioResampleCtx )
+            {
+                m_errorMsg = QObject::tr("Cannot allocate audio resampler");
+                return false;
+            }
 
 			// Some formats (i.e. WAV) do not produce the proper channel layout
 			if ( m_aplayer->aCodecCtx->channel_layout == 0 )
-				av_opt_set_int( audioResampleCtx, "in_channel_layout",	av_get_channel_layout( m_profile->channels == 1 ? "mono" : "stereo" ), 0 );
+                av_opt_set_channel_layout( audioResampleCtx, "in_channel_layout", av_get_channel_layout( m_profile->channels == 1 ? "mono" : "stereo" ), 0 );
 			else
-				av_opt_set_int( audioResampleCtx, "in_channel_layout",	m_aplayer->aCodecCtx->channel_layout, 0 );
+                av_opt_set_channel_layout( audioResampleCtx, "in_channel_layout", m_aplayer->aCodecCtx->channel_layout, 0 );
 
 			av_opt_set_int( audioResampleCtx, "in_sample_fmt",     m_aplayer->aCodecCtx->sample_fmt, 0);
+            av_opt_set_int( audioResampleCtx, "out_sample_fmt",     audioCodecCtx->sample_fmt, 0);
 			av_opt_set_int( audioResampleCtx, "in_sample_rate",    m_aplayer->aCodecCtx->sample_rate, 0);
-			av_opt_set_int( audioResampleCtx, "in_channels",       m_aplayer->aCodecCtx->channels,0);
-			av_opt_set_int( audioResampleCtx, "out_channel_layout", audioCodecCtx->channel_layout, 0);
-			av_opt_set_int( audioResampleCtx, "out_sample_fmt",     audioCodecCtx->sample_fmt, 0);
-			av_opt_set_int( audioResampleCtx, "out_sample_rate",    audioCodecCtx->sample_rate, 0);
-			av_opt_set_int( audioResampleCtx, "out_channels",       audioCodecCtx->channels, 0);
+            av_opt_set_int( audioResampleCtx, "out_sample_rate",    audioCodecCtx->sample_rate, 0);
+            av_opt_set_int( audioResampleCtx, "in_channel_layout", m_aplayer->aCodecCtx->channel_layout, 0);
+            av_opt_set_int( audioResampleCtx, "out_channel_layout", audioCodecCtx->channel_layout, 0);
 
-			err = avresample_open( audioResampleCtx );
-			if ( err < 0 )
-			{
-				m_errorMsg = QString("Could not open the audio resampler: %1") . arg( err );
-				goto cleanup;
-			}
+            if ( swr_init( audioResampleCtx ) < 0 )
+            {
+                m_errorMsg = QObject::tr("Cannot initialize audio resampler");
+                return false;
+            }
 
-            audioFrame = av_frame_alloc();
-
-			if ( !audioFrame )
-			{
-				m_errorMsg = "Could not allocate audio frame";
-				goto cleanup;
-			}
-
-			audioFrame->nb_samples = audioStream->codec->frame_size;
-			audioFrame->format = audioStream->codec->sample_fmt;
-			audioFrame->channel_layout = audioStream->codec->channel_layout;
-
-			// Tthe codec gives us the frame size, in samples,we calculate the size of the samples buffer in bytes
-			audioSampleBuffer_size = av_samples_get_buffer_size( NULL, audioCodecCtx->channels, audioCodecCtx->frame_size, audioCodecCtx->sample_fmt, 0 );
-			audioSampleBuffer = (uint8_t*) av_malloc( audioSampleBuffer_size );
-
-			if ( !audioSampleBuffer )
-			{
-				m_errorMsg = "Could not allocate audio buffer";
-				goto cleanup;
-			}
-
-			// Setup the data pointers in the AVFrame
-			if ( avcodec_fill_audio_frame( audioFrame, audioStream->codec->channels, audioStream->codec->sample_fmt, (const uint8_t*) audioSampleBuffer, audioSampleBuffer_size, 0 ) < 0 )
-			{
-				m_errorMsg = "Could not set up audio frame";
-				goto cleanup;
-			}
-
+/*
             if ( audioStream->codec->block_align == 1 && audioStream->codec->codec_id == AV_CODEC_ID_MP3 )
 				audioStream->codec->block_align= 0;
 
             if ( audioStream->codec->codec_id == AV_CODEC_ID_AC3 )
-				audioStream->codec->block_align= 0;
+                audioStream->codec->block_align= 0;*/
 		}
 
 		// Rewind the audio player
@@ -582,7 +590,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 	}
 
 	// Allocate the buffer for the picture
-	size = avpicture_get_size( videoCodecCtx->pix_fmt, videoCodecCtx->width, videoCodecCtx->height );
+    size = av_image_get_buffer_size( videoCodecCtx->pix_fmt, videoCodecCtx->width, videoCodecCtx->height, 1 );
 	videoImageBuffer = new uint8_t[size];
 
 	if ( !videoImageBuffer )
@@ -602,12 +610,15 @@ av_log_set_level(AV_LOG_VERBOSE);
 
 	// Reset the PTS
 	videoFrame->pts = 0;
+    videoFrame->width = videoCodecCtx->width;
+    videoFrame->height = videoCodecCtx->height;
+    videoFrame->format = videoCodecCtx->pix_fmt;
 
-	// Setup the planes
-	avpicture_fill( (AVPicture *)videoFrame, videoImageBuffer,videoCodecCtx->pix_fmt, videoCodecCtx->width, videoCodecCtx->height );
+    // Setup the planes
+    av_image_fill_arrays( videoFrame->data, videoFrame->linesize, videoImageBuffer,videoCodecCtx->pix_fmt, videoCodecCtx->width, videoCodecCtx->height, 1 );
 
 	// Create the file and write the header
-	strncpy( outputFormatCtx->filename, FFMPEG_FILENAME( fileName ), sizeof(outputFormatCtx->filename) );
+    outputFormatCtx->url = av_strdup( FFMPEG_FILENAME( fileName ) );
 
 	if ( avio_open( &outputFormatCtx->pb, FFMPEG_FILENAME( fileName ), AVIO_FLAG_WRITE) < 0 )
 	{
@@ -615,7 +626,11 @@ av_log_set_level(AV_LOG_VERBOSE);
 		goto cleanup;
 	}
 
-	avformat_write_header( outputFormatCtx, 0 );
+    if ( avformat_write_header( outputFormatCtx, 0 ) < 0 )
+    {
+        m_errorMsg = "Could not write the video file";
+        goto cleanup;
+    }
 
 /*
 	// Dump output streams
@@ -633,200 +648,239 @@ av_log_set_level(AV_LOG_VERBOSE);
 					outputFormatCtx->streams[i]->codec->sample_rate,
 					outputFormatCtx->streams[i]->codec->bit_rate );
 	}
-/*
+*/
 	videoFrameNumber = 0;
-	audioPTStracker = 0;
+    audioSamplesOut = 0;
 	outputTotalSize = 0;
 	outputFileOpened = true;
 
 	return true;
 
 cleanup:
-    close();*/
+    close();
     return false;
 
+}
+
+int FFMpegVideoEncoderPriv::encodeMoreAudio()
+{
+    AVPacket inpkt, outpkt;
+    AVFrame * decodedAudioFrame = 0;
+
+    // Read until we've read the audio frame
+    while ( true )
+    {
+        // Read an audio frame
+        av_init_packet( &inpkt );
+
+        if ( av_read_frame( m_aplayer->pFormatCtx, &inpkt ) < 0 )
+        {
+            //av_packet_unref( &inpkt );
+            return 0;  // Frame read failed (e.g. end of stream)
+        }
+
+        // Skip non-audio frames
+        if ( inpkt.stream_index == m_aplayer->audioStream )
+            break;
+    }
+
+    // Send the packet with the compressed data to the decoder
+    if ( avcodec_send_packet( m_aplayer->aCodecCtx, &inpkt ) < 0)
+    {
+        qWarning( "Error while submitting audio packet to decoder" );
+        return -1;
+    }
+
+    // Read all the output frames (in general there may be any number of them)
+    decodedAudioFrame = av_frame_alloc();
+
+    while ( avcodec_receive_frame( m_aplayer->aCodecCtx, decodedAudioFrame ) >= 0 )
+    {
+        // Output audio frame
+        AVFrame * resampledAudioframe = av_frame_alloc();
+        av_frame_copy_props( resampledAudioframe, decodedAudioFrame );
+
+        decodedAudioFrame->format = m_aplayer->aCodecCtx->sample_fmt;
+        decodedAudioFrame->channel_layout = m_aplayer->aCodecCtx->channel_layout;
+        decodedAudioFrame->channels = m_aplayer->aCodecCtx->channels;
+        decodedAudioFrame->sample_rate = m_aplayer->aCodecCtx->sample_rate;
+
+        resampledAudioframe->nb_samples = audioCodecCtx->frame_size;
+        resampledAudioframe->channel_layout = audioCodecCtx->channel_layout;
+        resampledAudioframe->channels = audioCodecCtx->channels;
+        resampledAudioframe->sample_rate = audioCodecCtx->sample_rate;
+        resampledAudioframe->format = audioCodecCtx->sample_fmt;
+
+        //av_frame_get_buffer( resampledAudioframe, 0 );
+
+        // Run the audio resampling
+        if ( swr_convert_frame( audioResampleCtx, resampledAudioframe, decodedAudioFrame ) < 0 )
+        {
+            qWarning( "Error while converting the audio frame" );
+            return -1;
+        }
+
+        qDebug("output frame: %d samples", resampledAudioframe->nb_samples );
+
+        // Assign the PTS to the audio frame
+        AVRational rate;
+        rate.num = 1;
+        rate.den = audioCodecCtx->sample_rate;
+
+        resampledAudioframe->pts = av_rescale_q( audioSamplesOut, rate, audioCodecCtx->time_base);
+
+        // Send the audio frame for encoding
+        if ( avcodec_send_frame( audioCodecCtx, resampledAudioframe ) < 0 )
+        {
+            qWarning( "Error sending the frame to the encoder");
+            return -1;
+        }
+
+        av_packet_unref( &inpkt );
+
+        // Read all the available output packets (in general there may be any number of them)
+        while ( true  )
+        {
+            // Prepare the packet
+            av_init_packet( &outpkt );
+
+            // packet data will be allocated by the encoder - av_init_packet() does NOT do that!
+            int ret = avcodec_receive_packet( audioCodecCtx, &outpkt );
+
+            if ( ret == AVERROR(EAGAIN) || ret == AVERROR_EOF )
+                break;
+            else if ( ret < 0 )
+            {
+                qWarning( "Error encoding audio frame" );
+                return -1;
+            }
+
+            // Set up the packet index
+            outpkt.stream_index = audioStream->index;
+
+            // Rescale output packet timestamp values from codec to stream timebase
+            outpkt.pts = av_rescale_q_rnd( outpkt.pts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
+            outpkt.dts = av_rescale_q_rnd( outpkt.dts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
+            outpkt.duration = av_rescale_q( outpkt.duration, audioCodecCtx->time_base, audioStream->time_base);
+
+            // And write the file
+            if ( av_interleaved_write_frame( outputFormatCtx, &outpkt ) < 0 )
+            {
+                qWarning("Failed to write the audio packet");
+                return -1;
+            }
+
+            qDebug( "Audio packet out: %ld", outpkt.pts );
+            outputTotalSize += outpkt.size;
+
+            av_packet_unref( &outpkt );
+        }
+
+        audioSamplesOut += resampledAudioframe->nb_samples;
+        // free resampledAudioframe
+        // free decodedAudioFrame
+    }
+
+    return 1;
 }
 
 
 int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
 {
-	int err;
-	AVPacket pkt;
-	int got_packet;
-/*
-	// If we have audio, first add all audio packets for this time
+    // FIXME: cleanup
+    int err;
+    AVPacket outpkt;
+
+    // Do we need to output audio?
 	if ( m_aplayer )
-	{
-		while ( true )
-		{
-            double audio_pts = (double) audioStream->pts.val * av_q2d( audioStream->time_base );
-			double video_pts = (double) videoStream->pts.val * av_q2d( videoStream->time_base );
+    {
+        double video_time = ((double) videoFrameNumber * videoCodecCtx->time_base.num) / videoCodecCtx->time_base.den;
+        double audio_time = ((double) audioSamplesOut * audioCodecCtx->time_base.num) / audioCodecCtx->time_base.den;
 
-			//qDebug( "PTS check: A: %g V: %g", audio_pts, video_pts );
+        while ( audio_time <= video_time )
+        {
+            qDebug("Progress: A %g, V %g", audio_time, video_time );
 
-			if ( video_pts < audio_pts )
-				break;
+            // Output more audio if we're behind video
+            err = encodeMoreAudio();
 
-			AVPacket pkt;
+            if ( err == 0 )
+                break; // audio stream ended
+            else if ( err < 0 )
+                return -1; // error
 
-			// Read a frame
-			if ( av_read_frame( m_aplayer->pFormatCtx, &pkt ) < 0 )
-				return false;  // Frame read failed (e.g. end of stream)
+            // Recalculate
+            audio_time = ((double) audioSamplesOut * audioCodecCtx->time_base.num) / audioCodecCtx->time_base.den;
+            qDebug("After encode: A %g, V %g", audio_time, video_time );
+        }
+    }
 
-			if ( pkt.stream_index != m_aplayer->audioStream )
-			{
-				av_free_packet( &pkt );
-				continue;
-			}
-
-			// Initialize the frame
-			AVFrame srcaudio;
-            av_frame_unref( &srcaudio );
-
-			// Decode the original audio into the srcaudio frame
-			int got_audio;
-			err = avcodec_decode_audio4( m_aplayer->aCodecCtx, &srcaudio, &got_audio, &pkt );
-
-			if ( err < 0 )
-			{
-				qWarning( "Error decoding audio frame: %d", err );
-				return -1;
-			}
-
-			// We don't need the AV packet anymore
-			av_free_packet( &pkt );
-
-			// Next packet if we didn't get audio
-			if ( !got_audio )
-				continue;
-
-			// Resample the input into the audioSampleBuffer until we proceed the whole decoded data
-			if ( (err = avresample_convert( audioResampleCtx,
-											NULL,
-											0,
-											0,
-											srcaudio.data,
-											0,
-											srcaudio.nb_samples )) < 0 )
-			{
-				qWarning( "Error resampling decoded audio: %d", err );
-				return -1;
-			}
-
-			while( avresample_available( audioResampleCtx ) >= audioFrame->nb_samples )
-			{
-				// Read a frame audio data from the resample fifo
-				if ( avresample_read( audioResampleCtx, audioFrame->data, audioFrame->nb_samples ) != audioFrame->nb_samples )
-				{
-					qWarning( "Error reading resampled audio: %d", err );
-					return -1;
-				}
-
-				// Prepare the packet
-				av_init_packet( &pkt );
-
-				// packet data will be allocated by the encoder - av_init_packet() does NOT do that!
-				pkt.data = 0;
-				pkt.size = 0;
-
-				// this only works for theora+vorbis
-//				if ( videoCodec->id == AV_CODEC_ID_THEORA && audioCodec->id == AV_CODEC_ID_VORBIS )
-				{
-                    AVRational rate;
-                    rate.num = 1;
-                    rate.den = audioCodecCtx->sample_rate;
-
-                    audioFrame->pts = av_rescale_q( audioPTStracker, rate, audioCodecCtx->time_base);
-					audioPTStracker += audioFrame->nb_samples;
-				}
-
-				// and encode the audio into the audiopkt
-				if ( (err = avcodec_encode_audio2( audioCodecCtx, &pkt, audioFrame, &got_packet )) < 0 )
-				{
-					qWarning("Audio encoder failed with error %d", err );
-					return -1;
-				}
-
-				if ( got_packet )
-				{
-					// Set up the packet index
-					pkt.stream_index = audioStream->index;
-
-					// Newer ffmpeg versions do it anyway, but just in case
-					pkt.flags |= AV_PKT_FLAG_KEY;
-
-					// Rescale output packet timestamp values from codec to stream timebase
-					pkt.pts = av_rescale_q_rnd( pkt.pts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
-					pkt.dts = av_rescale_q_rnd( pkt.dts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
-					pkt.duration = av_rescale_q( pkt.duration, audioCodecCtx->time_base, audioStream->time_base);
-
-					// And write the file
-					if ( (err = av_interleaved_write_frame( outputFormatCtx, &pkt )) < 0 )
-					{
-						qWarning("Failed to write the audio packet: error %d", err );
-						return -1;
-					}
-
-					outputTotalSize += pkt.size;
-
-					av_free_packet( &pkt );
-				}
-			}
-		}
-	}
-
-	// SWS conversion
-	convertImage_sws(img);
+    // Convert Qt image into FFMpeg frame (videoFrame)
+    convertImage_sws( img );
 
 	// Setup frame data
 	videoFrame->interlaced_frame = (m_videoformat->flags & VIFO_INTERLACED) ? 1 : 0;
 	videoFrame->pts = videoFrameNumber++;
 
-	//qDebug("Video time: %g", ((double) videoFrameNumber * videoCodecCtx->time_base.num) / videoCodecCtx->time_base.den );
+    qDebug("Video time: %g", ((double) videoFrameNumber * videoCodecCtx->time_base.num) / videoCodecCtx->time_base.den );
 
-	av_init_packet( &pkt );
+    av_init_packet( &outpkt );
 
 	// packet data will be allocated by the encoder - av_init_packet() does NOT do that!
-	pkt.data = 0;
-	pkt.size = 0;
+    outpkt.data = 0;
+    outpkt.size = 0;
 
-	err = avcodec_encode_video2( videoCodecCtx, &pkt, videoFrame, &got_packet );
-	if ( err < 0 )
-	{
-		qWarning( "Error encoding video: %d", err );
-		return -1;
-	}
+    // Send the video frame for encoding
+    if ( avcodec_send_frame( videoCodecCtx, videoFrame ) < 0 )
+    {
+        qWarning( "Error sending the frame to the encoder");
+        return false;
+    }
 
-	if ( got_packet )
-	{
+    // Read all the available output video packets (in general there may be any number of them)
+    while ( true  )
+    {
+        // Prepare the packet
+        av_init_packet( &outpkt );
+
+        // packet data will be allocated by the encoder - av_init_packet() does NOT do that!
+        //FIXME?
+        outpkt.data = 0;
+        outpkt.size = 0;
+
+        int ret = avcodec_receive_packet( videoCodecCtx, &outpkt );
+
+        if ( ret == AVERROR(EAGAIN) || ret == AVERROR_EOF )
+            break;
+        else if ( ret < 0 )
+        {
+            qWarning( "Error encoding audio frame" );
+            return false;
+        }
+
 		// Convert the PTS from the packet base to stream base
-		if ( pkt.pts != AV_NOPTS_VALUE )
-			pkt.pts = av_rescale_q( pkt.pts, videoCodecCtx->time_base, videoStream->time_base );
+        if ( outpkt.pts != AV_NOPTS_VALUE )
+            outpkt.pts = av_rescale_q( outpkt.pts, videoCodecCtx->time_base, videoStream->time_base );
 
 		// Convert the DTS from the packet base to stream base
-		if ( pkt.dts != AV_NOPTS_VALUE )
-			pkt.dts = av_rescale_q( pkt.dts, videoCodecCtx->time_base, videoStream->time_base );
+        if ( outpkt.dts != AV_NOPTS_VALUE )
+            outpkt.dts = av_rescale_q( outpkt.dts, videoCodecCtx->time_base, videoStream->time_base );
 
-		if ( pkt.duration > 0 )
-			pkt.duration = av_rescale_q( pkt.duration, videoCodecCtx->time_base, videoStream->time_base );
+        if ( outpkt.duration > 0 )
+            outpkt.duration = av_rescale_q( outpkt.duration, videoCodecCtx->time_base, videoStream->time_base );
 
-		if ( videoCodecCtx->coded_frame->key_frame )
-			pkt.flags |= AV_PKT_FLAG_KEY;
+        outpkt.stream_index = videoStream->index;
 
-		pkt.stream_index = videoStream->index;
-
-		err = av_interleaved_write_frame( outputFormatCtx, &pkt );
+        err = av_interleaved_write_frame( outputFormatCtx, &outpkt );
 
 		if ( err < 0 )
 			return -1;
 
-		outputTotalSize += pkt.size;
-		av_free_packet( &pkt );
+        outputTotalSize += outpkt.size;
+        av_packet_unref( &outpkt );
 	}
 
 	return outputTotalSize;
-    */
-    return -1;
 }
 
 
@@ -851,7 +905,7 @@ bool FFMpegVideoEncoderPriv::convertImage_sws(const QImage &img)
 		return false;
 	}
 
-	if ( img.format()!=QImage::Format_RGB32	&& img.format() != QImage::Format_ARGB32 )
+    if ( img.format() != QImage::Format_RGB32 && img.format() != QImage::Format_ARGB32 )
 	{
 		printf("Wrong image format\n");
 		return false;

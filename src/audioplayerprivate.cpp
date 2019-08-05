@@ -258,6 +258,10 @@ bool AudioPlayerPrivate::openAudio( const QString& filename )
     av_opt_set_channel_layout( pAudioResampler, "out_channel_layout", AV_CH_LAYOUT_STEREO,  0);
     av_opt_set_int( pAudioResampler, "in_sample_rate",     aCodecCtx->sample_rate, 0);
     av_opt_set_int( pAudioResampler, "out_sample_rate",    aCodecCtx->sample_rate, 0);
+
+    //FIXME
+    //av_opt_set_int( audioResampleCtx, "in_channels",       m_aplayer->aCodecCtx->channels,0);
+
     av_opt_set_sample_fmt( pAudioResampler, "in_sample_fmt",  aCodecCtx->sample_fmt, 0);
     av_opt_set_sample_fmt( pAudioResampler, "out_sample_fmt", AV_SAMPLE_FMT_S16,  0);
 

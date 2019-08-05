@@ -30,7 +30,7 @@
 
 Licensing * pLicensing;
 
-
+//FIXME
 static const char * CA_DER_CERT = "MIICkDCCAfmgAwIBAgIJAJvgo443LFCmMA0GCSqGSIb3DQEBBQUAMIGAMTEwLwYD"
 									"VQQDDChrYXJseXJpY2VkaXRvci5jb20uY2VydGlmaWNhdGUuYXV0aG9yaXR5MRMw"
 									"EQYDVQQIDApDYWxpZm9ybmlhMQswCQYDVQQGEwJVUzEpMCcGCSqGSIb3DQEJARYa"
