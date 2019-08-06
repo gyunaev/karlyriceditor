@@ -26,7 +26,7 @@ void ffmpeg_init_once()
     if ( !ffmpeg_initialized )
 	{
         //FIXME
-		avcodec_register_all();
-		av_register_all();
+        avcodec_register_all();
+        av_register_all();
     }
 }

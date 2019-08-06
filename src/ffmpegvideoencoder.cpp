@@ -83,9 +83,6 @@ class FFMpegVideoEncoderPriv
         // Audio resample context
         SwrContext          *   audioResampleCtx;
 
-        // Audio FIFO buffer
-        AVAudioFifo         *   audioFIFO;
-
         // Output file has been opened successfully
 		bool					outputFileOpened;
 
@@ -125,7 +122,6 @@ FFMpegVideoEncoderPriv::FFMpegVideoEncoderPriv()
 	videoCodec = 0;
 	videoFrame = 0;
 	audioResampleCtx = 0;
-    audioFIFO = 0;
 
 	audioCodecCtx = 0;
 	videoImageBuffer = 0;
@@ -175,10 +171,6 @@ bool FFMpegVideoEncoderPriv::close()
     //if ( audioResampleCtx )
     //audioResampleCtx = 0;
 
-    //if ( audioFIFO )
-    //audioFIFO = 0;
-
-
 	outputFormatCtx = 0;
 	outputFormat = 0;
 	videoCodecCtx = 0;
@@ -189,7 +181,6 @@ bool FFMpegVideoEncoderPriv::close()
 	videoImageBuffer = 0;
 	videoConvertCtx = 0;
     audioResampleCtx = 0;
-    audioFIFO = 0;
 
 	return true;
 }
@@ -248,73 +239,8 @@ void FFMpegVideoEncoderPriv::initAVpacket( AVPacket  * packet )
 
 void FFMpegVideoEncoderPriv::flush()
 {
-    AVPacket outpkt;
-
-    // Flush audio
-    if ( avcodec_send_frame( audioCodecCtx, nullptr ) < 0 )
-        return;
-
-    // Read all the available output packets (in general there may be any number of them)
-    while ( true  )
-    {
-        // Prepare the packet
-        initAVpacket( &outpkt );
-
-        int ret = avcodec_receive_packet( audioCodecCtx, &outpkt );
-
-        if ( ret == AVERROR(EAGAIN) || ret == AVERROR_EOF )
-            break;
-        else if ( ret < 0 )
-            return;
-
-        // Set up the packet index
-        outpkt.stream_index = audioStream->index;
-
-        // Rescale output packet timestamp values from codec to stream timebase
-        outpkt.pts = av_rescale_q_rnd( outpkt.pts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
-        outpkt.dts = av_rescale_q_rnd( outpkt.dts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
-        outpkt.duration = av_rescale_q( outpkt.duration, audioCodecCtx->time_base, audioStream->time_base);
-
-        outputTotalSize += outpkt.size;
-
-        // And write the file
-        if ( av_interleaved_write_frame( outputFormatCtx, &outpkt ) < 0 )
-            return;
-    }
-
-    // Flush the video
-    if ( avcodec_send_frame( videoCodecCtx, nullptr ) < 0 )
-        return;
-
-    while ( true )
-    {
-        // Prepare the packet
-        initAVpacket( &outpkt );
-
-        int ret = avcodec_receive_packet( videoCodecCtx, &outpkt );
-
-        if ( ret == AVERROR(EAGAIN) || ret == AVERROR_EOF )
-            break;
-        else if ( ret < 0 )
-            return;
-
-        // Convert the PTS from the packet base to stream base
-        if ( outpkt.pts != AV_NOPTS_VALUE )
-            outpkt.pts = av_rescale_q( outpkt.pts, videoCodecCtx->time_base, videoStream->time_base );
-
-        // Convert the DTS from the packet base to stream base
-        if ( outpkt.dts != AV_NOPTS_VALUE )
-            outpkt.dts = av_rescale_q( outpkt.dts, videoCodecCtx->time_base, videoStream->time_base );
-
-        if ( outpkt.duration > 0 )
-            outpkt.duration = av_rescale_q( outpkt.duration, videoCodecCtx->time_base, videoStream->time_base );
-
-        outpkt.stream_index = videoStream->index;
-        outputTotalSize += outpkt.size;
-
-        if ( av_interleaved_write_frame( outputFormatCtx, &outpkt ) < 0 )
-            return;
-    }
+    encodeFrame( nullptr, audioCodecCtx, audioStream );
+    encodeFrame( nullptr, videoCodecCtx, videoStream );
 }
 
 bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
@@ -324,7 +250,7 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 	// If we had an open video, close it.
 	close();
 
-av_log_set_level(AV_LOG_VERBOSE);
+    av_log_set_level(AV_LOG_VERBOSE);
 
 	// Find the output container format
 	outputFormat = av_guess_format( qPrintable( m_profile->videoContainer ), qPrintable( m_profile->videoContainer ), 0 );
@@ -503,7 +429,7 @@ av_log_set_level(AV_LOG_VERBOSE);
 			audioCodecCtx->codec_type = AVMEDIA_TYPE_AUDIO;
 			audioCodecCtx->bit_rate = m_audiobitrate;
 			audioCodecCtx->channels = m_profile->channels;
-			audioCodecCtx->sample_rate = m_profile->sampleRate;
+            audioCodecCtx->sample_rate = m_aplayer->aCodecCtx->sample_rate;
 			audioCodecCtx->channel_layout = av_get_channel_layout( m_profile->channels == 1 ? "mono" : "stereo" );
 			audioCodecCtx->time_base.num = 1;
 			audioCodecCtx->time_base.den = m_profile->sampleRate;
@@ -580,22 +506,6 @@ av_log_set_level(AV_LOG_VERBOSE);
                 m_errorMsg = QObject::tr("Cannot initialize audio resampler");
                 return false;
             }
-
-            // Setup audio FIFO
-            audioFIFO = av_audio_fifo_alloc( audioCodecCtx->sample_fmt, audioCodecCtx->channels, 1 );
-
-            if ( !audioFIFO )
-            {
-                m_errorMsg = QObject::tr("Cannot initialize audio FIFO");
-                return false;
-            }
-
-/*
-            if ( audioStream->codec->block_align == 1 && audioStream->codec->codec_id == AV_CODEC_ID_MP3 )
-				audioStream->codec->block_align= 0;
-
-            if ( audioStream->codec->codec_id == AV_CODEC_ID_AC3 )
-                audioStream->codec->block_align= 0;*/
 		}
 
 		// Rewind the audio player
@@ -675,31 +585,6 @@ cleanup:
 
 }
 
-/**
- * Add converted input audio samples to the FIFO buffer for later processing.
- * @param fifo                    Buffer to add the samples to
- * @param converted_input_samples Samples to be added. The dimensions are channel
- *                                (for multi-channel audio), sample.
- * @param frame_size              Number of samples to be converted
- * @return Error code (0 if successful)
- */
-static bool add_samples_to_fifo( AVAudioFifo *fifo, uint8_t **converted_input_samples, const int frame_size )
-{
-    //  Make the FIFO as large as it needs to be to hold both, the old and the new samples
-    if ( av_audio_fifo_realloc(fifo, av_audio_fifo_size(fifo) + frame_size) < 0)
-    {
-        qWarning( "Could not reallocate FIFO" );
-        return false;
-    }
-
-    // Store the new samples in the FIFO buffer.
-    if ( av_audio_fifo_write(fifo, (void **)converted_input_samples, frame_size) < frame_size)
-    {
-        qWarning( "Could not write data to FIFO" );
-        return false;
-    }
-    return true;
-}
 
 /**
  * Encode one frame worth of audio or video to the output file.
@@ -712,8 +597,11 @@ static bool add_samples_to_fifo( AVAudioFifo *fifo, uint8_t **converted_input_sa
  */
 bool FFMpegVideoEncoderPriv::encodeFrame( AVFrame *frame, AVCodecContext *output_codec_context, AVStream * stream )
 {
-    int error;
-    int totalsize = 0;
+    int error = 0;
+
+    // Mark frame writable so it is not refcounted (and thus encoder would make a copy if it needs)
+    if ( frame )
+        av_frame_make_writable( frame );
 
     // Send the audio frame stored in the temporary packet to the encoder.
     // The output audio stream encoder is used to do this.
@@ -730,8 +618,6 @@ bool FFMpegVideoEncoderPriv::encodeFrame( AVFrame *frame, AVCodecContext *output
         qWarning( "Could not send packet for encoding (error '%d')", error );
         return -1;
     }
-
-    av_frame_make_writable( frame );
 
     // We repeat this process until we get EOF
     while ( true )
@@ -778,19 +664,19 @@ bool FFMpegVideoEncoderPriv::encodeFrame( AVFrame *frame, AVCodecContext *output
         if ( output_packet.duration > 0 )
             output_packet.duration = av_rescale_q( output_packet.duration, output_codec_context->time_base, stream->time_base );
 
+        outputTotalSize += output_packet.size;
+
         // Write one audio frame from the temporary packet to the output file.
+        // av_write_frame takes over the packet and unrefs it itself
         if ( (error = av_write_frame( outputFormatCtx, &output_packet)) < 0)
         {
             qWarning( "Could not write frame (error '%d)", error );
             goto cleanup;
         }
-
-        totalsize += output_packet.size;
-        av_packet_unref( &output_packet );
     }
 
 cleanup:
-    return error <= 0 ? error : totalsize;
+    return error == 0;
 }
 
 
@@ -829,110 +715,38 @@ int FFMpegVideoEncoderPriv::encodeMoreAudio()
 
     while ( avcodec_receive_frame( m_aplayer->aCodecCtx, decodedAudioFrame ) >= 0 )
     {
-        // Allocate the resampler data for max 256 channels
-        uint8_t * converted_input_samples[256] = { 0 };
+        // Output audio frame
+        AVFrame * resampledAudioframe = av_frame_alloc();
 
-        // Allocate memory for the samples of all channels in one consecutive block for convenience
-        if ( av_samples_alloc( converted_input_samples,
-                               NULL,
-                               audioCodecCtx->channels,
-                               audioCodecCtx->frame_size,
-                               audioCodecCtx->sample_fmt,
-                               0) < 0)
-        {
-            qWarning( "Could not allocate converted input samples" );
-            goto cleanup;
-                //av_freep(&(*converted_input_samples)[0]);
-        }
-
-        static QFile * f;
-
-        if ( !f )
-        {
-            f = new QFile("/home/tim/testfile");
-            f->open( QIODevice::WriteOnly );
-            qDebug("Audio %d %d %d", decodedAudioFrame->channels, decodedAudioFrame->format, decodedAudioFrame->sample_rate );
-        }
-
-        int wrbytes = av_get_bytes_per_sample( (enum AVSampleFormat) decodedAudioFrame->format ) * decodedAudioFrame->nb_samples * decodedAudioFrame->channels;
-
-        f->write( (const char*) decodedAudioFrame->extended_data, wrbytes );
-
+        av_frame_copy_props( resampledAudioframe, decodedAudioFrame );
+        resampledAudioframe->channel_layout = audioCodecCtx->channel_layout;
+        resampledAudioframe->channels = audioCodecCtx->channels;
+        resampledAudioframe->sample_rate = audioCodecCtx->sample_rate;
+        resampledAudioframe->format = audioCodecCtx->sample_fmt;
 
         // Run the audio resampling
-        if ( swr_convert( audioResampleCtx,
-                          converted_input_samples,
-                          decodedAudioFrame->nb_samples,
-                          (const uint8_t**) decodedAudioFrame->extended_data,
-                          decodedAudioFrame->nb_samples  ) < 0 )
+        if ( swr_convert_frame( audioResampleCtx, resampledAudioframe, decodedAudioFrame ) < 0 )
         {
             qWarning( "Error while converting the audio frame" );
             goto cleanup;
         }
 
-        // Add the resampled audio to FIFO
-        if ( !add_samples_to_fifo( audioFIFO, converted_input_samples, decodedAudioFrame->nb_samples ) )
-            goto cleanup;
-
-        av_freep( &converted_input_samples[0] );
-
-        // Only proceed with sending packets if FIFO has enough samples for the output frame
-        if ( av_audio_fifo_size(audioFIFO) < audioCodecCtx->frame_size  )
-            continue;
-
-        // Use the maximum number of possible samples per frame.
-        const int frame_size = FFMIN( av_audio_fifo_size(audioFIFO),  audioCodecCtx->frame_size );
-
-        // Allocate the output frame
-        AVFrame * output_frame = av_frame_alloc();
-
-        if ( output_frame == 0 )
-        {
-            qWarning( "Could not allocate output frame" );
-            goto cleanup;
-        }
-
-        // Set the frame's parameters, especially its size and format.
-        // av_frame_get_buffer needs this to allocate memory for the
-        // audio samples of the frame.
-        output_frame->nb_samples     = frame_size;
-        output_frame->channel_layout = audioCodecCtx->channel_layout;
-        output_frame->channels = audioCodecCtx->channels;
-        output_frame->format         = audioCodecCtx->sample_fmt;
-        output_frame->sample_rate    = audioCodecCtx->sample_rate;
-
-        // Allocate the samples of the created frame. This call will make sure
-        // that the audio frame can hold as many samples as specified.
-        if ( av_frame_get_buffer( output_frame, 0) < 0)
-        {
-            qWarning( "Could not allocate output frame samples" );
-            goto cleanup;
-        }
-
-        // Read as many samples from the FIFO buffer as required to fill the frame.
-        // The samples are stored in the frame temporarily.
-        if ( av_audio_fifo_read( audioFIFO, (void **)output_frame->data, frame_size) < frame_size )
-        {
-            qWarning( "Could not read data from FIFO");
-            av_frame_free( &output_frame );
-            goto cleanup;
-        }
-
         // Assign the PTS to the audio frame
-        AVRational rate;
+      /*  AVRational rate;
         rate.num = 1;
         rate.den = audioCodecCtx->sample_rate;
 
-        //output_frame->pts = av_rescale_q( audioSamplesOut, rate, audioCodecCtx->time_base);
-        output_frame->pts = audioSamplesOut;
-        audioSamplesOut += output_frame->nb_samples;
+        output_frame->pts = av_rescale_q( audioSamplesOut, rate, audioCodecCtx->time_base);*/
+        resampledAudioframe->pts = audioSamplesOut;
+        audioSamplesOut += resampledAudioframe->nb_samples;
 
-        int bytes = encodeFrame( output_frame, audioCodecCtx, audioStream );
+        bool ret = encodeFrame( resampledAudioframe, audioCodecCtx, audioStream );
+        av_frame_unref( resampledAudioframe );
 
-        if ( bytes < 0 )
+        if ( !ret )
             goto cleanup;
 
-        outputTotalSize += bytes;
+
 /*
             // Rescale output packet timestamp values from codec to stream timebase
             outpkt.pts = av_rescale_q_rnd( outpkt.pts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
@@ -957,7 +771,7 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
     int err;
 
     // Do we need to output audio?
-	if ( m_aplayer )
+    if ( m_aplayer )
     {
         double video_time = ((double) videoFrameNumber * videoCodecCtx->time_base.num) / videoCodecCtx->time_base.den;
         double audio_time = ((double) audioSamplesOut * audioCodecCtx->time_base.num) / audioCodecCtx->time_base.den;
@@ -983,19 +797,16 @@ int FFMpegVideoEncoderPriv::encodeImage( const QImage &img, qint64 )
     // Convert Qt image into FFMpeg frame (videoFrame)
     convertImage_sws( img );
 
-	// Setup frame data
-	videoFrame->interlaced_frame = (m_videoformat->flags & VIFO_INTERLACED) ? 1 : 0;
+    // Setup frame data
+    videoFrame->interlaced_frame = (m_videoformat->flags & VIFO_INTERLACED) ? 1 : 0;
     videoFrame->pts = videoFrameNumber++;
 
     //qDebug("Video time: %g", ((double) videoFrameNumber * videoCodecCtx->time_base.num) / videoCodecCtx->time_base.den );
 
-    int bytes = encodeFrame( videoFrame, videoCodecCtx, videoStream );
+    if ( !encodeFrame( videoFrame, videoCodecCtx, videoStream ) )
+        return -1;
 
-    if ( bytes < 0 )
-        return false;
-
-    outputTotalSize += bytes;
-	return outputTotalSize;
+    return outputTotalSize;
 }
 
 
