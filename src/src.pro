@@ -1,16 +1,15 @@
 TEMPLATE = app
 TARGET = ../bin/karlyriceditor
 DEPENDPATH += .
-LIBS += -lcrypto
-CONFIG += link_pkgconfig
-PKGCONFIG += libavformat libavcodec libswscale  libavresample libavutil libswresample
 
-win32-g++-cross: {
-	LIBS += -lwsock32 -ldxguid
+!win32: {
+	CONFIG += link_pkgconfig
+	PKGCONFIG += libavformat libavcodec libswscale libavutil libswresample
+	LIBS += -lcrypto
 }
 
-linux-g++-32: {
-	LIBS += -L.
+win32: {
+    LIBS += -lwsock32 -ldxguid libeay32.lib avformat.lib avcodec.lib swscale.lib avutil.lib swresample.lib
 }
 
 # Input
@@ -55,6 +54,8 @@ HEADERS += mainwindow.h \
     util.h \
     videoencodingprofiles.h
 SOURCES += mainwindow.cpp \
+    ffmpegvideodecoder.cpp \
+    ffmpegvideoencoder.cpp \
     main.cpp \
     wizard_newproject.cpp \
     project.cpp \
@@ -77,8 +78,6 @@ SOURCES += mainwindow.cpp \
     lyricsrenderer.cpp \
     textrenderer.cpp \
     lyricswidget.cpp \
-    ffmpegvideodecoder.cpp \
-    ffmpegvideoencoder.cpp \
     videogenerator.cpp \
     lyricsevents.cpp \
     background.cpp \
