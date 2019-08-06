@@ -23,9 +23,10 @@ static bool ffmpeg_initialized = false;
 
 void ffmpeg_init_once()
 {
-	if ( !ffmpeg_initialized )
+    if ( !ffmpeg_initialized )
 	{
+        //FIXME
 		avcodec_register_all();
 		av_register_all();
-	}
+    }
 }
