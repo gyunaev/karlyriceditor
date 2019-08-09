@@ -82,7 +82,7 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 		// For current video selection tracking
 		const VideoEncodingProfile * m_currentProfile;
 		const VideoFormat * m_currentVideoFormat;
-		unsigned int		m_audioEncodingMode;
+        unsigned int		m_audioEncodingType;
 		unsigned int		m_quality;
 };
 

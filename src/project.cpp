@@ -996,23 +996,23 @@ bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics, b
 
 bool Project::importLyricsTxt( const QStringList & readlyrics, Lyrics& lyrics )
 {
-	lyrics.clear();
+    lyrics.clear();
 
-	if ( readlyrics.isEmpty() )
-		return false;
+    if ( readlyrics.isEmpty() )
+        return false;
 
     // TXT could be UltraStar or PowerKaraoke or KBP
-	if ( readlyrics.first().indexOf( QRegExp( "^#[a-zA-Z]+:\\s*.*\\s*$" ) ) != -1 )
-		return importLyricsUStar( readlyrics, lyrics );
-	else if ( readlyrics.first().indexOf( QRegExp( "^([0-9.]+) ([0-9.]+) (.+)" ) ) != -1 )
-		return importLyricsPowerKaraoke( readlyrics, lyrics );
-    else if ( readlyrics.contains( "PAGEV2") != -1 )
+    if ( readlyrics.first().indexOf( QRegExp( "^#[a-zA-Z]+:\\s*.*\\s*$" ) ) != -1 )
+        return importLyricsUStar( readlyrics, lyrics );
+    else if ( readlyrics.first().indexOf( QRegExp( "^([0-9.]+) ([0-9.]+) (.+)" ) ) != -1 )
+        return importLyricsPowerKaraoke( readlyrics, lyrics );
+    else if ( readlyrics.contains( "PAGEV2") )
         return importLyricsKaraokeBuilder( readlyrics, lyrics );
 
-	QMessageBox::critical( 0,
-						   QObject::tr("Invalid text file"),
-						   QObject::tr("This file is not a valid UltraStar nor PowerKaraoke lyric file") );
-	return false;
+    QMessageBox::critical( 0,
+                           QObject::tr("Invalid text file"),
+                           QObject::tr("This file is not a valid UltraStar nor PowerKaraoke lyric file") );
+    return false;
 }
 
 static int powerKaraokeTime( QString time )

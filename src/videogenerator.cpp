@@ -49,10 +49,10 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	// Get the video info
 	const VideoEncodingProfile * profile;
 	const VideoFormat * format;
-	unsigned int		audioEncodingMode;
+    unsigned int		audioEncodingType;
 	unsigned int		quality;
 
-	if ( !dlg.videoParams( &profile, &format, &audioEncodingMode, &quality ) )
+    if ( !dlg.videoParams( &profile, &format, &audioEncodingType, &quality ) )
 		return;
 
 	// Prepare the renderer
@@ -84,8 +84,7 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 										 profile,
 										 format,
 										 quality,
-										 audioEncodingMode == 0 ? true : false,
-										 audioEncodingMode == 2 ? 0 : pAudioPlayer );
+                                         audioEncodingType == 1 ? 0 : pAudioPlayer );
 
 	if ( !errmsg.isEmpty() )
 	{

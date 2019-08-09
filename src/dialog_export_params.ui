@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>592</width>
-    <height>583</height>
+    <width>624</width>
+    <height>770</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -121,15 +121,10 @@
            </widget>
           </item>
           <item row="2" column="2">
-           <widget class="QComboBox" name="boxVideoAudio">
+           <widget class="QComboBox" name="boxAudioEncodingType">
             <item>
              <property name="text">
               <string>encode according to profile</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>copy original content</string>
              </property>
             </item>
             <item>
@@ -537,7 +532,7 @@
   <tabstop>boxVideoTarget</tabstop>
   <tabstop>boxVideoProfile</tabstop>
   <tabstop>boxVideoQuality</tabstop>
-  <tabstop>boxVideoAudio</tabstop>
+  <tabstop>boxAudioEncodingType</tabstop>
   <tabstop>fontVideo</tabstop>
   <tabstop>fontVideoSize</tabstop>
   <tabstop>btnDetectSize</tabstop>

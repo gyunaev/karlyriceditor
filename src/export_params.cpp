@@ -240,7 +240,7 @@ void DialogExportOptions::accept()
 		if ( !m_currentProfile || !m_currentVideoFormat )
 			return;
 
-		m_audioEncodingMode = boxVideoAudio->currentIndex();
+        m_audioEncodingType = boxAudioEncodingType->currentIndex();
 		m_quality = boxVideoQuality->itemData( boxVideoQuality->currentIndex() ).toInt();
 
 		// Store rendering params
@@ -342,7 +342,7 @@ void DialogExportOptions::videoShowDetails()
 	if ( !m_currentProfile || !m_currentVideoFormat )
 		return;
 
-	m_audioEncodingMode = boxVideoAudio->currentIndex();
+    m_audioEncodingType = boxAudioEncodingType->currentIndex();
 	m_quality = boxVideoQuality->itemData( boxVideoQuality->currentIndex() ).toInt();
 
 	QString data = tr("<table border=0>"
@@ -407,7 +407,7 @@ bool DialogExportOptions::videoParams(const VideoEncodingProfile **profile, cons
 {
 	*profile = m_currentProfile;
 	*format = m_currentVideoFormat;
-	*audioMode = m_audioEncodingMode;
+    *audioMode = m_audioEncodingType;
 	*qualty = m_quality;
 
     return true;

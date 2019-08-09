@@ -3,6 +3,7 @@ TARGET = ../bin/karlyriceditor
 DEPENDPATH += .
 
 !win32: {
+        INCLUDEPATH = /usr/include/ffmpeg
 	CONFIG += link_pkgconfig
 	PKGCONFIG += libavformat libavcodec libswscale libavutil libswresample
 	LIBS += -lcrypto
