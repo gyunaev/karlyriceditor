@@ -53,7 +53,8 @@ HEADERS += mainwindow.h \
     kfn_file_parser.h \
     dialog_timeadjustment.h \
     util.h \
-    videoencodingprofiles.h
+    videoencodingprofiles.h \
+    videogeneratorthread.h
 SOURCES += mainwindow.cpp \
     ffmpegvideodecoder.cpp \
     ffmpegvideoencoder.cpp \
@@ -91,7 +92,8 @@ SOURCES += mainwindow.cpp \
     kfn_file_parser.cpp \
     dialog_timeadjustment.cpp \
     util.cpp \
-    videoencodingprofiles.cpp
+    videoencodingprofiles.cpp \
+    videogeneratorthread.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \
     wiznewproject_lyrictype.ui \
