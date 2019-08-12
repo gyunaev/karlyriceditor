@@ -47,14 +47,14 @@ HEADERS += mainwindow.h \
     audioplayer.h \
     ffmpeg_headers.h \
     audioplayerprivate.h \
-	export_params.h \
     licensing.h \
     karaokelyricstextkar.h \
     kfn_file_parser.h \
     dialog_timeadjustment.h \
     util.h \
     videoencodingprofiles.h \
-    videogeneratorthread.h
+    videogeneratorthread.h \
+    dialog_export_params.h
 SOURCES += mainwindow.cpp \
     ffmpegvideodecoder.cpp \
     ffmpegvideoencoder.cpp \
@@ -86,14 +86,14 @@ SOURCES += mainwindow.cpp \
     audioplayer.cpp \
     audioplayerprivate.cpp \
     ffmpeg_headers.cpp \
-	export_params.cpp \
     licensing.cpp \
     karaokelyricstextkar.cpp \
     kfn_file_parser.cpp \
     dialog_timeadjustment.cpp \
     util.cpp \
     videoencodingprofiles.cpp \
-    videogeneratorthread.cpp
+    videogeneratorthread.cpp \
+    dialog_export_params.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \
     wiznewproject_lyrictype.ui \

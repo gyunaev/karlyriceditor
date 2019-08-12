@@ -74,6 +74,8 @@ class Project
 
             Tag_ExportFilenameCDG,
             Tag_ExportFilenameVideo,
+            Tag_CDG_TextAlignVertical,
+            Tag_Video_TextAlignVertical,
 		};
 
 		Project( Editor * editor );

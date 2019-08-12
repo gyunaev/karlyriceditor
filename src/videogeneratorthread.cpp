@@ -36,7 +36,7 @@ void VideoGeneratorThread::run()
     qint64 time = 0;
 
     int frames = 0, totalframes = mTotalLength  / mTimeStep;
-    QTime timing;
+    QTime timing, total;
     QString finishedMsg;
 
     timing.start();
@@ -77,7 +77,7 @@ void VideoGeneratorThread::run()
                         time / dialog_step,
                         QString("%1 of %2") .arg( frames ) .arg( totalframes ),
                         QString( "%1 Mb" ) .arg( ret / (1024*1024) ),
-                        markToTime( timing.elapsed() ) );
+                        markToTime( total.elapsed() ) );
         }
 
         time += mTimeStep;

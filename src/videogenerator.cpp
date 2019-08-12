@@ -25,7 +25,7 @@
 #include "audioplayer.h"
 #include "videogenerator.h"
 #include "textrenderer.h"
-#include "export_params.h"
+#include "dialog_export_params.h"
 #include "ffmpegvideoencoder.h"
 #include "editor.h"
 #include "videogeneratorthread.h"
@@ -58,20 +58,35 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 
 	// Prepare the renderer
     TextRenderer * lyricrenderer = new TextRenderer( format->width, format->height );
+
+    // Must be set before lyrics
+    lyricrenderer->setDefaultVerticalAlign( (TextRenderer::VerticalAlignment) m_project->tag( Project::Tag_Video_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
+
+    // The order matters because setLyrics resets font and colors
     lyricrenderer->setLyrics( lyrics );
 
+    // Title
+    lyricrenderer->setTitlePageData( dlg.m_artist,
+                                    dlg.m_title,
+                                    dlg.m_createdBy,
+                                    m_project->tag( Project::Tag_Video_titletime, "5" ).toInt() * 1000 );
+
+
+    // Rendering font
+    QFont renderFont( m_project->tag(Project::Tag_Video_font ) );
+    int fontsize = m_project->tag(Project::Tag_Video_fontsize).toInt();
+
+    if ( fontsize == 0 )
+        fontsize = lyricrenderer->autodetectFontSize( QSize(format->width, format->height), renderFont );
+
+    renderFont.setPointSize( fontsize );
+
 	// Initialize colors from m_project
-    lyricrenderer->setRenderFont( QFont( m_project->tag(Project::Tag_Video_font, "arial"), m_project->tag(Project::Tag_Video_fontsize, "8").toInt()) );
+    lyricrenderer->setRenderFont( renderFont );
     lyricrenderer->setColorBackground( m_project->tag( Project::Tag_Video_bgcolor, "black" ) );
     lyricrenderer->setColorTitle( m_project->tag( Project::Tag_Video_infocolor, "white" ) );
     lyricrenderer->setColorSang( m_project->tag( Project::Tag_Video_inactivecolor, "blue" ) );
-    lyricrenderer->setColorToSing( m_project->tag( Project::Tag_Video_activecolor, "green" ) );
-
-	// Title
-    lyricrenderer->setTitlePageData( dlg.m_artist,
-									dlg.m_title,
-									dlg.m_createdBy,
-									m_project->tag( Project::Tag_Video_titletime, "5" ).toInt() * 1000 );
+    lyricrenderer->setColorToSing( m_project->tag( Project::Tag_Video_activecolor, "green" ) );    
 
 	// Preamble
 	if ( m_project->tag( Project::Tag_Video_preamble).toInt() != 0 )

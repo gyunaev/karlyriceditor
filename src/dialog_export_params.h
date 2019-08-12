@@ -50,11 +50,12 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 
 	private slots:
 		void	activateTab( int index );
-		void	autodetectFontSize();
 		void	browseOutputFile();
-		bool	testFontSize();
 		void	previewUpdateImage();
 		void	previewSliderMoved( int newvalue );
+        void    recalculateLargestFontSize();
+        void    fontSizeStrategyChanged(int index);
+
 		void	accept();
 
 		void	videoMediumChanged( int newvalue );
@@ -69,6 +70,8 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 
 	private:
 		void	setBoxIndex( Project::Tag tag, QComboBox * box );
+        int     calculateLargestFontSize(const QFont &font);
+        bool    testFontSize();
 
 	private:
 		bool		m_videomode;
@@ -83,7 +86,7 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 		const VideoEncodingProfile * m_currentProfile;
 		const VideoFormat * m_currentVideoFormat;
         unsigned int		m_audioEncodingType;
-		unsigned int		m_quality;
+        unsigned int		m_quality;
 };
 
 #endif // VIDEOEXPORTOPTIONS_H
