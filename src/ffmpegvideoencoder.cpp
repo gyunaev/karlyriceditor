@@ -197,7 +197,8 @@ FFMpegVideoEncoder::~FFMpegVideoEncoder()
 
 bool FFMpegVideoEncoder::close()
 {
-	return d->close();
+    d->flush();
+    return d->close();
 }
 
 int FFMpegVideoEncoder::encodeImage( const QImage & img, qint64 time )
