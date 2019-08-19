@@ -25,16 +25,17 @@
 #include "audioplayer.h"
 #include "videogenerator.h"
 #include "textrenderer.h"
-#include "export_params.h"
+#include "dialog_export_params.h"
 #include "ffmpegvideoencoder.h"
 #include "editor.h"
-
-#include "ui_dialog_encodingprogress.h"
+#include "videogeneratorthread.h"
 
 
 VideoGenerator::VideoGenerator( Project * prj )
 {
+    mProgress.setupUi( this );
 	m_project = prj;
+    mVideoGeneratorThread = 0;
 }
 
 
@@ -49,43 +50,57 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	// Get the video info
 	const VideoEncodingProfile * profile;
 	const VideoFormat * format;
-	unsigned int		audioEncodingMode;
+    unsigned int		audioEncodingType;
 	unsigned int		quality;
 
-	if ( !dlg.videoParams( &profile, &format, &audioEncodingMode, &quality ) )
+    if ( !dlg.videoParams( &profile, &format, &audioEncodingType, &quality ) )
 		return;
 
 	// Prepare the renderer
-	TextRenderer lyricrenderer( format->width, format->height );
-	lyricrenderer.setLyrics( lyrics );
+    TextRenderer * lyricrenderer = new TextRenderer( format->width, format->height );
+
+    // Must be set before lyrics
+    lyricrenderer->setDefaultVerticalAlign( (TextRenderer::VerticalAlignment) m_project->tag( Project::Tag_Video_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
+
+    // The order matters because setLyrics resets font and colors
+    lyricrenderer->setLyrics( lyrics );
+
+    // Title
+    lyricrenderer->setTitlePageData( dlg.m_artist,
+                                    dlg.m_title,
+                                    dlg.m_createdBy,
+                                    m_project->tag( Project::Tag_Video_titletime, "5" ).toInt() * 1000 );
+
+
+    // Rendering font
+    QFont renderFont( m_project->tag(Project::Tag_Video_font ) );
+    int fontsize = m_project->tag(Project::Tag_Video_fontsize).toInt();
+
+    if ( fontsize == 0 )
+        fontsize = lyricrenderer->autodetectFontSize( QSize(format->width, format->height), renderFont );
+
+    renderFont.setPointSize( fontsize );
 
 	// Initialize colors from m_project
-	lyricrenderer.setRenderFont( QFont( m_project->tag(Project::Tag_Video_font, "arial"), m_project->tag(Project::Tag_Video_fontsize, "8").toInt()) );
-	lyricrenderer.setColorBackground( m_project->tag( Project::Tag_Video_bgcolor, "black" ) );
-	lyricrenderer.setColorTitle( m_project->tag( Project::Tag_Video_infocolor, "white" ) );
-	lyricrenderer.setColorSang( m_project->tag( Project::Tag_Video_inactivecolor, "blue" ) );
-	lyricrenderer.setColorToSing( m_project->tag( Project::Tag_Video_activecolor, "green" ) );
-
-	// Title
-	lyricrenderer.setTitlePageData( dlg.m_artist,
-									dlg.m_title,
-									dlg.m_createdBy,
-									m_project->tag( Project::Tag_Video_titletime, "5" ).toInt() * 1000 );
+    lyricrenderer->setRenderFont( renderFont );
+    lyricrenderer->setColorBackground( m_project->tag( Project::Tag_Video_bgcolor, "black" ) );
+    lyricrenderer->setColorTitle( m_project->tag( Project::Tag_Video_infocolor, "white" ) );
+    lyricrenderer->setColorSang( m_project->tag( Project::Tag_Video_inactivecolor, "blue" ) );
+    lyricrenderer->setColorToSing( m_project->tag( Project::Tag_Video_activecolor, "green" ) );    
 
 	// Preamble
 	if ( m_project->tag( Project::Tag_Video_preamble).toInt() != 0 )
-		lyricrenderer.setPreambleData( 4, 5000, 8 );
+        lyricrenderer->setPreambleData( 4, 5000, 8 );
 
 	// Video encoder
-	FFMpegVideoEncoder encoder;
+    FFMpegVideoEncoder * encoder = new FFMpegVideoEncoder();
 
 	// audioEncodingMode: 0 - encode, 1 - copy, 2 - no audio
-	QString errmsg = encoder.createFile( dlg.m_outputVideo,
+    QString errmsg = encoder->createFile( dlg.m_outputVideo,
 										 profile,
 										 format,
 										 quality,
-										 audioEncodingMode == 0 ? true : false,
-										 audioEncodingMode == 2 ? 0 : pAudioPlayer );
+                                         audioEncodingType == 1 ? 0 : pAudioPlayer );
 
 	if ( !errmsg.isEmpty() )
 	{
@@ -95,59 +110,69 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 		return;
 	}
 
-	// Pop up progress dialog
-	QDialog progressdlg;
-	Ui::DialogEncodingProgress ui;
-	ui.setupUi( &progressdlg );
+    // Calculate the time step for rendering
+    qint64 time_step = (1000 * format->frame_rate_num) / format->frame_rate_den;
 
-	ui.progressBar->setMaximum( 99 );
-	ui.progressBar->setMinimum( -1 );
-	ui.progressBar->setValue( -1 );
+    // Start the video encoding
+    mVideoGeneratorThread = new VideoGeneratorThread( encoder, lyricrenderer, total_length, time_step );
+    mVideoGeneratorThread->start();
 
-	ui.lblFrames->setText( "0" );
-	ui.lblOutput->setText( "0 Mb" );
-	ui.lblTime->setText( "0:00.00" );
+    // Connect the signals
+    connect( mVideoGeneratorThread, SIGNAL( finished(QString)), this, SLOT(finished(QString)), Qt::QueuedConnection );
+    connect( mVideoGeneratorThread, SIGNAL( progress(int, QString, QString, QString)), this, SLOT(progress(int, QString, QString, QString)), Qt::QueuedConnection );
 
-	progressdlg.show();
+    // Pop up our progress dialog
+    mProgress.progressBar->setMaximum( 99 );
+    mProgress.progressBar->setMinimum( -1 );
+    mProgress.progressBar->setValue( -1 );
 
-	qint64 dialog_step = total_length / 100;
-	qint64 time_step = (1000 * format->frame_rate_num) / format->frame_rate_den;
+    mProgress.lblFrames->setText( "0" );
+    mProgress.lblOutput->setText( "0 Mb" );
+    mProgress.lblTime->setText( "0:00.00" );
 
-	int frames = 0, totalframes = total_length / time_step;
-	QTime timing;
-	timing.start();
+    exec();
+}
 
-	// Rendering
-	for ( qint64 time = 0; time < total_length; time += time_step )
-	{
-		frames++;
-		lyricrenderer.update( time );
-		QImage image = lyricrenderer.image();
+void VideoGenerator::progress( int progress, QString frames, QString size, QString timing )
+{
+    mProgress.progressBar->setValue( progress );
 
-		int ret = encoder.encodeImage( image, time );
+    mProgress.lblFrames->setText( frames );
+    mProgress.lblOutput->setText( size );
+    mProgress.lblTime->setText( timing );
+    mProgress.image->setPixmap( QPixmap::fromImage( mVideoGeneratorThread->currentImage() ).scaled( mProgress.image->size() ) );
+}
 
-		if ( ret < 0 )
-		{
-			QMessageBox::critical( 0,
-								  "Cannot write video",
-								  QString("Encoding error while creating the video file: %1") .arg(errmsg) );
-			encoder.close();
-			return;
-		}
+void VideoGenerator::finished( QString errormsg )
+{
+    // This slot is called when the encoding thread is finished, which may mean aborted, or error
+    if ( !errormsg.isEmpty() )
+        QMessageBox::critical( 0,
+                               "Video encoding failed",
+                               QString( "Failed to encode the video:\n%1").arg( errormsg ) );
 
-		// Should we update the progress dialog?
-		if ( time / dialog_step > ui.progressBar->value() )
-		{
-			ui.progressBar->setValue( time / dialog_step );
+    mVideoGeneratorThread->deleteLater();
 
-			ui.lblFrames->setText( QString("%1 of %2") .arg( frames ) .arg( totalframes ) );
-			ui.lblOutput->setText( QString( "%1 Mb" ) .arg( ret / (1024*1024) ) );
-			ui.lblTime->setText( markToTime( timing.elapsed() ) );
-			ui.image->setPixmap( QPixmap::fromImage( image ).scaled( ui.image->size() ) );
+    // Close the dialog window
+    reject();
+}
 
-			qApp->processEvents( QEventLoop::ExcludeUserInputEvents );
-		}
-	}
+void VideoGenerator::buttonAbort()
+{
+    mVideoGeneratorThread->abort();
+}
 
-	encoder.close();
+void VideoGenerator::closeEvent(QCloseEvent *e)
+{
+    // We handle it internally
+    e->ignore();
+
+    if ( QMessageBox::question( 0,
+                                "Abort video encoding?",
+                                "Do you want to abort video encoding process?",
+                                QMessageBox::Yes,
+                                QMessageBox::No ) != QMessageBox::Yes )
+        return;
+
+    buttonAbort();
 }

@@ -47,7 +47,6 @@ class FFMpegVideoEncoderPriv
 		// Video output parameters
 		const VideoEncodingProfile * m_profile;
 		const VideoFormat		   * m_videoformat;
-		bool						 m_convertaudio;
 		unsigned int				 m_videobitrate;
 		unsigned int				 m_audiobitrate;
 
@@ -211,13 +210,11 @@ QString FFMpegVideoEncoder::createFile( const QString &filename,
 										const VideoEncodingProfile *profile,
 										const VideoFormat * videoformat,
 										unsigned int quality,
-										bool  convert_audio,
 										AudioPlayer *audio )
 {
 	d->m_aplayer = audio ? audio->impl() : 0;
 	d->m_profile = profile;
 	d->m_videoformat = videoformat;
-	d->m_convertaudio = convert_audio;
 
 	d->m_videobitrate = profile->bitratesVideo[quality] * 1000;
 	d->m_audiobitrate = profile->bitratesAudio[quality] * 1000;
@@ -372,142 +369,109 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 	// Do we also have audio stream?
 	if ( m_aplayer )
 	{
-		// Are we copying the stream data?
-		if ( !m_convertaudio )
-		{
-			// Add the audio stream, index 1
-			audioStream = avformat_new_stream( outputFormatCtx, 0 );
+        // Find the audio codec
+        audioCodec = avcodec_find_encoder_by_name( qPrintable( m_profile->audioCodec ) );
 
-			if ( !audioStream )
-			{
-				m_errorMsg = "Could not allocate audio stream";
-				goto cleanup;
-			}
+        if ( !audioCodec )
+        {
+            m_errorMsg = QString("Could not use the audio codec %1") .arg( m_profile->audioCodec );
+            goto cleanup;
+        }
 
-			AVStream * origAudioStream = m_aplayer->pFormatCtx->streams[m_aplayer->audioStream];
+        // Hack to use the fixed AC3 codec if available
+        if ( audioCodec->id == AV_CODEC_ID_AC3 && avcodec_find_encoder_by_name( "ac3_fixed" ) )
+            audioCodec = avcodec_find_encoder_by_name( "ac3_fixed" );
 
-			audioStream->time_base = origAudioStream->time_base;
-			audioStream->disposition = origAudioStream->disposition;
-            //audioStream->pts.num = origAudioStream->pts.num;
-            //audioStream->pts.den = origAudioStream->pts.den;
+        // Allocate the audio context
+        audioCodecCtx = avcodec_alloc_context3( audioCodec );
 
-            //AVCodecContext * newCtx = audioStream->codec;
+        if ( !audioCodecCtx )
+        {
+            m_errorMsg = QString( "Context for audio codec %1 cannot be allocated") .arg( m_profile->audioCodec );
+            goto cleanup;
+        }
 
-			// We're copying the stream
-            avcodec_parameters_copy( audioStream->codecpar, origAudioStream->codecpar );
-            /*
-            if ( newCtx->block_align == 1 && newCtx->codec_id == AV_CODEC_ID_MP3 )
-				newCtx->block_align= 0;
+        audioCodecCtx->codec_id = audioCodec->id;
+        audioCodecCtx->codec_type = AVMEDIA_TYPE_AUDIO;
+        audioCodecCtx->bit_rate = m_audiobitrate;
+        audioCodecCtx->channels = m_profile->channels;
+        audioCodecCtx->sample_rate = m_aplayer->aCodecCtx->sample_rate;
+        audioCodecCtx->channel_layout = av_get_channel_layout( m_profile->channels == 1 ? "mono" : "stereo" );
+        audioCodecCtx->time_base.num = 1;
+        audioCodecCtx->time_base.den = m_profile->sampleRate;
 
-            if ( newCtx->codec_id == AV_CODEC_ID_AC3 )
-                newCtx->block_align= 0;*/
-		}
-		else
-		{
-			// Find the audio codec
-			audioCodec = avcodec_find_encoder_by_name( qPrintable( m_profile->audioCodec ) );
+        if ( outputFormatCtx->oformat->flags & AVFMT_GLOBALHEADER )
+            audioCodecCtx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
-			if ( !audioCodec )
-			{
-				m_errorMsg = QString("Could not use the audio codec %1") .arg( m_profile->audioCodec );
-				goto cleanup;
-			}
+        // Since different audio codecs support different sample formats, look up which one is supported by this specific codec
+        if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_FLTP ) )
+            audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_FLTP;
+        else if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_S16 ) )
+            audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_S16;
+        else if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_S16P ) )
+            audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_S16P;
+        else
+        {
+            QString supported;
 
-			// Hack to use the fixed AC3 codec if available
-            if ( audioCodec->id == AV_CODEC_ID_AC3 && avcodec_find_encoder_by_name( "ac3_fixed" ) )
-				audioCodec = avcodec_find_encoder_by_name( "ac3_fixed" );
+            for ( const enum AVSampleFormat * fmt = audioCodec->sample_fmts; *fmt != AV_SAMPLE_FMT_NONE; fmt++ )
+                supported+= QString(" %1") .arg( *fmt );
 
-			// Allocate the audio context
-			audioCodecCtx = avcodec_alloc_context3( audioCodec );
+            m_errorMsg = QString("Could not find the sample format supported by the audio codec %1; supported: %2") . arg( m_profile->audioCodec ) .arg(supported);
+            goto cleanup;
+        }
 
-			if ( !audioCodecCtx )
-			{
-				m_errorMsg = QString( "Context for audio codec %1 cannot be allocated") .arg( m_profile->audioCodec );
-				goto cleanup;
-			}
+        // Open the audio codec
+        err = avcodec_open2( audioCodecCtx, audioCodec, 0 );
+        if ( err < 0 )
+        {
+            m_errorMsg = QString("Could not open the audio codec: %1") . arg( err );
+            goto cleanup;
+        }
 
-			audioCodecCtx->codec_id = audioCodec->id;
-			audioCodecCtx->codec_type = AVMEDIA_TYPE_AUDIO;
-			audioCodecCtx->bit_rate = m_audiobitrate;
-			audioCodecCtx->channels = m_profile->channels;
-            audioCodecCtx->sample_rate = m_aplayer->aCodecCtx->sample_rate;
-			audioCodecCtx->channel_layout = av_get_channel_layout( m_profile->channels == 1 ? "mono" : "stereo" );
-			audioCodecCtx->time_base.num = 1;
-			audioCodecCtx->time_base.den = m_profile->sampleRate;
+        // Allocate the audio stream
+        audioStream = avformat_new_stream( outputFormatCtx, audioCodec );
 
-			if ( outputFormatCtx->oformat->flags & AVFMT_GLOBALHEADER )
-                audioCodecCtx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        if ( !audioStream )
+        {
+            m_errorMsg = "Could not allocate audio stream";
+            goto cleanup;
+        }
 
-			// Since different audio codecs support different sample formats, look up which one is supported by this specific codec
-			if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_FLTP ) )
-				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_FLTP;
-			else if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_S16 ) )
-				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_S16;
-			else if ( isAudioSampleFormatSupported( audioCodec->sample_fmts, AV_SAMPLE_FMT_S16P ) )
-				audioCodecCtx->sample_fmt = AV_SAMPLE_FMT_S16P;
-			else
-			{
-				QString supported;
+        // Specify the coder for the stream
+        if ( avcodec_parameters_from_context(  audioStream->codecpar, audioCodecCtx ) < 0 )
+        {
+            m_errorMsg = "Failed to copy encoder parameters to output audio stream";
+            goto cleanup;
+        }
 
-				for ( const enum AVSampleFormat * fmt = audioCodec->sample_fmts; *fmt != AV_SAMPLE_FMT_NONE; fmt++ )
-					supported+= QString(" %1") .arg( *fmt );
+        // Setup the audio resampler
+        audioResampleCtx = swr_alloc();
 
-				m_errorMsg = QString("Could not find the sample format supported by the audio codec %1; supported: %2") . arg( m_profile->audioCodec ) .arg(supported);
-				goto cleanup;
-			}
+        if ( !audioResampleCtx )
+        {
+            m_errorMsg = QObject::tr("Cannot allocate audio resampler");
+            return false;
+        }
 
-			// Open the audio codec
-			err = avcodec_open2( audioCodecCtx, audioCodec, 0 );
-			if ( err < 0 )
-			{
-				m_errorMsg = QString("Could not open the audio codec: %1") . arg( err );
-				goto cleanup;
-			}
+        // Some formats (i.e. WAV) do not produce the proper channel layout
+        if ( m_aplayer->aCodecCtx->channel_layout == 0 )
+            av_opt_set_channel_layout( audioResampleCtx, "in_channel_layout", av_get_channel_layout( m_profile->channels == 1 ? "mono" : "stereo" ), 0 );
+        else
+            av_opt_set_channel_layout( audioResampleCtx, "in_channel_layout", m_aplayer->aCodecCtx->channel_layout, 0 );
 
-			// Allocate the audio stream
-			audioStream = avformat_new_stream( outputFormatCtx, audioCodec );
+        av_opt_set_channel_layout( audioResampleCtx, "out_channel_layout", audioCodecCtx->channel_layout, 0 );
 
-			if ( !audioStream )
-			{
-				m_errorMsg = "Could not allocate audio stream";
-				goto cleanup;
-			}
+        av_opt_set_int( audioResampleCtx, "in_sample_fmt",     m_aplayer->aCodecCtx->sample_fmt, 0);
+        av_opt_set_int( audioResampleCtx, "out_sample_fmt",     audioCodecCtx->sample_fmt, 0);
+        av_opt_set_int( audioResampleCtx, "in_sample_rate",    m_aplayer->aCodecCtx->sample_rate, 0);
+        av_opt_set_int( audioResampleCtx, "out_sample_rate",    audioCodecCtx->sample_rate, 0);
 
-            // Specify the coder for the stream
-            if ( avcodec_parameters_from_context(  audioStream->codecpar, audioCodecCtx ) < 0 )
-            {
-                m_errorMsg = "Failed to copy encoder parameters to output audio stream";
-                goto cleanup;
-            }
-
-			// Setup the audio resampler
-            audioResampleCtx = swr_alloc();
-
-            if ( !audioResampleCtx )
-            {
-                m_errorMsg = QObject::tr("Cannot allocate audio resampler");
-                return false;
-            }
-
-			// Some formats (i.e. WAV) do not produce the proper channel layout
-			if ( m_aplayer->aCodecCtx->channel_layout == 0 )
-                av_opt_set_channel_layout( audioResampleCtx, "in_channel_layout", av_get_channel_layout( m_profile->channels == 1 ? "mono" : "stereo" ), 0 );
-			else
-                av_opt_set_channel_layout( audioResampleCtx, "in_channel_layout", m_aplayer->aCodecCtx->channel_layout, 0 );
-
-            av_opt_set_channel_layout( audioResampleCtx, "out_channel_layout", audioCodecCtx->channel_layout, 0 );
-
-			av_opt_set_int( audioResampleCtx, "in_sample_fmt",     m_aplayer->aCodecCtx->sample_fmt, 0);
-            av_opt_set_int( audioResampleCtx, "out_sample_fmt",     audioCodecCtx->sample_fmt, 0);
-			av_opt_set_int( audioResampleCtx, "in_sample_rate",    m_aplayer->aCodecCtx->sample_rate, 0);
-            av_opt_set_int( audioResampleCtx, "out_sample_rate",    audioCodecCtx->sample_rate, 0);
-
-            if ( swr_init( audioResampleCtx ) < 0 )
-            {
-                m_errorMsg = QObject::tr("Cannot initialize audio resampler");
-                return false;
-            }
-		}
+        if ( swr_init( audioResampleCtx ) < 0 )
+        {
+            m_errorMsg = QObject::tr("Cannot initialize audio resampler");
+            return false;
+        }
 
 		// Rewind the audio player
 		m_aplayer->reset();

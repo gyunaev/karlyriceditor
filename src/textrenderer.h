@@ -32,13 +32,21 @@ class Project;
 class TextRenderer : public LyricsRenderer
 {
 	public:
+        enum VerticalAlignment
+        {
+            // default = 0
+            VerticalBottom = 0,
+            VerticalMiddle = 1,
+            VerticalTop = 2
+        };
+
 		TextRenderer( int width, int height );
 
 		// Sets the lyrics to render. Resets all previously set params to defaults except setDisplaySize.
 		void	setLyrics( const Lyrics& lyrics );
 
 		// Lyrics data to render, overrides defaults from settings
-		void	setRenderFont( const QFont& font );
+        void	setRenderFont( const QFont& font );
 		void	setColorBackground( const QColor& color );
 		void	setColorTitle( const QColor& color );
 		void	setColorToSing( const QColor& color );
@@ -46,6 +54,7 @@ class TextRenderer : public LyricsRenderer
 		void	setPreambleData( unsigned int height, unsigned int timems, unsigned int count );
 		void	setTitlePageData( const QString& artist, const QString& title, const QString& userCreatedBy, unsigned int msec ); // duration = 0 - no title, default
 		void	setColorAlpha( int alpha ); // 0 - 255
+        void    setDefaultVerticalAlign( VerticalAlignment align );
 
 		// Force CD+G rendering mode (no anti-aliasing)
 		void	forceCDGmode();
@@ -73,15 +82,7 @@ class TextRenderer : public LyricsRenderer
 		// Verifies that all lyrics could be rendered into a specific image size using the provided font
 		bool	verifyFontSize( const QSize& imagesize, const QFont& font );
 
-		enum VerticalAlignment
-		{
-			// default = 0
-			VerticalBottom = 0,
-			VerticalMiddle = 1,
-			VerticalTop = 2
-		};
-
-	private:
+    private:
 		// Returns the lyrics bounding box for a line or for paragraph using the font specified,
 		// or the default font if not specified
 		QRect	boundingRect( int blockid, const QFont& font );

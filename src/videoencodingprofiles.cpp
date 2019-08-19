@@ -284,6 +284,31 @@ void VideoEncodingProfiles::initInternalProfiles()
 	m_videoProfiles[ "MP4 (h.264)" ] = p;
 
 
+    // MP4 (h.265)
+    p.type = VideoEncodingProfile::TYPE_FILE;
+    p.name = "MP4 (h.265)";
+    p.videoContainer = "mp4";
+    p.videoCodec = "libx265";
+    p.audioCodec = "aac";
+    p.sampleRate = 48000;
+    p.channels = 2;
+    p.limitFormats.clear();
+    p.bitratesEnabled[ VideoEncodingProfile::BITRATE_LOW ] = true;
+    p.bitratesEnabled[ VideoEncodingProfile::BITRATE_MEDIUM ] = true;
+    p.bitratesEnabled[ VideoEncodingProfile::BITRATE_HIGH ] = true;
+
+    p.bitratesVideo[ VideoEncodingProfile::BITRATE_LOW ] = 40;
+    p.bitratesVideo[ VideoEncodingProfile::BITRATE_MEDIUM ] = 23;
+    p.bitratesVideo[ VideoEncodingProfile::BITRATE_HIGH ] = 0;
+
+    p.bitratesAudio[ VideoEncodingProfile::BITRATE_LOW ] = 96;
+    p.bitratesAudio[ VideoEncodingProfile::BITRATE_MEDIUM ] = 128;
+    p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 192;
+
+    m_videoProfiles[ "MP4 (h.265)" ] = p;
+
+
+
 	// Vimeo-HD
 	p.type = VideoEncodingProfile::TYPE_WEB;
 	p.name = "Vimeo-HD";
@@ -458,7 +483,7 @@ void VideoEncodingProfiles::initInternalProfiles()
 
 	// WEBM (vpx)
 	p.type = VideoEncodingProfile::TYPE_FILE;
-	p.name = "WEBM (vpx)";
+    p.name = "WEBM (vpx)";
 	p.videoContainer = "webm";
 	p.videoCodec = "libvpx";
 	p.audioCodec = "libvorbis";
@@ -478,6 +503,55 @@ void VideoEncodingProfiles::initInternalProfiles()
 	p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 192;
 
 	m_videoProfiles[ "WEBM (vpx)" ] = p;
+
+
+    // WEBM (av1)
+    p.type = VideoEncodingProfile::TYPE_FILE;
+    p.name = "WEBM (av1)";
+    p.videoContainer = "webm";
+    p.videoCodec = "libaom-av1";
+    p.audioCodec = "libvorbis";
+    p.sampleRate = 48000;
+    p.channels = 2;
+    p.limitFormats.clear();
+    p.bitratesEnabled[ VideoEncodingProfile::BITRATE_LOW ] = true;
+    p.bitratesEnabled[ VideoEncodingProfile::BITRATE_MEDIUM ] = true;
+    p.bitratesEnabled[ VideoEncodingProfile::BITRATE_HIGH ] = true;
+
+    p.bitratesVideo[ VideoEncodingProfile::BITRATE_LOW ] = 384;
+    p.bitratesVideo[ VideoEncodingProfile::BITRATE_MEDIUM ] = 5120;
+    p.bitratesVideo[ VideoEncodingProfile::BITRATE_HIGH ] = 15360;
+
+    p.bitratesAudio[ VideoEncodingProfile::BITRATE_LOW ] = 96;
+    p.bitratesAudio[ VideoEncodingProfile::BITRATE_MEDIUM ] = 128;
+    p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 192;
+
+    m_videoProfiles[ "WEBM (av1)" ] = p;
+
+
+    // WEBM (vp9)
+    p.type = VideoEncodingProfile::TYPE_FILE;
+    p.name = "WEBM (vp9)";
+    p.videoContainer = "webm";
+    p.videoCodec = "libvpx-vp9";
+    p.audioCodec = "libvorbis";
+    p.sampleRate = 48000;
+    p.channels = 2;
+    p.limitFormats.clear();
+    p.bitratesEnabled[ VideoEncodingProfile::BITRATE_LOW ] = true;
+    p.bitratesEnabled[ VideoEncodingProfile::BITRATE_MEDIUM ] = true;
+    p.bitratesEnabled[ VideoEncodingProfile::BITRATE_HIGH ] = true;
+
+    p.bitratesVideo[ VideoEncodingProfile::BITRATE_LOW ] = 50;
+    p.bitratesVideo[ VideoEncodingProfile::BITRATE_MEDIUM ] = 23;
+    p.bitratesVideo[ VideoEncodingProfile::BITRATE_HIGH ] = 0;
+
+    p.bitratesAudio[ VideoEncodingProfile::BITRATE_LOW ] = 96;
+    p.bitratesAudio[ VideoEncodingProfile::BITRATE_MEDIUM ] = 128;
+    p.bitratesAudio[ VideoEncodingProfile::BITRATE_HIGH ] = 192;
+
+    m_videoProfiles[ "WEBM (vp9)" ] = p;
+
 
 
 	// FLV (h.264)

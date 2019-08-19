@@ -23,7 +23,7 @@
 #include <QWhatsThis>
 
 #include "textrenderer.h"
-#include "export_params.h"
+#include "dialog_export_params.h"
 #include "playerwidget.h"
 #include "licensing.h"
 #include "version.h"
@@ -43,9 +43,11 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 	setupUi( this );
 
 	// Buttons
-	connect( btnDetectSize, SIGNAL(clicked()), this, SLOT(autodetectFontSize()) );
-	connect( btnTestSize, SIGNAL(clicked()), this, SLOT(testFontSize()) );
 	connect( btnBrowse, SIGNAL(clicked()), this, SLOT(browseOutputFile()) );
+
+    // Changes in font type, text size strategy and font size box
+    connect( fontVideo, SIGNAL(currentFontChanged(const QFont &)), this, SLOT( recalculateLargestFontSize() ) );
+    connect( boxFontVideoSizeType, SIGNAL(currentIndexChanged(int)), this, SLOT( fontSizeStrategyChanged(int)) );
 
 	// Tabs
 	connect( tabWidget, SIGNAL(currentChanged(int)), this, SLOT(activateTab(int)) );
@@ -54,6 +56,7 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 	// Video comboboxes
 	connect( boxVideoTarget, SIGNAL(currentIndexChanged(int)), this, SLOT(videoTargetChanged(int)) );
 	connect( boxVideoMedium, SIGNAL(currentIndexChanged(int)), this, SLOT(videoMediumChanged(int)) );
+    connect( boxVideoProfile, SIGNAL(currentIndexChanged(int)), this, SLOT(recalculateLargestFontSize() ) );
 
 	// Details label
 	connect( lblVideoDetailsLink, SIGNAL(linkActivated(QString)), this, SLOT(videoShowDetails()) );
@@ -66,13 +69,14 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 		btnVideoColorBg->setColor( m_project->tag( Project::Tag_Video_bgcolor, "black" ) );
 		btnVideoColorInactive->setColor( m_project->tag( Project::Tag_Video_inactivecolor, "green" ) );
 		btnVideoColorInfo->setColor( m_project->tag( Project::Tag_Video_infocolor, "white" ) );
-		fontVideo->setCurrentFont( QFont( m_project->tag( Project::Tag_Video_font, "arial" ) ) );
-		fontVideoSize->setValue( m_project->tag( Project::Tag_Video_fontsize, "8" ).toInt() );
+
 		titleVideoMin->setValue( m_project->tag( Project::Tag_Video_titletime, "5" ).toInt() );
 		cbVideoPreamble->setChecked( m_project->tag( Project::Tag_Video_preamble, "1" ).toInt() );
 
 		setWindowTitle( tr("Specify video parameters") );
         leOutputFile->setText( m_project->tag( Project::Tag_ExportFilenameVideo, "" ) );
+
+        boxTextVerticalAlign->setCurrentIndex( m_project->tag( Project::Tag_Video_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
 	}
 	else
 	{
@@ -84,9 +88,9 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 		btnVideoColorInactive->setColor( m_project->tag( Project::Tag_CDG_inactivecolor, "green" ) );
 		btnVideoColorInfo->setColor( m_project->tag( Project::Tag_CDG_infocolor, "white" ) );
 		fontVideo->setCurrentFont( QFont( m_project->tag( Project::Tag_CDG_font, "arial" ) ) );
-		fontVideoSize->setValue( m_project->tag( Project::Tag_CDG_fontsize, "8").toInt() );
 		titleVideoMin->setValue( m_project->tag( Project::Tag_CDG_titletime, "5").toInt() );
 		cbVideoPreamble->setChecked( m_project->tag( Project::Tag_CDG_preamble, "1").toInt() );
+        boxTextVerticalAlign->setCurrentIndex( m_project->tag( Project::Tag_CDG_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
 
 		setWindowTitle( tr("Specify CDG parameters") );
 		lblOutput->setText( tr("Write CD+G data to file:") );
@@ -101,7 +105,23 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 		resize( width(), 1 );
 	}
 
-	fontVideo->setFontFilters( QFontComboBox::ScalableFonts | QFontComboBox::MonospacedFonts | QFontComboBox::ProportionalFonts );
+    // This order matters!
+    // this triggers font change callback and recalculates maximum value for spinFontSize
+    fontVideo->setCurrentFont( QFont( m_project->tag( video ? Project::Tag_Video_font : Project::Tag_CDG_font, "arial" ) ) );
+    fontVideo->setFontFilters( QFontComboBox::ScalableFonts | QFontComboBox::MonospacedFonts | QFontComboBox::ProportionalFonts );
+
+    int fontsizevalue = m_project->tag( video ? Project::Tag_Video_fontsize : Project::Tag_CDG_fontsize, "0" ).toInt();
+
+    if ( fontsizevalue > 0 )
+    {
+        boxFontVideoSizeType->setCurrentIndex( 0 );
+        spinFontSize->setValue( fontsizevalue );
+    }
+    else
+    {
+        // This disables the spin and sets it to maximum
+        boxFontVideoSizeType->setCurrentIndex( 1 );
+    }
 
 	// Title window
 	leTitle->setText( m_project->tag( Project::Tag_Title, "") );
@@ -115,7 +135,7 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 	{
 		leTitleCreatedBy->setEnabled( false );
 		leTitleCreatedBy->setText( "Application not registered, this field cannot be modified" );
-	}
+    }
 }
 
 
@@ -138,10 +158,8 @@ void DialogExportOptions::setBoxIndex( Project::Tag tag, QComboBox * box )
 	}
 }
 
-void DialogExportOptions::autodetectFontSize()
+int DialogExportOptions::calculateLargestFontSize( const QFont& font )
 {
-	QFont font = fontVideo->currentFont();
-
 	// Ask the renderer
 	TextRenderer renderer( 100, 100 );
 	renderer.setLyrics( m_lyrics );
@@ -152,15 +170,13 @@ void DialogExportOptions::autodetectFontSize()
                                leTitleCreatedBy->text(),
                                m_project->tag( Project::Tag_CDG_titletime, "5" ).toInt() * 1000 );
 
-	int fsize = renderer.autodetectFontSize( getVideoSize(), font );
-
-	fontVideoSize->setValue( fsize );
+    return renderer.autodetectFontSize( getVideoSize(), font );
 }
 
 bool DialogExportOptions::testFontSize()
 {
     QFont font = fontVideo->currentFont();
-    font.setPointSize( fontVideoSize->value() );
+    font.setPointSize( spinFontSize->value() );
 
     // Ask the renderer
     TextRenderer renderer( 100, 100 );
@@ -240,7 +256,7 @@ void DialogExportOptions::accept()
 		if ( !m_currentProfile || !m_currentVideoFormat )
 			return;
 
-		m_audioEncodingMode = boxVideoAudio->currentIndex();
+        m_audioEncodingType = boxAudioEncodingType->currentIndex();
 		m_quality = boxVideoQuality->itemData( boxVideoQuality->currentIndex() ).toInt();
 
 		// Store rendering params
@@ -249,7 +265,12 @@ void DialogExportOptions::accept()
 		m_project->setTag( Project::Tag_Video_inactivecolor, btnVideoColorInactive->color().name() );
 		m_project->setTag( Project::Tag_Video_infocolor, btnVideoColorInfo->color().name() );
 		m_project->setTag( Project::Tag_Video_font, fontVideo->currentFont().family() );
-		m_project->setTag( Project::Tag_Video_fontsize, QString::number( fontVideoSize->value() ) );
+
+        if ( boxFontVideoSizeType->currentIndex() == 0 )
+            m_project->setTag( Project::Tag_Video_fontsize, QString::number( spinFontSize->value() ) );
+        else
+            m_project->setTag( Project::Tag_Video_fontsize, "0" );
+
 		m_project->setTag( Project::Tag_Video_titletime, QString::number( titleVideoMin->value() ) );
 		m_project->setTag( Project::Tag_Video_preamble, cbVideoPreamble->isChecked() ? "1" : "0" );
 
@@ -264,13 +285,21 @@ void DialogExportOptions::accept()
 		m_project->setTag( Project::Tag_CDG_inactivecolor, btnVideoColorInactive->color().name() );
 		m_project->setTag( Project::Tag_CDG_infocolor, btnVideoColorInfo->color().name() );
 		m_project->setTag( Project::Tag_CDG_font, fontVideo->currentFont().family() );
-		m_project->setTag( Project::Tag_CDG_fontsize, QString::number( fontVideoSize->value() ) );
+
+        if ( boxFontVideoSizeType->currentIndex() == 0 )
+            m_project->setTag( Project::Tag_CDG_fontsize, QString::number( spinFontSize->value() ) );
+        else
+            m_project->setTag( Project::Tag_CDG_fontsize, "0" );
+
 		m_project->setTag( Project::Tag_CDG_titletime, QString::number( titleVideoMin->value() ) );
 		m_project->setTag( Project::Tag_CDG_preamble, cbVideoPreamble->isChecked() ? "1" : "0" );
 
         // Store the export file name
         m_project->setTag( Project::Tag_ExportFilenameCDG, leOutputFile->text() );
 	}
+
+    m_project->setTag( m_videomode ? Project::Tag_Video_TextAlignVertical : Project::Tag_CDG_TextAlignVertical,
+                       QString::number( boxTextVerticalAlign->currentIndex() ) );
 
 	QDialog::accept();
 }
@@ -342,7 +371,7 @@ void DialogExportOptions::videoShowDetails()
 	if ( !m_currentProfile || !m_currentVideoFormat )
 		return;
 
-	m_audioEncodingMode = boxVideoAudio->currentIndex();
+    m_audioEncodingType = boxAudioEncodingType->currentIndex();
 	m_quality = boxVideoQuality->itemData( boxVideoQuality->currentIndex() ).toInt();
 
 	QString data = tr("<table border=0>"
@@ -407,7 +436,7 @@ bool DialogExportOptions::videoParams(const VideoEncodingProfile **profile, cons
 {
 	*profile = m_currentProfile;
 	*format = m_currentVideoFormat;
-	*audioMode = m_audioEncodingMode;
+    *audioMode = m_audioEncodingType;
 	*qualty = m_quality;
 
     return true;
@@ -415,44 +444,49 @@ bool DialogExportOptions::videoParams(const VideoEncodingProfile **profile, cons
 
 void DialogExportOptions::activateTab( int index )
 {
-	// We're only interested in Preview tab
-	if ( index != 1 )
-	{
-		adjustSize();
-		return;
-	}
+    // We're only interested in Preview tab
+    if ( index != 1 )
+    {
+        adjustSize();
+        return;
+    }
 
-	// Prepare the text renderer using current params
-	QFont font = fontVideo->currentFont();
-	font.setPointSize( fontVideoSize->value() );
+    // Prepare the text renderer using current params
+    QFont font = fontVideo->currentFont();
 
-	m_renderer = TextRenderer( getVideoSize().width(), getVideoSize().height() );
+    if ( boxFontVideoSizeType->currentIndex() == 0 )
+        font.setPointSize( spinFontSize->value() );
+    else
+        font.setPointSize( calculateLargestFontSize(font) );
 
-	// Initialize colors from m_project
-	m_renderer.setLyrics( m_lyrics );
-	m_renderer.setRenderFont( font );
-	m_renderer.setColorBackground( btnVideoColorBg->color() );
-	m_renderer.setColorTitle( btnVideoColorInfo->color() );
-	m_renderer.setColorSang( btnVideoColorInactive->color() );
-	m_renderer.setColorToSing( btnVideoColorActive->color() );
+    m_renderer = TextRenderer( getVideoSize().width(), getVideoSize().height() );
 
-	// CD+G?
-	if ( !m_videomode )
-		m_renderer.forceCDGmode();
+    // The order here matters because setLyrics resets font and colors
+    m_renderer.setDefaultVerticalAlign( (TextRenderer::VerticalAlignment) boxTextVerticalAlign->currentIndex() );
+    m_renderer.setLyrics( m_lyrics );
+    m_renderer.setRenderFont( font );
+    m_renderer.setColorBackground( btnVideoColorBg->color() );
+    m_renderer.setColorTitle( btnVideoColorInfo->color() );
+    m_renderer.setColorSang( btnVideoColorInactive->color() );
+    m_renderer.setColorToSing( btnVideoColorActive->color() );
 
-	// Title
-	m_renderer.setTitlePageData( leArtist->text(),
-								 leTitle->text(),
-								 pLicensing->isValid() ? leTitleCreatedBy->text() : "",
-								 titleVideoMin->value() * 1000 );
+    // CD+G?
+    if ( !m_videomode )
+        m_renderer.forceCDGmode();
 
-	// Preamble
-	if ( cbVideoPreamble->isChecked() )
-		m_renderer.setPreambleData( 4, 5000, 8 );
+    // Title
+    m_renderer.setTitlePageData( leArtist->text(),
+                                 leTitle->text(),
+                                 pLicensing->isValid() ? leTitleCreatedBy->text() : "",
+                                 titleVideoMin->value() * 1000 );
 
-	// Update the image
-	previewUpdateImage();
-	adjustSize();
+    // Preamble
+    if ( cbVideoPreamble->isChecked() )
+        m_renderer.setPreambleData( 4, 5000, 8 );
+
+    // Update the image
+    previewUpdateImage();
+    adjustSize();
 }
 
 void DialogExportOptions::previewUpdateImage()
@@ -480,5 +514,32 @@ void DialogExportOptions::previewUpdateImage()
 void DialogExportOptions::previewSliderMoved( int newvalue )
 {
 	m_time = newvalue * m_project->getSongLength() / seekSlider->maximum();
-	previewUpdateImage();
+    previewUpdateImage();
+}
+
+void DialogExportOptions::recalculateLargestFontSize()
+{
+    int maxsize = calculateLargestFontSize( fontVideo->currentFont() );
+    spinFontSize->setMaximum( maxsize );
+
+    if ( boxFontVideoSizeType->currentIndex() == 1 )
+        spinFontSize->setValue( maxsize );
+}
+
+void DialogExportOptions::fontSizeStrategyChanged(int index)
+{
+    if ( index == 0 )
+    {
+        // Fixed size strategy
+        spinFontSize->setEnabled( true );
+        spinFontSize->setMinimum( 4 );
+        spinFontSize->setMaximum( calculateLargestFontSize( fontVideo->currentFont() ) );
+        spinFontSize->setValue( spinFontSize->maximum() );
+    }
+    else
+    {
+        spinFontSize->setMaximum( calculateLargestFontSize( fontVideo->currentFont() ) );
+        spinFontSize->setValue( spinFontSize->maximum() );
+        spinFontSize->setEnabled( false );
+    }
 }

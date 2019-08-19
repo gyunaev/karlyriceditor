@@ -45,7 +45,6 @@ class FFMpegVideoEncoder
 							const VideoEncodingProfile * profile,
 							const VideoFormat * videoformat,
 							unsigned int quality,
-							bool  convert_audio,
 							AudioPlayer * audio );
 
 		bool close();
