@@ -350,15 +350,15 @@ qint64 AudioPlayerPrivate::writeData(const char *data, qint64 len)
 // Called from the callback - no GUI/Widget functions!
 bool AudioPlayerPrivate::MoreAudio()
 {
-    AVPacket * packet = av_packet_alloc();
-
     while ( m_playing > 0 )
 	{
+        AVPacket * packet = av_packet_alloc();
+
 		// Read a frame
         if ( av_read_frame( pFormatCtx, packet ) < 0 )
         {
             QMetaObject::invokeMethod( pAudioPlayer, "finished", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
-            av_packet_unref( packet );
+            av_packet_free( &packet );
 			return false;  // Frame read failed (e.g. end of stream)
         }
 
@@ -384,6 +384,7 @@ bool AudioPlayerPrivate::MoreAudio()
         {
             qWarning( "Error while submitting packet to decoder" );
             QMetaObject::invokeMethod( pAudioPlayer, "finished", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
+            av_packet_free( &packet );
             return false;
         }
 
@@ -399,6 +400,7 @@ bool AudioPlayerPrivate::MoreAudio()
             {
                 qWarning( "Error %d during decoding", ret );
                 QMetaObject::invokeMethod( pAudioPlayer, "finished", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
+                av_packet_free( &packet );
                 return false;
             }
 
@@ -420,9 +422,9 @@ bool AudioPlayerPrivate::MoreAudio()
         }
 
         // We should have data in our buffer
-        break;
+        av_packet_free( &packet );
+        return true;
 	}
 
-    av_packet_unref( packet );
-    return true;
+    return false;
 }
