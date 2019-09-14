@@ -357,13 +357,16 @@ bool AudioPlayerPrivate::MoreAudio()
 		// Read a frame
         if ( av_read_frame( pFormatCtx, packet ) < 0 )
         {
-            QMetaObject::invokeMethod( pAudioPlayer, "finished", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
+            QMetaObject::invokeMethod( pAudioPlayer, "finished", Qt::QueuedConnection );
             av_packet_free( &packet );
 			return false;  // Frame read failed (e.g. end of stream)
         }
 
         if ( packet->stream_index != audioStream || packet->size == 0 )
-			continue;
+        {
+            av_packet_free( &packet );
+            continue;
+        }
 
 		m_sample_buf_idx = 0;
 		m_sample_buf_size = 0;
@@ -383,7 +386,7 @@ bool AudioPlayerPrivate::MoreAudio()
         if ( avcodec_send_packet( aCodecCtx, packet ) < 0)
         {
             qWarning( "Error while submitting packet to decoder" );
-            QMetaObject::invokeMethod( pAudioPlayer, "finished", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
+            QMetaObject::invokeMethod( pAudioPlayer, "finished", Qt::QueuedConnection );
             av_packet_free( &packet );
             return false;
         }
@@ -399,7 +402,7 @@ bool AudioPlayerPrivate::MoreAudio()
             if ( ret < 0 )
             {
                 qWarning( "Error %d during decoding", ret );
-                QMetaObject::invokeMethod( pAudioPlayer, "finished", Qt::QueuedConnection, Q_ARG( qint64, m_currentTime ) );
+                QMetaObject::invokeMethod( pAudioPlayer, "finished", Qt::QueuedConnection );
                 av_packet_free( &packet );
                 return false;
             }
