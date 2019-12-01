@@ -61,6 +61,15 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 	// Details label
 	connect( lblVideoDetailsLink, SIGNAL(linkActivated(QString)), this, SLOT(videoShowDetails()) );
 
+    // Add font video styles and choose "normal" to match previous behavior
+    fontVideoStyle->addItem( "Thin", QFont::Thin );
+    fontVideoStyle->addItem( "Light", QFont::Light );
+    fontVideoStyle->addItem( "Normal", QFont::Normal );
+    fontVideoStyle->addItem( "Medium", QFont::Medium );
+    fontVideoStyle->addItem( "Bold", QFont::Bold );
+    fontVideoStyle->addItem( "X-Bold", QFont::ExtraBold );
+    fontVideoStyle->setCurrentIndex( 2 );
+
 	if ( video )
 	{
 		// Set the video output params
@@ -454,6 +463,15 @@ void DialogExportOptions::activateTab( int index )
     // Prepare the text renderer using current params
     QFont font = fontVideo->currentFont();
 
+    // Apply boldness and aliasing first as it affects the maximum size
+    if ( boxEnableAntialiasing->isChecked() )
+        font.setStyleStrategy( QFont::PreferAntialias );
+    else
+        font.setStyleStrategy( QFont::NoAntialias );
+
+    font.setWeight( fontVideoStyle->currentData().toInt( ) );
+
+    // Autofit or fixed size?
     if ( boxFontVideoSizeType->currentIndex() == 0 )
         font.setPointSize( spinFontSize->value() );
     else

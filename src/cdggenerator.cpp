@@ -367,16 +367,19 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
     QFont renderFont( m_project->tag(Project::Tag_CDG_font) );
     int fontsize = m_project->tag(Project::Tag_CDG_fontsize).toInt();
 
-    if ( fontsize == 0 )
-        fontsize = lyricrenderer.autodetectFontSize( QSize(CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT), renderFont );
-
-    renderFont.setPointSize( fontsize );
-
     // Is anti-aliasing enabled?
     if ( m_enableAntiAlias )
         renderFont.setStyleStrategy( QFont::PreferAntialias );
     else
         renderFont.setStyleStrategy( QFont::NoAntialias );
+
+    // Apply boldness and aliasing first as it affects the maximum size
+    renderFont.setWeight( dlg.fontVideoStyle->currentData().toInt( ) );
+
+    if ( fontsize == 0 )
+        fontsize = lyricrenderer.autodetectFontSize( QSize(CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT), renderFont );
+
+    renderFont.setPointSize( fontsize );
 
     lyricrenderer.setRenderFont( renderFont );
 
