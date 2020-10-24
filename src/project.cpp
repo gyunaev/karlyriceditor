@@ -1194,7 +1194,8 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 {
 	bool header = true;
 	bool relative = false;
-	int bpm = -1, gap = -1;
+	double bpm = -1
+	double gap = -1;
 	double msecs_per_beat = 0;
 	int last_time_ms = 0;
 	int next_time_ms = 0;
@@ -1235,9 +1236,9 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 				else if ( tag == "EDITION" )
 					tagid = PD_TAG_EDITION;
 				else if ( tag == "BPM" )
-					bpm = value.toInt();
+					bpm = value.toDouble();
 				else if ( tag == "GAP" )
-					gap = value.toInt();
+					gap = value.toDouble();
 				else if ( tag == "RELATIVE" )
 					relative = value.compare( "yes" );
 				else
@@ -1249,7 +1250,7 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 			else
 			{
 				// Tag not found; either header ended, or invalid file
-				if ( bpm == -1 || gap == -1 )
+				if ( bpm < 0 || gap < 0 )
 				{
 					QMessageBox::critical( 0,
 										   QObject::tr("Invalid UltraStar file"),
@@ -1257,7 +1258,7 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 					return false;
 				}
 
-				msecs_per_beat = (int) ((60.0 / (double) bpm / 4.0) * 1000.0);
+				msecs_per_beat = (60.0 / bpm / 4.0) * 1000.0;
 				header = false;
 			}
 		}
