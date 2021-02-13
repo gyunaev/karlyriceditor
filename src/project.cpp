@@ -1194,7 +1194,7 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 {
 	bool header = true;
 	bool relative = false;
-	double bpm = -1
+	double bpm = -1;
 	double gap = -1;
 	double msecs_per_beat = 0;
 	int last_time_ms = 0;
