@@ -104,7 +104,7 @@ bool BackgroundColor::isValid() const
     return m_color.isValid();
 }
 
-qint64 BackgroundColor::doDraw(QImage &image, qint64 timing)
+qint64 BackgroundColor::doDraw(QImage &image, qint64)
 {
     image.fill( m_color );
 

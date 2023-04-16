@@ -24,6 +24,7 @@
  **************************************************************************/
 
 #include <QFile>
+#include <memory>
 
 #include "ffmpeg_headers.h"
 #include "ffmpegvideoencoder.h"
@@ -58,7 +59,6 @@ class FFMpegVideoEncoderPriv
 
 	private:
         int     encodeMoreAudio();
-        void    initAVpacket(AVPacket *packet);
         bool    convertImage_sws(const QImage &img);
         bool    encodeFrame(AVFrame *frame, AVCodecContext *output_codec_context, AVStream *stream);
 
@@ -223,16 +223,6 @@ QString FFMpegVideoEncoder::createFile( const QString &filename,
 		return QString();
 
 	return d->m_errorMsg;
-}
-
-void FFMpegVideoEncoderPriv::initAVpacket( AVPacket  * packet )
-{
-    // Prepare the packet
-    av_init_packet( packet );
-
-    // av_init_packet does not do this
-    packet->data = NULL;
-    packet->size = 0;
 }
 
 void FFMpegVideoEncoderPriv::flush()
@@ -588,16 +578,15 @@ bool FFMpegVideoEncoderPriv::encodeFrame( AVFrame *frame, AVCodecContext *output
     while ( true )
     {
         // Packet used for temporary storage.
-        AVPacket output_packet;
-
-        initAVpacket( &output_packet );
+        AVPacket* output_packet = av_packet_alloc();
 
         // Receive one encoded frame from the encoder.
-        error = avcodec_receive_packet(output_codec_context, &output_packet);
+        error = avcodec_receive_packet(output_codec_context, output_packet );
 
         // If the encoder asks for more data to be able to provide an encoded frame, return indicating that no data is present.
         if ( error == AVERROR(EAGAIN) )
         {
+            av_packet_unref( output_packet );
             error = 0;
             break;
         }
@@ -605,39 +594,44 @@ bool FFMpegVideoEncoderPriv::encodeFrame( AVFrame *frame, AVCodecContext *output
         // If the last frame has been encoded, stop encoding.
         if (error == AVERROR_EOF)
         {
+            av_packet_unref( output_packet );
             error = 0;
             break;
         }
 
         if ( error < 0 )
         {
+            av_packet_unref( output_packet );
             qWarning( "Could not encode frame (error '%d')", error );
             break;
         }
 
         // Set up the packet index
-        output_packet.stream_index = stream->index;
+        output_packet->stream_index = stream->index;
 
         // Convert the PTS from the packet base to stream base
-        if ( output_packet.pts != AV_NOPTS_VALUE )
-            output_packet.pts = av_rescale_q( output_packet.pts, output_codec_context->time_base, stream->time_base );
+        if ( output_packet->pts != AV_NOPTS_VALUE )
+            output_packet->pts = av_rescale_q( output_packet->pts, output_codec_context->time_base, stream->time_base );
 
         // Convert the DTS from the packet base to stream base
-        if ( output_packet.dts != AV_NOPTS_VALUE )
-            output_packet.dts = av_rescale_q( output_packet.dts, output_codec_context->time_base, stream->time_base );
+        if ( output_packet->dts != AV_NOPTS_VALUE )
+            output_packet->dts = av_rescale_q( output_packet->dts, output_codec_context->time_base, stream->time_base );
 
-        if ( output_packet.duration > 0 )
-            output_packet.duration = av_rescale_q( output_packet.duration, output_codec_context->time_base, stream->time_base );
+        if ( output_packet->duration > 0 )
+            output_packet->duration = av_rescale_q( output_packet->duration, output_codec_context->time_base, stream->time_base );
 
-        outputTotalSize += output_packet.size;
+        outputTotalSize += output_packet->size;
 
         // Write one audio frame from the temporary packet to the output file.
         // av_write_frame takes over the packet and unrefs it itself
-        if ( (error = av_write_frame( outputFormatCtx, &output_packet)) < 0)
+        if ( (error = av_write_frame( outputFormatCtx, output_packet)) < 0)
         {
+            av_packet_unref( output_packet );
             qWarning( "Could not write frame (error '%d)", error );
             goto cleanup;
         }
+
+        av_packet_unref( output_packet );
     }
 
 cleanup:
@@ -647,7 +641,7 @@ cleanup:
 
 int FFMpegVideoEncoderPriv::encodeMoreAudio()
 {
-    AVPacket inpkt;
+    AVPacket * inpkt = nullptr;
     AVFrame * decodedAudioFrame = 0;
     int ret = -1;
 
@@ -655,25 +649,28 @@ int FFMpegVideoEncoderPriv::encodeMoreAudio()
     while ( true )
     {
         // Read an audio frame
-        initAVpacket( &inpkt );
+        inpkt = av_packet_alloc();
 
-        if ( av_read_frame( m_aplayer->pFormatCtx, &inpkt ) < 0 )
+        if ( av_read_frame( m_aplayer->pFormatCtx, inpkt ) < 0 )
         {
-            av_packet_unref( &inpkt );
+            av_packet_unref( inpkt );
             return 0;  // Frame read failed (e.g. end of stream)
         }
 
         // Skip non-audio frames
-        if ( inpkt.stream_index == m_aplayer->audioStream )
+        if ( inpkt->stream_index == m_aplayer->audioStream )
             break;
     }
 
     // Send the packet with the compressed data to the decoder
-    if ( avcodec_send_packet( m_aplayer->aCodecCtx, &inpkt ) < 0)
+    if ( avcodec_send_packet( m_aplayer->aCodecCtx, inpkt ) < 0)
     {
         qWarning( "Error while submitting audio packet to decoder" );
         goto cleanup;
     }
+
+    // No longer needed
+    av_packet_unref( inpkt );
 
     // Read all the output frames (in general there may be any number of them)
     decodedAudioFrame = av_frame_alloc();
@@ -710,14 +707,6 @@ int FFMpegVideoEncoderPriv::encodeMoreAudio()
 
         if ( !ret )
             goto cleanup;
-
-
-/*
-            // Rescale output packet timestamp values from codec to stream timebase
-            outpkt.pts = av_rescale_q_rnd( outpkt.pts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
-            outpkt.dts = av_rescale_q_rnd( outpkt.dts, audioCodecCtx->time_base, audioStream->time_base, (AVRounding) (AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX) );
-            outpkt.duration = av_rescale_q( outpkt.duration, audioCodecCtx->time_base, audioStream->time_base);
-*/
     }
 
     // We sent out the whole packet; return success

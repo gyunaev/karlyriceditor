@@ -19,14 +19,17 @@
 
 #include "ffmpeg_headers.h"
 
-static bool ffmpeg_initialized = false;
-
 void ffmpeg_init_once()
 {
+#if LIBAVCODEC_VERSION_MAJOR < 58
+    static bool ffmpeg_initialized = false;
+
+    // No longer needed on 58+
     if ( !ffmpeg_initialized )
 	{
         //FIXME
         avcodec_register_all();
         av_register_all();
     }
+#endif
 }

@@ -278,7 +278,7 @@ void CheckNewVersion::run()
 	reportStatus( Status_Proceeding );
 
 	m_inputBuffer.replace( '\r', '\n' );
-	QStringList content_list = QString::fromUtf8( m_inputBuffer ).split( '\n', QString::SkipEmptyParts );
+    QStringList content_list = QString::fromUtf8( m_inputBuffer ).split( '\n', Qt::SkipEmptyParts );
 	QMap<QString,QString> contentMap;
 
 	// Validate the file, and parse it into map
@@ -350,7 +350,7 @@ QString CheckNewVersion::readLine()
 
 		// No line in buffer yet
 		if ( m_inputOffset + 1 > m_inputBuffer.size() )
-			return QString::null;
+            return QString();
 
 		int bytes = ::recv( m_sockfd, m_inputBuffer.data() + m_inputOffset, m_inputBuffer.size() - m_inputOffset, 0 );
 
@@ -369,5 +369,5 @@ QString CheckNewVersion::readLine()
 		m_inputOffset += bytes;
 	}
 
-	return QString::null;
+    return QString();
 }

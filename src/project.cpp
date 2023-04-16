@@ -541,11 +541,10 @@ QByteArray Project::exportLyricsAsLRC1()
 				Lyrics::Syllable lentry = line[pos];
 
 				// Insert timing mark
-				QString timetag;
 				int minute, second, msecond;
 
 				splitTimeMark( lentry.timing, &minute, &second, &msecond );
-				timetag.sprintf( "%02d:%02d.%02d", minute, second, msecond / 10 );
+                QString timetag = QString::asprintf( "%02d:%02d.%02d", minute, second, msecond / 10 );
 
 				if ( pos == 0 )
 					lrc += "[" + timetag + "]";
@@ -610,11 +609,10 @@ QByteArray Project::exportLyricsAsLRC2()
 				Lyrics::Syllable lentry = line[pos];
 
 				// Insert timing mark
-				QString timetag;
 				int minute, second, msecond;
 
 				splitTimeMark( lentry.timing, &minute, &second, &msecond );
-				timetag.sprintf( "%02d:%02d.%02d", minute, second, msecond / 10 );
+                QString timetag = QString::asprintf( "%02d:%02d.%02d", minute, second, msecond / 10 );
 
 				if ( pos == 0 )
 					lrc += "[" + timetag + "]";

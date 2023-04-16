@@ -36,8 +36,8 @@ void VideoGeneratorThread::run()
     qint64 time = 0;
 
     int frames = 0, totalframes = mTotalLength  / mTimeStep;
-    QTime timing, total;
     QString finishedMsg;
+    QElapsedTimer timing, total;
 
     timing.start();
 

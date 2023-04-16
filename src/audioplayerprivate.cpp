@@ -342,7 +342,7 @@ qint64 AudioPlayerPrivate::readData(char *data, qint64 maxSize)
     return out;
 }
 
-qint64 AudioPlayerPrivate::writeData(const char *data, qint64 len)
+qint64 AudioPlayerPrivate::writeData(const char *, qint64 )
 {
     return -1;
 }

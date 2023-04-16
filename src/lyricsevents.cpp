@@ -96,7 +96,9 @@ bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * err
         value = check.cap( 2 );
     }
     else
+    {
         key = text.trimmed();
+    }
 
 	if ( key == "IMAGE" )
 	{
@@ -298,8 +300,8 @@ void LyricsEvents::draw( qint64 timing, QImage& image )
     if ( !bg )
         return;
 
-	// Same event as before?
-	if ( found.key() != m_eventTiming )
+    // Same event as before?
+    if ( found.key() != m_eventTiming )
 	{
 		m_eventTiming = found.key();
 		cache_changed = true;

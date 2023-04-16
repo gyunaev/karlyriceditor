@@ -149,7 +149,7 @@ void KFNFileParser::close()
 QString	KFNFileParser::musicFileExtention() const
 {
 	if ( m_entryMusic == -1 )
-		return QString::null;
+		return QString();
 
 	const Entry& entry = m_entries[m_entryMusic];
 
@@ -180,14 +180,14 @@ bool KFNFileParser::writeMusicFile( QFile& outfile )
 QString	KFNFileParser::lyricsAsLRC()
 {
 	if ( m_entrySongIni == -1 )
-		return QString::null;
+		return QString();
 
 	const Entry& entry = m_entries[m_entrySongIni];
 
 	QByteArray data = extract( entry );
 
 	if ( data.isEmpty() )
-		return QString::null;
+		return QString();
 
 	QString songini = QString::fromUtf8( data.data(), data.size() );
 	songini.replace( QRegExp("[\r\n]+"), "\n" );

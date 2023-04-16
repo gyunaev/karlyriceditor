@@ -1073,7 +1073,7 @@ void Editor::addMissingTimingMarks()
 			for ( int i = 1; i < timings.size(); i++ )
 				perchartimings.push_back( (timings[i] - timings[i-1]) / lengths[i-1] );
 
-			qSort( perchartimings.begin(), perchartimings.end() );
+            std::sort( perchartimings.begin(), perchartimings.end() );
 			qint64 median = perchartimings[ perchartimings.size() / 2 ];
 			newtime = timings.back() + lengths.back() * median;
 		}

@@ -38,7 +38,7 @@ static inline QString markToTime( qint64 mark )
 	int sec = (mark - min * 60000) / 1000;
 	int msec = mark - (min * 60000 + sec * 1000 );
 
-	return QString().sprintf( "%02d:%02d.%02d", min, sec, msec / 10 );
+    return QString::asprintf( "%02d:%02d.%02d", min, sec, msec / 10 );
 }
 
 static inline qint64 timeToMark( QString data )

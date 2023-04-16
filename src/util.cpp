@@ -36,7 +36,7 @@ QString convertWithUserEncoding( const QByteArray& data )
 			DialogSelectEncoding dlg( data );
 
 			if ( dlg.exec() == QDialog::Rejected )
-				return QString::null;
+				return QString();
 
 			return dlg.codec()->toUnicode( data );
 			break;

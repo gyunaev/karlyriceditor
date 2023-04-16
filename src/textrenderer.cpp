@@ -562,7 +562,7 @@ QRect TextRenderer::boundingRect( int blockid, const QFont& font )
 			metrics = QFontMetrics( curFont );
 		}
 
-		linewidth += metrics.width( block[cur] );
+        linewidth += metrics.horizontalAdvance( block[cur] );
 		lineheight = qMax( lineheight, metrics.height() );
 		cur++;
 	}
@@ -655,7 +655,7 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
                 painter.restore();
 
                 painter.drawText( start_x, start_y, (QString) block[i] );
-                start_x += painter.fontMetrics().width( block[i] );
+                start_x += painter.fontMetrics().horizontalAdvance( block[i] );
             }
 
             if ( cur >= block.length() )
@@ -678,7 +678,7 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
             metrics = QFontMetrics( curFont );
         }
 
-        linewidth += metrics.width( block[cur] );
+        linewidth += metrics.horizontalAdvance( block[cur] );
         cur++;
     }
 }

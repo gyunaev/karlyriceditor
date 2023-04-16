@@ -324,7 +324,7 @@ void MainWindow::act_fileOpenProject()
 
 	QString fileName = QFileDialog::getOpenFileName( this,
 			tr("Open a project file"),
-			QString::null,
+            QString(),
 			tr("Project files (*.kleproj)") );
 
 	if ( fileName.isEmpty() )
@@ -476,8 +476,8 @@ void MainWindow::act_editInsertPicture()
 {
 	QString fileName = QFileDialog::getOpenFileName( this,
 			tr("Open an image file"),
-			QString::null,
-			QString::null );
+            QString(),
+            QString() );
 
 	if ( fileName.isEmpty() )
 		return;
@@ -489,8 +489,8 @@ void MainWindow::act_editInsertVideo()
 {
 	QString fileName = QFileDialog::getOpenFileName( this,
 			tr("Open a video file"),
-			QString::null,
-			QString::null );
+            QString(),
+            QString() );
 
 	if ( fileName.isEmpty() )
 		return;
@@ -558,7 +558,7 @@ void MainWindow::act_projectOpenLyricFile()
 {
 	QString fileName = QFileDialog::getOpenFileName( this,
 			tr("Open a lyric file"),
-			QString::null,
+            QString(),
             tr("LRC files (*.lrc);;UltraStar/PowerKaraoke/KaraokeBuilder files (*.txt);;KAR/MIDI files (*.mid *.midi *.kar);;KaraFun files (*.kfn);;DEL Karaoke files (*.kok)") );
 
 	if ( fileName.isEmpty() )
