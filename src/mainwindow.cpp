@@ -373,7 +373,7 @@ bool MainWindow::act_fileSaveProjectAs()
 	QString suggestedFile = m_projectFile;
 
 	if ( suggestedFile.isEmpty() )
-		suggestedFile = Util::removeFileExtention( m_project->musicFile() ) + ".kleproj";
+        suggestedFile = Util::removeFileExtention( m_project->musicFile() ) + "kleproj";
 
 	QString fileName = QFileDialog::getSaveFileName( this,
 			tr("Save as a project file"),
@@ -583,27 +583,34 @@ void MainWindow::act_projectExportLyricFile()
 	QString filter_LRC2 = tr("LRC version 2 (*.lrc)");
 	QString filter_UStar = tr("UltraStar (*.txt)");
 
-	QString filter, selected, outfilter;
+    QString filter, selected, outfilter, extension;
 
 	switch ( m_project->type() )
 	{
 		case Project::LyricType_LRC1:
 			filter = filter_LRC1 + ";;" + filter_LRC2 + ";;" + filter_UStar;
 			selected = filter_LRC1;
+            extension = "lrc";
 			break;
 
 		case Project::LyricType_LRC2:
 			filter = filter_LRC2 + ";;" + filter_LRC1 + ";;" + filter_UStar;
 			selected = filter_LRC2;
+            extension = "lrc";
 			break;
 
 		case Project::LyricType_UStar:
 			filter = filter_UStar + ";;" + filter_LRC2 + ";;" + filter_LRC1;
 			selected = filter_UStar;
+            extension = "txt";
 			break;
 	}
 
-	QString outfile = QFileDialog::getSaveFileName( 0, tr("Export lyrics to a file"), QString::null, filter, &outfilter );
+    QString outfile = QFileDialog::getSaveFileName( 0,
+                                                    tr("Export lyrics to a file"),
+                                                    Util::removeFileExtention( m_project->musicFile() ) + extension,
+                                                    filter,
+                                                    &outfilter );
 	QByteArray lyrics;
 
 	if ( outfile.isEmpty() )
