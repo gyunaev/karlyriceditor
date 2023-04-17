@@ -27,6 +27,7 @@
 #include "version.h"
 #include "wizard_newproject.h"
 #include "kfn_file_parser.h"
+#include "settings.h"
 #include "util.h"
 
 namespace WizardNewProject
@@ -91,7 +92,8 @@ PageMusicFile::~PageMusicFile()
 void PageMusicFile::browse()
 {
 	QString filename = QFileDialog::getOpenFileName( 0,
-			tr("Choose a music file to load"), "." );
+            tr("Choose a music file to load"),
+            pSettings->m_LastUsedDirectory );
 
 	if ( filename.isEmpty() )
 		return;
@@ -205,6 +207,9 @@ void PageMusicFile::browse()
 
 		}
 	}
+
+    // Store the last used import directory
+    pSettings->updateLastUsedDirectory( QDir(filename).dirName() );
 }
 
 bool PageMusicFile::validatePage()

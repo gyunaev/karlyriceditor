@@ -30,6 +30,8 @@ Settings::Settings()
 {
 	QSettings settings;
 
+    m_LastUsedDirectory = settings.value( "main/lastseddir", "." ).toString();
+
 	m_phononSoundDelay = settings.value( "advanced/phononsounddelay", 250 ).toInt();
 	m_checkForUpdates = settings.value( "advanced/checkforupdates", true ).toBool();
 
@@ -169,5 +171,12 @@ void Settings::edit()
 	settings.setValue( "preview/fontsize", m_previewFontSize );
 	settings.setValue( "preview/bgcolor", m_previewBackground.name() );
 	settings.setValue( "preview/inactivecolor", m_previewTextInactive.name() );
-	settings.setValue( "preview/activecolor", m_previewTextActive.name() );
+    settings.setValue( "preview/activecolor", m_previewTextActive.name() );
+}
+
+void Settings::updateLastUsedDirectory(const QString &lastdir)
+{
+    m_LastUsedDirectory = lastdir;
+    QSettings settings;
+    settings.setValue( "main/lastseddir", lastdir );
 }
