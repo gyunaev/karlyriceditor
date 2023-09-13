@@ -20,7 +20,6 @@
 #include <QMap>
 #include <QSettings>
 #include <QMessageBox>
-#include <QTextCodec>
 
 #include "dialog_selectencoding.h"
 
@@ -32,6 +31,7 @@ DialogSelectEncoding::DialogSelectEncoding( const QByteArray& text, QWidget *par
 {
 	setupUi( this );
 	m_encodedText = text;
+    m_selectedCodec = nullptr;
 
 	connect( boxEncoding, SIGNAL(currentIndexChanged(int)), this, SLOT(encodingChanged(int)) );
 
@@ -81,7 +81,12 @@ DialogSelectEncoding::DialogSelectEncoding( const QByteArray& text, QWidget *par
 
 		if ( index != -1 )
 			boxEncoding->setCurrentIndex( index );
-	}
+    }
+}
+
+DialogSelectEncoding::~DialogSelectEncoding()
+{
+    delete m_selectedCodec;
 }
 
 void DialogSelectEncoding::accept()
@@ -109,10 +114,10 @@ void DialogSelectEncoding::encodingChanged( int index )
 		return;
 
 	m_selectedEncoding = boxEncoding->itemData ( index ).toString();
-	m_selectedCodec = QTextCodec::codecForName( qPrintable(m_selectedEncoding) );
+    m_selectedCodec = new QStringDecoder( qPrintable(m_selectedEncoding) );
 
-	if ( !m_selectedCodec )
+    if ( !m_selectedCodec->isValid() )
 		qFatal("Failed to select Qt text codec for name '%s'", qPrintable(m_selectedEncoding) );
 
-	leSample->setText( m_selectedCodec->toUnicode( m_encodedText ) );
+    leSample->setText( m_selectedCodec->decode( m_encodedText ) );
 }

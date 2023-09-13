@@ -511,11 +511,12 @@ cont_paragraph:
 					}
 					else
 					{
-						QRegExp rxtime( "^(\\d+):(\\d+)\\.(\\d+)$" );
+                        QRegularExpression rxtime( "^(\\d+):(\\d+)\\.(\\d+)$" );
+                        QRegularExpressionMatch match = rxtime.match( time );
 
-						if ( time.indexOf( rxtime ) != -1 )
+                        if ( match.hasMatch() )
 						{
-							if ( rxtime.cap( 2 ).toInt() >= 60 )
+                            if ( match.captured( 2 ).toInt() >= 60 )
 							{
 								errors.push_back(
 										ValidatorError(
@@ -682,7 +683,7 @@ void Editor::removeAllTimeTags()
 
 	// Placeholders
 	text.remove( PLACEHOLDER );
-	text.remove( QRegExp( "\\[\\d+:\\d+\\.\\d+\\]" ) );
+    text.remove( QRegularExpression( "\\[\\d+:\\d+\\.\\d+\\]" ) );
 
 	setPlainText( text );
 }
@@ -710,12 +711,13 @@ static bool isTimingMark( const QString& text, int * length = 0 )
 		return true;
 	}
 
-	QRegExp rx( "^\\[\\d+:\\d+\\.\\d+\\]" );
+    QRegularExpression rx( "^\\[\\d+:\\d+\\.\\d+\\]" );
+    QRegularExpressionMatch match = rx.match( text );
 
-	if ( text.indexOf( rx ) != -1 )
+    if ( match.hasMatch() )
 	{
 		if ( length )
-			*length = rx.matchedLength();
+            *length = match.capturedLength();
 
 		return true;
 	}
@@ -891,27 +893,30 @@ qint64 Editor::timeForPosition( QTextCursor cur )
 
 	QString left = line.left( pos );
 	QString right = line.mid( pos );
-	QRegExp markrx ( "\\[(\\d+:\\d+\\.\\d+)\\]" );
+    QRegularExpression markrx ( ".*\\[(\\d+:\\d+\\.\\d+)\\]" );
+    QRegularExpression markrx2 ( "\\[(\\d+:\\d+\\.\\d+)\\]" );
+    QRegularExpressionMatch match;
 
 	// Search left
-	int offset = left.lastIndexOf( markrx );
+    match = markrx.match( left );
+    // fixme
+    //int offset = left.lastIndexOf( markrx );
+    if ( !match.hasMatch() )
+        return -1;
 
-	if ( offset == -1 )
-		return -1;
-
-	qint64 leftmark = timeToMark( markrx.cap( 1 ) );
-	left = left.mid( offset + markrx.matchedLength() );
+    qint64 leftmark = timeToMark( match.captured( 1 ) );
+    left = left.mid( match.capturedEnd() );
 	left.remove( markrx );
 
 	// Search right
-	offset = right.indexOf( markrx );
+    match = markrx2.match( right );
 
-	if ( offset == -1 )
+    if ( !match.hasMatch() )
 		return -1;
 
-	qint64 rightmark = timeToMark( markrx.cap( 1 ) );
-	right = right.left( offset );
-	right.remove( markrx );
+    qint64 rightmark = timeToMark( match.captured( 1 ) );
+    right = right.left( match.capturedStart() );
+    right.remove( markrx2 );
 
 	// We have time rightmark-leftmark for (left+right) characters
 	int timediff = (int) (rightmark - leftmark);
@@ -944,12 +949,14 @@ void Editor::followingTick(qint64 tick)
     // Iterate through all the timing marks
     QString text = toPlainText();
 
-    QRegExp pattern( "\\[(\\d+:\\d+\\.\\d+)\\]");
+    QRegularExpression pattern( "\\[(\\d+:\\d+\\.\\d+)\\]");
+    QRegularExpressionMatch match;
     int pos = 0, lastpos = 0;
 
-    while ( (pos = pattern.indexIn( text, pos )) != -1 )
+    while ( (match = pattern.match( text, pos )).hasMatch() )
     {
-        qint64 timing = timeToMark( pattern.cap( 1 ) );
+        pos = pos + match.capturedLength();
+        qint64 timing = timeToMark( match.captured( 1 ) );
 
         if ( tick < timing )
         {
@@ -967,7 +974,7 @@ void Editor::followingTick(qint64 tick)
         }
 
         lastpos = pos;
-        pos = pos + pattern.cap(1).length();
+        pos = pos + match.captured(1).length();
     }
 }
 
@@ -1032,8 +1039,8 @@ void Editor::addMissingTimingMarks()
 	QString text = toPlainText();
 	QStringList lines = text.split( '\n' );
 
-	QRegExp endTimingPattern( ".*\\[(\\d+:\\d+\\.\\d+)\\]$");
-	QRegExp beginTimingPattern( "^\\[(\\d+:\\d+\\.\\d+)\\]");
+    QRegularExpression endTimingPattern( ".*\\[(\\d+:\\d+\\.\\d+)\\]$");
+    QRegularExpression beginTimingPattern( "^\\[(\\d+:\\d+\\.\\d+)\\]");
 
 
 	for ( int l = 0; l < lines.size(); l++ )
@@ -1044,20 +1051,21 @@ void Editor::addMissingTimingMarks()
 			continue;
 
 		// If the line has the last timing already, ignore it
-		if ( line.indexOf( endTimingPattern ) != -1 )
+        if ( endTimingPattern.match( line ).hasMatch() )
 			continue;
 
 		// This line doesn't. Analyze it
-		QRegExp pattern( "\\[(\\d+:\\d+\\.\\d+)\\]([^\\[]*)");
+        QRegularExpression pattern( "\\[(\\d+:\\d+\\.\\d+)\\]([^\\[]*)");
+        QRegularExpressionMatch match;
 		int pos = 0;
 		QList< qint64 > timings;
 		QList< int > lengths;
 
-		while ( (pos = pattern.indexIn( line, pos )) != -1 )
+        while ( (match = pattern.match( line, pos ) ).hasMatch() )
 		{
-			timings.push_back( timeToMark( pattern.cap( 1 ) ) );
-			lengths.push_back( pattern.cap( 2 ).length() );
-			pos += pattern.matchedLength();
+            timings.push_back( timeToMark( match.captured( 1 ) ) );
+            lengths.push_back( match.captured( 2 ).length() );
+            pos = match.capturedEnd();
 		}
 
 		if ( timings.isEmpty() )
@@ -1084,9 +1092,11 @@ void Editor::addMissingTimingMarks()
 			if ( lines[ll].isEmpty() )
 				continue;
 
-			if ( lines[ll].indexOf( beginTimingPattern ) != -1 )
+            QRegularExpressionMatch m = beginTimingPattern.match( lines[ll] );
+
+            if ( m.hasMatch() )
 			{
-				qint64 nextBegin = timeToMark( beginTimingPattern.cap( 1 ) );
+                qint64 nextBegin = timeToMark( m.captured( 1 ) );
 
 				if ( nextBegin < newtime )
 					newtime = nextBegin - 1;
@@ -1113,18 +1123,20 @@ void Editor::adjustTimings()
 	// Iterate through all the timing marks
 	QString text = toPlainText();
 
-	QRegExp pattern( "\\[(\\d+:\\d+\\.\\d+)\\]");
+    QRegularExpression pattern( "\\[(\\d+:\\d+\\.\\d+)\\]");
+    QRegularExpressionMatch m;
 	int pos = 0;
 
-	while ( (pos = pattern.indexIn( text, pos )) != -1 )
+    while ( (m = pattern.match( text, pos )).hasMatch() )
 	{
-		qint64 timing = timeToMark( pattern.cap( 1 ) );
+        pos = m.capturedStart();
+        qint64 timing = timeToMark( m.captured( 1 ) );
 		timing *= dlg.m_valueMultiply;
 		timing += dlg.m_valueAdd;
 
 		QString newtime = "[" + markToTime( timing ) + "]";
 
-		text.remove( pos, pattern.matchedLength() );
+        text.remove( pos, m.capturedLength() );
 		text.insert( pos, newtime );
 
 		pos += newtime.length();

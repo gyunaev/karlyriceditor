@@ -22,7 +22,7 @@
 
 #include <QDialog>
 #include <QString>
-#include <QTextCodec>
+#include <QStringDecoder>
 
 #include "ui_dialog_selectencoding.h"
 
@@ -33,15 +33,16 @@ class DialogSelectEncoding : public QDialog, public Ui::DialogSelectEncoding
 
 	public:
 		DialogSelectEncoding( const QByteArray& text, QWidget *parent = 0 );
+        ~DialogSelectEncoding();
 		QString encoding() const { return m_selectedEncoding; }
-		QTextCodec* codec() const { return m_selectedCodec; }
+        QStringDecoder* codec() const { return m_selectedCodec; }
 
 	protected slots:
 		void	accept();
 		void	encodingChanged( int index );
 
 	private:
-		QTextCodec    * m_selectedCodec;
+        QStringDecoder* m_selectedCodec;
 		QString			m_selectedEncoding;
 		QByteArray		m_encodedText;
 

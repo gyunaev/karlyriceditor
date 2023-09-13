@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU General Public License     *
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
-
+#include <QRegularExpression>
 #include <QPainter>
 
 #include "background.h"
@@ -65,11 +65,12 @@ qint64 BackgroundImage::doDraw( QImage& image, qint64 )
 BackgroundVideo::BackgroundVideo( const QString& filename )
 	: Background()
 {
-	QRegExp videopathstart("^(.*);STARTFRAME=(\\d+)$");
+    QRegularExpression videopathstart("^(.*);STARTFRAME=(\\d+)$");
+    QRegularExpressionMatch match = videopathstart.match( filename );
 
-	if ( filename.indexOf( videopathstart ) != -1 )
+    if ( match.hasMatch() )
 	{
-		m_valid = m_videoDecoder.openFile( videopathstart.cap(1), videopathstart.cap(2).toUInt() );
+        m_valid = m_videoDecoder.openFile( match.captured(1), match.captured(2).toUInt() );
 	}
 	else
 		m_valid = m_videoDecoder.openFile( filename, 0 );

@@ -22,7 +22,7 @@
 
 #include <QMutex>
 #include <QString>
-#include <QAudioOutput>
+#include <QAudioSink>
 
 #include "ffmpeg_headers.h"
 
@@ -70,7 +70,7 @@ class AudioPlayerPrivate : public QIODevice
 		// Access to everything below is guarded by mutex
 		mutable QMutex	m_mutex;
 
-        QAudioOutput   * m_audioDevice;
+        QAudioSink     * m_audioDevice;
 
         // FFMpeg decoder specific data
 		AVFormatContext *pFormatCtx;

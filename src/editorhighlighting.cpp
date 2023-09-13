@@ -63,12 +63,14 @@ void EditorHighlighting::highlightBlock ( const QString & line )
 	}
 
 	// highlight colors, text size changes and vertical alignments
-    QRegExp modifiers( "(@[<>\\$])|(@%[TMB])|(@#[0-9a-f]{6})" );
+    QRegularExpression modifiers( "(@[<>\\$])|(@%[TMB])|(@#[0-9a-f]{6})" );
+    QRegularExpressionMatch match;
 	int pos = 0;
 
-	while ( (pos = modifiers.indexIn( line, pos ) ) != -1)
+    while ( (match = modifiers.match( line, pos )).hasMatch() )
 	{
-		int len = modifiers.matchedLength();
+        pos = match.capturedStart();
+        int len = match.capturedLength();
 
 		if( !len )
 		{
@@ -141,9 +143,10 @@ void EditorHighlighting::highlightBlock ( const QString & line )
 						setFormat( time_tag_start - 1, time_len, m_hlPlaceholder );
 					else
 					{
-						QRegExp rxtime( "^(\\d+):(\\d+)\\.(\\d+)$" );
+                        QRegularExpression rxtime( "^(\\d+):(\\d+)\\.(\\d+)$" );
+                        QRegularExpressionMatch match = rxtime.match( time );
 
-						if ( time.indexOf( rxtime ) == -1 || rxtime.cap( 2 ).toInt() >= 60 )
+                        if ( !match.hasMatch() || match.captured( 2 ).toInt() >= 60 )
 							setFormat( time_tag_start - 1, time_len, m_hlInvalidTiming );
 						else
 							setFormat( time_tag_start - 1, time_len, m_hlValidTiming );

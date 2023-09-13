@@ -374,7 +374,7 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
         renderFont.setStyleStrategy( QFont::NoAntialias );
 
     // Apply boldness and aliasing first as it affects the maximum size
-    renderFont.setWeight( dlg.fontVideoStyle->currentData().toInt( ) );
+    renderFont.setWeight( (QFont::Weight) dlg.fontVideoStyle->currentData().toInt( ) );
 
     if ( fontsize == 0 )
         fontsize = lyricrenderer.autodetectFontSize( QSize(CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT), renderFont );

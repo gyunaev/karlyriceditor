@@ -20,7 +20,7 @@
 #include "kfn_file_parser.h"
 
 #include <QMap>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QStringList>
 
 #define KFN_SUPPORT_ENCRYPTION
@@ -190,15 +190,15 @@ QString	KFNFileParser::lyricsAsLRC()
 		return QString();
 
 	QString songini = QString::fromUtf8( data.data(), data.size() );
-	songini.replace( QRegExp("[\r\n]+"), "\n" );
+    songini.replace( QRegularExpression("[\r\n]+"), "\n" );
 	QStringList lines = songini.split( "\n" );
 
 	// Parse the song.ini and fill up the sync and text arrays
 	QStringList texts;
 	QList< int > syncs;
 
-	QRegExp patternSync( "^Sync[0-9]+=(.+)" );
-	QRegExp patternText( "^Text[0-9]+=(.*)" );
+    QRegularExpression patternSync( "^Sync[0-9]+=(.+)" );
+    QRegularExpression patternText( "^Text[0-9]+=(.*)" );
 
 	// Analyze each line
 	for ( int i = 0; i < lines.size(); i++ )
@@ -206,22 +206,26 @@ QString	KFNFileParser::lyricsAsLRC()
 		QString line = lines[i];
 
 		// Try to match the sync first
-		if ( line.indexOf( patternSync ) != -1 )
+        QRegularExpressionMatch m = patternSync.match( line );
+
+        if ( m.hasMatch() )
 		{
 			// Syncs are split by comma
-			QStringList values = patternSync.cap( 1 ).split(",");
+            QStringList values = m.captured( 1 ).split(",");
 
 			for ( int v = 0; v < values.size(); v++ )
 				syncs.push_back( values[v].toInt() );
 		}
 
 		// Now the text
-		if ( line.indexOf( patternText ) != -1 )
+        m = patternText.match( line );
+
+        if ( m.hasMatch() )
 		{
-			if ( !patternText.cap( 1 ).isEmpty() )
+            if ( !m.captured( 1 ).isEmpty() )
 			{
 				// Text is split by word and optionally by the slash
-				QStringList values = patternText.cap( 1 ).split(" ");
+                QStringList values = m.captured( 1 ).split(" ");
 
 				for ( int v = 0; v < values.size(); v++ )
 				{

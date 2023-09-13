@@ -19,6 +19,9 @@
 
 #include <QFile>
 #include <QMessageBox>
+#include <QAudioFormat>
+#include <QAudioDevice>
+#include <QMediaDevices>
 
 #include "audioplayer.h"
 #include "audioplayerprivate.h"
@@ -219,22 +222,17 @@ bool AudioPlayerPrivate::openAudio( const QString& filename )
     QAudioFormat format;
     format.setSampleRate( aCodecCtx->sample_rate );
     format.setChannelCount( 2 );
-    format.setCodec("audio/pcm");
-    format.setByteOrder( QAudioFormat::LittleEndian );
+    format.setSampleFormat( QAudioFormat::Int16 );
 
-    // We will convert the format into S16 anyway as this is played everywhere
-    format.setSampleSize( 16 );
-    format.setSampleType( QAudioFormat::SignedInt );
-
-    QAudioDeviceInfo info( QAudioDeviceInfo::defaultOutputDevice() );
+    QAudioDevice info( QMediaDevices::defaultAudioOutput() );
 
     if ( !info.isFormatSupported(format) )
     {
         m_errorMsg = "Your audio device cannot play this format";
         return false;
-    }
+    }   
 
-    m_audioDevice = new QAudioOutput( format );
+    m_audioDevice = new QAudioSink( format );
 
     // Allocate the first frame
     m_decodedFrame = av_frame_alloc();

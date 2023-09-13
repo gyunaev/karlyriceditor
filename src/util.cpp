@@ -38,7 +38,7 @@ QString convertWithUserEncoding( const QByteArray& data )
 			if ( dlg.exec() == QDialog::Rejected )
 				return QString();
 
-			return dlg.codec()->toUnicode( data );
+            return dlg.codec()->decode( data );
 			break;
 		}
 	}

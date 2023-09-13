@@ -103,7 +103,7 @@ void Settings::edit()
 
 	if ( settings.contains( "advanced/lastupdate" ) )
 		ui.lblLastUpdate->setText( QObject::tr("Last checked: %1")
-			.arg( settings.value( "advanced/lastupdate" ).toDateTime().toString( Qt::SystemLocaleShortDate ) ) );
+            .arg( settings.value( "advanced/lastupdate" ).toDateTime().toString() ) );
 
 	if ( dlg.exec() == QDialog::Rejected )
 		return;

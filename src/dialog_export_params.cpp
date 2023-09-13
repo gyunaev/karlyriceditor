@@ -469,7 +469,7 @@ void DialogExportOptions::activateTab( int index )
     else
         font.setStyleStrategy( QFont::NoAntialias );
 
-    font.setWeight( fontVideoStyle->currentData().toInt( ) );
+    font.setWeight( (QFont::Weight) fontVideoStyle->currentData().toInt( ) );
 
     // Autofit or fixed size?
     if ( boxFontVideoSizeType->currentIndex() == 0 )
