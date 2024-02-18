@@ -95,7 +95,7 @@ void CheckNewVersion::fatalError( int code )
 
 	closeSocket();
 	emit error( code );
-	deleteLater();
+    QThread::exit( 0 );
 }
 
 void CheckNewVersion::reportStatus( int status )
