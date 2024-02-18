@@ -85,7 +85,7 @@ void TextRenderer::setLyrics( const Lyrics& lyrics )
 				if ( ln + 1 < block.size() )	// Beginning of next line in this block
 					calcenlinetime = block[ln].first().timing;
 				else if ( bl + 1 < lyrics.totalBlocks() ) // Beginning of next block
-					calcenlinetime = block[ln+1].first().timing;
+                    calcenlinetime = lyrics.block( bl+1 ).first().first().timing;
 				else // last line in last block
 					calcenlinetime = endlinetime + 2000; // 2 sec
 

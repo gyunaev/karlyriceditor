@@ -96,6 +96,9 @@ void Editor::textModified()
     // And look up backward for a timing block divider
     int timeend, timestart = textCursor().columnNumber();
 
+    if ( timestart >= line.length() )
+        timestart = line.length() - 1;
+
     // If we edit right before the time tag, this is relevant to prior time tag
     if ( line[timestart] == '[' && timestart > 0 )
         timestart--;
