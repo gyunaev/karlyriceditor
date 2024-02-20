@@ -64,7 +64,7 @@ class FFMpegVideoEncoderPriv
 
 		// FFmpeg stuff
 		AVFormatContext		*	outputFormatCtx;
-		AVOutputFormat		*	outputFormat;
+        const AVOutputFormat		*	outputFormat;
 		AVCodecContext		*	videoCodecCtx;
 		AVCodecContext		*	audioCodecCtx;
 		AVStream			*	videoStream;
@@ -261,7 +261,7 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 	outputFormatCtx->oformat = outputFormat;
 
 	// Find the video encoder
-	videoCodec = avcodec_find_encoder_by_name( qPrintable(m_profile->videoCodec) );
+    videoCodec = (AVCodec*) avcodec_find_encoder_by_name( qPrintable(m_profile->videoCodec) );
 
 	if ( !videoCodec )
 	{
@@ -360,7 +360,7 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 	if ( m_aplayer )
 	{
         // Find the audio codec
-        audioCodec = avcodec_find_encoder_by_name( qPrintable( m_profile->audioCodec ) );
+        audioCodec = (AVCodec*) avcodec_find_encoder_by_name( qPrintable( m_profile->audioCodec ) );
 
         if ( !audioCodec )
         {
@@ -370,7 +370,7 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
 
         // Hack to use the fixed AC3 codec if available
         if ( audioCodec->id == AV_CODEC_ID_AC3 && avcodec_find_encoder_by_name( "ac3_fixed" ) )
-            audioCodec = avcodec_find_encoder_by_name( "ac3_fixed" );
+            audioCodec = (AVCodec*) avcodec_find_encoder_by_name( "ac3_fixed" );
 
         // Allocate the audio context
         audioCodecCtx = avcodec_alloc_context3( audioCodec );

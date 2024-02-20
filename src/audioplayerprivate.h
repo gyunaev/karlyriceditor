@@ -32,6 +32,8 @@ typedef uint8_t		Uint8;
 
 class AudioPlayerPrivate : public QIODevice
 {
+    Q_OBJECT
+
 	public:
 		AudioPlayerPrivate();
 
@@ -53,8 +55,12 @@ class AudioPlayerPrivate : public QIODevice
 		QString			m_metaAlbum;
 
     protected:
-        virtual qint64 readData(char *data, qint64 maxlen);
-        virtual qint64 writeData(const char *data, qint64 len);
+        virtual qint64 readData(char *data, qint64 maxlen) override;
+        virtual qint64 writeData(const char *data, qint64 len) override;
+        virtual qint64 bytesAvailable() const;
+
+    private slots:
+        void    audioStateChanged(QAudio::State newState);
 
 	private:
 		// Called from the callback
@@ -76,7 +82,7 @@ class AudioPlayerPrivate : public QIODevice
 		AVFormatContext *pFormatCtx;
 		int				 audioStream;
 		AVCodecContext  *aCodecCtx;
-		AVCodec         *pCodec;
+        const AVCodec   *pCodec;
 
         // Software audio resampler
         SwrContext      *pAudioResampler;

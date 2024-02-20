@@ -46,7 +46,7 @@ AudioPlayerPrivate::AudioPlayerPrivate()
 	m_sample_buf_idx = 0;
 
     // Open the QIODevice unbuffered so we wouldn't have to deal with QIODevice's own buffer
-    QIODevice::open( QIODevice::ReadOnly | QIODevice::Unbuffered );
+    QIODevice::open( QIODevice::ReadOnly );
 }
 
 bool AudioPlayerPrivate::isPlaying() const
@@ -131,7 +131,7 @@ bool AudioPlayerPrivate::openAudio( const QString& filename )
 	QMutexLocker m( &m_mutex );
 
 	// Open the file
-	if ( avformat_open_input( &pFormatCtx, FFMPEG_FILENAME( filename ), NULL, 0 ) != 0 )
+    if ( avformat_open_input( &pFormatCtx, filename.toUtf8().data(), NULL, 0 ) != 0 )
 	{
 		m_errorMsg = "Could not open the audio file";
 		return false;
@@ -150,7 +150,7 @@ bool AudioPlayerPrivate::openAudio( const QString& filename )
 	for ( unsigned i = 0; i < pFormatCtx->nb_streams; i++ )
 	{
         AVStream *stream = pFormatCtx->streams[i];
-        AVCodec *dec = avcodec_find_decoder( stream->codecpar->codec_id );
+        const AVCodec *dec = avcodec_find_decoder( stream->codecpar->codec_id );
 
         if ( !dec )
             continue;
@@ -232,7 +232,8 @@ bool AudioPlayerPrivate::openAudio( const QString& filename )
         return false;
     }   
 
-    m_audioDevice = new QAudioSink( format );
+    m_audioDevice = new QAudioSink( QMediaDevices::defaultAudioOutput(), format );
+    connect( m_audioDevice, &QAudioSink::stateChanged, this, &AudioPlayerPrivate::audioStateChanged );
 
     // Allocate the first frame
     m_decodedFrame = av_frame_alloc();
@@ -283,8 +284,11 @@ void AudioPlayerPrivate::queueClear()
 
 void AudioPlayerPrivate::play()
 {
-	QMutexLocker m( &m_mutex );
+    m_mutex.lock();
     m_playing = 1;
+    m_mutex.unlock();
+
+    MoreAudio();
     m_audioDevice->start( this );
 }
 
@@ -315,7 +319,7 @@ void AudioPlayerPrivate::seekTo( qint64 value )
 // Called from QAudioOutput thread - no GUI/Widget functions!
 qint64 AudioPlayerPrivate::readData(char *data, qint64 maxSize)
 {
-	QMutexLocker m( &m_mutex );
+    QMutexLocker m( &m_mutex );
     int out = 0;
 
     while ( out < maxSize )
@@ -342,7 +346,16 @@ qint64 AudioPlayerPrivate::readData(char *data, qint64 maxSize)
 
 qint64 AudioPlayerPrivate::writeData(const char *, qint64 )
 {
-    return -1;
+    return 0;
+}
+
+qint64 AudioPlayerPrivate::bytesAvailable() const
+{
+    return aCodecCtx->sample_rate * 2 * 4;
+}
+
+void AudioPlayerPrivate::audioStateChanged(QAudio::State newState)
+{
 }
 
 // Called from the callback - no GUI/Widget functions!

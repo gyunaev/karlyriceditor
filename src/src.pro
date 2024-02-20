@@ -11,6 +11,8 @@ DEPENDPATH += .
 
 win32: {
     LIBS += -lwsock32 -ldxguid libeay32.lib avformat.lib avcodec.lib swscale.lib avutil.lib swresample.lib
+    INCLUDEPATH=C:\Users\test\Builder\extralibs\x86_64\include\ffmpeg\ C:\Users\test\Builder\extralibs\x86_64\include
+    LIBS += -LC:\Users\test\Builder\extralibs\x86_64\lib\ffmpeg\ -LC:\Users\test\Builder\extralibs\x86_64\lib
 }
 
 # Input
