@@ -32,7 +32,7 @@ class FFMpegVideoDecoderPriv
 		AVFormatContext *pFormatCtx;
 		int				 videoStream;
 		AVCodecContext  *pCodecCtx;
-		AVCodec         *pCodec;
+		const AVCodec   *pCodec;
 		AVFrame         *pFrame;
 		AVFrame         *pFrameRGB;
 		SwsContext      *img_convert_ctx;
@@ -104,7 +104,7 @@ bool FFMpegVideoDecoder::openFile( const QString& filename, unsigned int seekto 
 	for ( unsigned i = 0; i < d->pFormatCtx->nb_streams; i++ )
 	{
         AVStream *stream = d->pFormatCtx->streams[i];
-        AVCodec *dec = avcodec_find_decoder( stream->codecpar->codec_id );
+        const AVCodec *dec = avcodec_find_decoder( stream->codecpar->codec_id );
 
         if ( !dec )
             continue;

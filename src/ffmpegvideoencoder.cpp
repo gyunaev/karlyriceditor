@@ -64,13 +64,13 @@ class FFMpegVideoEncoderPriv
 
 		// FFmpeg stuff
 		AVFormatContext		*	outputFormatCtx;
-		AVOutputFormat		*	outputFormat;
+		const AVOutputFormat*	outputFormat;
 		AVCodecContext		*	videoCodecCtx;
 		AVCodecContext		*	audioCodecCtx;
 		AVStream			*	videoStream;
 		AVStream			*	audioStream;
-		AVCodec				*	videoCodec;
-		AVCodec				*	audioCodec;
+		const AVCodec		*	videoCodec;
+		const AVCodec		*	audioCodec;
 
 		// Video frame data
 		AVFrame				*	videoFrame;

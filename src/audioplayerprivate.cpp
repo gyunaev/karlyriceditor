@@ -150,7 +150,7 @@ bool AudioPlayerPrivate::openAudio( const QString& filename )
 	for ( unsigned i = 0; i < pFormatCtx->nb_streams; i++ )
 	{
         AVStream *stream = pFormatCtx->streams[i];
-        AVCodec *dec = avcodec_find_decoder( stream->codecpar->codec_id );
+        const AVCodec *dec = avcodec_find_decoder( stream->codecpar->codec_id );
 
         if ( !dec )
             continue;
