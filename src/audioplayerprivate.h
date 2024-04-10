@@ -76,7 +76,7 @@ class AudioPlayerPrivate : public QIODevice
 		AVFormatContext *pFormatCtx;
 		int				 audioStream;
 		AVCodecContext  *aCodecCtx;
-		const AVCodec         *pCodec;
+		const AVCodec   *pCodec;
 
         // Software audio resampler
         SwrContext      *pAudioResampler;
