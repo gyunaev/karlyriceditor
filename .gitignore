@@ -1,0 +1,6 @@
+*.o
+moc_*
+ui_*
+qrc_*
+.qmake.stash
+Makefile
