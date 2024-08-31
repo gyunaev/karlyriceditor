@@ -64,7 +64,7 @@ class FFMpegVideoEncoderPriv
 
 		// FFmpeg stuff
 		AVFormatContext		*	outputFormatCtx;
-        const AVOutputFormat		*	outputFormat;
+    const AVOutputFormat		*	outputFormat;
 		AVCodecContext		*	videoCodecCtx;
 		AVCodecContext		*	audioCodecCtx;
 		AVStream			*	videoStream;
@@ -384,9 +384,8 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
         audioCodecCtx->codec_id = audioCodec->id;
         audioCodecCtx->codec_type = AVMEDIA_TYPE_AUDIO;
         audioCodecCtx->bit_rate = m_audiobitrate;
-        audioCodecCtx->channels = m_profile->channels;
         audioCodecCtx->sample_rate = m_aplayer->aCodecCtx->sample_rate;
-        audioCodecCtx->channel_layout = av_get_channel_layout( m_profile->channels == 1 ? "mono" : "stereo" );
+        av_channel_layout_default(&audioCodecCtx->ch_layout, m_profile->channels);
         audioCodecCtx->time_base.num = 1;
         audioCodecCtx->time_base.den = m_profile->sampleRate;
 
@@ -445,12 +444,12 @@ bool FFMpegVideoEncoderPriv::createFile( const QString& fileName )
         }
 
         // Some formats (i.e. WAV) do not produce the proper channel layout
-        if ( m_aplayer->aCodecCtx->channel_layout == 0 )
-            av_opt_set_channel_layout( audioResampleCtx, "in_channel_layout", av_get_channel_layout( m_profile->channels == 1 ? "mono" : "stereo" ), 0 );
+        if ( m_aplayer->aCodecCtx->ch_layout.nb_channels == 0 )
+            av_opt_set_chlayout( audioResampleCtx, "in_ch_layout", &audioCodecCtx->ch_layout, 0 );
         else
-            av_opt_set_channel_layout( audioResampleCtx, "in_channel_layout", m_aplayer->aCodecCtx->channel_layout, 0 );
+            av_opt_set_chlayout( audioResampleCtx, "in_ch_layout", &m_aplayer->aCodecCtx->ch_layout, 0 );
 
-        av_opt_set_channel_layout( audioResampleCtx, "out_channel_layout", audioCodecCtx->channel_layout, 0 );
+        av_opt_set_chlayout( audioResampleCtx, "out_ch_layout", &audioCodecCtx->ch_layout, 0 );
 
         av_opt_set_int( audioResampleCtx, "in_sample_fmt",     m_aplayer->aCodecCtx->sample_fmt, 0);
         av_opt_set_int( audioResampleCtx, "out_sample_fmt",     audioCodecCtx->sample_fmt, 0);
@@ -681,8 +680,7 @@ int FFMpegVideoEncoderPriv::encodeMoreAudio()
         AVFrame * resampledAudioframe = av_frame_alloc();
 
         av_frame_copy_props( resampledAudioframe, decodedAudioFrame );
-        resampledAudioframe->channel_layout = audioCodecCtx->channel_layout;
-        resampledAudioframe->channels = audioCodecCtx->channels;
+        av_channel_layout_copy(&resampledAudioframe->ch_layout, &audioCodecCtx->ch_layout);
         resampledAudioframe->sample_rate = audioCodecCtx->sample_rate;
         resampledAudioframe->format = audioCodecCtx->sample_fmt;
 

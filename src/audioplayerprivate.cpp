@@ -253,8 +253,9 @@ bool AudioPlayerPrivate::openAudio( const QString& filename )
         return false;
     }
 
-    av_opt_set_channel_layout( pAudioResampler, "in_channel_layout",  aCodecCtx->channel_layout, 0);
-    av_opt_set_channel_layout( pAudioResampler, "out_channel_layout", AV_CH_LAYOUT_STEREO,  0);
+    AVChannelLayout ch_layout = AV_CHANNEL_LAYOUT_STEREO;
+    av_opt_set_chlayout( pAudioResampler, "in_chlayout", &aCodecCtx->ch_layout, 0);
+    av_opt_set_chlayout( pAudioResampler, "out_chlayout", &ch_layout, 0);
 
     av_opt_set_int( pAudioResampler, "in_sample_rate",     aCodecCtx->sample_rate, 0);
     av_opt_set_int( pAudioResampler, "out_sample_rate",    aCodecCtx->sample_rate, 0);
