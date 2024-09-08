@@ -456,10 +456,7 @@ void MainWindow::setCurrentProject( Project * proj )
 
 void MainWindow::act_editInsertTag()
 {
-	if ( m_player->isPlaying() )
-		editor->insertTimeTag( m_player->currentTime() );
-	else
-		editor->insertTimeTag( 0 );
+  editor->insertTimeTag( m_player->currentTime() );
 }
 
 void MainWindow::act_editSplitLine()

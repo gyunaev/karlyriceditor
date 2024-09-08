@@ -59,20 +59,20 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 		void	btn_playerPlayPause();
 		void	btn_playerSeekForward();
 		void	btn_playerSeekBackward();
-        void	seekToTime( qint64 time );
+    void	seekToTime( qint64 time );
 
 	private slots:
 		void	slotAudioTick( qint64 tickvalue );
-		void	seekSliderMoved( int newvalue );
 		void	seekSliderUp();
-		void	seekSliderDown();
+		void	seekSliderActionTriggered( int action );
 
 	private:
 		void	updatePlayerState( int state );
+		void	updateSlider( qint64 time );
+		void	updateTimestamp( qint64 time );
 
 	private:
 		bool			m_ready;
-		bool			m_sliderDown; // do not update position
 };
 
 #endif // PLAYERWIDGET_H

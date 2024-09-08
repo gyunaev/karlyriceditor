@@ -313,6 +313,7 @@ void AudioPlayerPrivate::seekTo( qint64 value )
 
 	av_seek_frame( pFormatCtx, -1, value * 1000, 0 );
 	avcodec_flush_buffers( aCodecCtx );
+  m_currentTime = value;
 
 	queueClear();
 }

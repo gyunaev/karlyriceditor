@@ -40,7 +40,6 @@ PlayerWidget::PlayerWidget(QWidget *parent)
 	setupUi(this);
 
 	m_ready = false;
-	m_sliderDown = false;
 
 	// Set up icons
 	btnFwd->setPixmap( QPixmap(":images/dryicons_forward.png") );
@@ -77,8 +76,7 @@ PlayerWidget::PlayerWidget(QWidget *parent)
     connect( pAudioPlayer, SIGNAL(finished()), this, SLOT(btn_playerStop()) );
 
 	// Connect the seek slider
-	connect( seekSlider, SIGNAL(sliderMoved(int)), this, SLOT(seekSliderMoved(int)) );
-	connect( seekSlider, SIGNAL(sliderPressed()), this, SLOT(seekSliderDown()) );
+	connect( seekSlider, SIGNAL(actionTriggered(int)), this, SLOT(seekSliderActionTriggered(int)) );
 	connect( seekSlider, SIGNAL(sliderReleased()), this, SLOT(seekSliderUp()) );
 }
 
@@ -90,18 +88,8 @@ PlayerWidget::~PlayerWidget()
 void PlayerWidget::slotAudioTick( qint64 tickvalue )
 {
 	emit tick( tickvalue );
-
-	qint64 remaining = qMax( (qint64) 0, totalTime() - tickvalue );
-	lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( tickvalue ) ) );
-	lblTimeRemaining->setText( tr("<b>-%1</b>") .arg( tickToString( remaining ) ) );
-
-	if ( !m_sliderDown )
-	{
-		int value = currentTime() * seekSlider->maximum() / totalTime();
-
-		if ( seekSlider->value() != value )
-			seekSlider->setValue( value );
-	}
+	updateSlider( tickvalue );
+	updateTimestamp( tickvalue );
 }
 
 QString PlayerWidget::tickToString( qint64 tickvalue )
@@ -128,6 +116,7 @@ bool PlayerWidget::openMusicFile( Project * project )
 		return false;
 	}
 
+  seekSlider->setMaximum(totalTime() / 100);
 	setWindowTitle( tr("Player controls - %1 by %2")
 					.arg( project->tag( Project::Tag_Title ) )
 					.arg( project->tag( Project::Tag_Artist ) ) );
@@ -170,13 +159,9 @@ void PlayerWidget::btn_playerSeekBackward()
 
 void PlayerWidget::seekToTime(qint64 time)
 {
-    if ( pAudioPlayer->isPlaying() )
-    {
-        if ( time < 0 )
-            time = 0;
-
-        pAudioPlayer->seekTo( time );
-    }
+    pAudioPlayer->seekTo( qBound( 0, time, totalTime() ) );
+    updateSlider( currentTime() );
+    updateTimestamp( currentTime() );
 }
 
 void PlayerWidget::startPlaying()
@@ -244,29 +229,53 @@ void PlayerWidget::updatePlayerState( int newstate )
 	}
 	else
 	{
-		qint64 remaining = qMax( (qint64) 0, totalTime() - currentTime() );
-		lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( currentTime() ) ) );
-		lblTimeRemaining->setText( tr("<b>-%1</b>") .arg( tickToString( remaining ) ) );
+		updateSlider( currentTime() );
+		updateTimestamp( currentTime() );
 	}
 
 	pMainWindow->updateState();
 }
 
+void PlayerWidget::updateSlider( qint64 time )
+{
+	if ( !seekSlider->isSliderDown() )
+	{
+		seekSlider->setValue( time * seekSlider->maximum() / totalTime() );
+	}
+}
+
+void PlayerWidget::updateTimestamp( qint64 time )
+{
+  qint64 remaining = qMax( (qint64) 0, totalTime() - time );
+  lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( time ) ) );
+  lblTimeRemaining->setText( tr("<b>-%1</b>") .arg( tickToString( remaining ) ) );
+}
+
+void PlayerWidget::seekSliderActionTriggered( int action )
+{
+  qint64 time = seekSlider->sliderPosition() * totalTime() / seekSlider->maximum();
+  if ( action == QAbstractSlider::SliderMove )
+  {
+    seekSlider->setToolTip( tickToString( time ) );
+    QPoint gpos = QCursor::pos();
+    QPoint relpos = gpos;
+    gpos -= seekSlider->pos();
+    QHelpEvent ev( QEvent::ToolTip, relpos, gpos );
+    QCoreApplication::sendEvent( seekSlider, &ev );
+  }
+  else
+  {
+    pAudioPlayer->seekTo( time );
+    updateTimestamp( time );
+  }
+}
 
 void PlayerWidget::seekSliderUp()
 {
-	pAudioPlayer->seekTo( seekSlider->value() * totalTime() / seekSlider->maximum() );
-	m_sliderDown = false;
-}
-
-void PlayerWidget::seekSliderDown()
-{
-	m_sliderDown = true;
-}
-
-void PlayerWidget::seekSliderMoved( int newvalue )
-{
-	pAudioPlayer->seekTo( newvalue * totalTime() / seekSlider->maximum() );
+  qint64 time = seekSlider->sliderPosition() * totalTime() / seekSlider->maximum();
+  seekSlider->setToolTip( QString() );
+  pAudioPlayer->seekTo( time );
+  updateTimestamp( time );
 }
 
 bool PlayerWidget::isPlaying() const
