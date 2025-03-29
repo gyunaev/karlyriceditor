@@ -21,35 +21,52 @@
 #define VIDEOGENERATOR_H
 
 #include <QDialog>
+#include <QTimer>
 
 #include "lyrics.h"
 #include "project.h"
+#include "mediaplayer.h"
 
 #include "ui_dialog_encodingprogress.h"
 
-class VideoGeneratorThread;
+class MediaPlayer;
 
 class VideoGenerator : public QDialog
 {
     Q_OBJECT
 
 	public:
-		VideoGenerator( Project * prj );
-		void generate( const Lyrics& lyrics, qint64 total_length );
+        VideoGenerator( Project * prj, const Lyrics &lyrics );
+        void generate();
 
     public slots:
-        void    progress( int progress, QString frames, QString size, QString timing );
-        void    finished( QString errormsg );
+        void    mediaLoadingFinished( MediaPlayer::State newstate, QString error );
+        void    mediaDurationChanged();
+        void    mediaFinished();
+
         void    buttonAbort();
+        void    updateProgress();
 
     protected:
         void    closeEvent(QCloseEvent *e);
 
 	private:
 		Project *	m_project;
+        const Lyrics&  m_lyrics;
+        MediaPlayer * m_encoder;
 
-        VideoGeneratorThread * mVideoGeneratorThread;
         Ui::DialogEncodingProgress  mProgress;
+
+        // Progress info
+        QTimer          m_progressUpdateTimer;
+        QElapsedTimer   m_totalRenderTime;
+        QElapsedTimer   m_lastImageUpdate;
+
+        mutable QMutex  mProgressMutex;
+        QImage          m_lastRenderedImage;
+        unsigned int    m_processedFrames;
+        qint64          m_totalTime;
+        qint64          m_currentTime;
 };
 
 #endif // VIDEOGENERATOR_H

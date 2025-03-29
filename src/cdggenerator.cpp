@@ -415,7 +415,7 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	progressUi.progressBar->setValue( -1 );
 
 	progressUi.lblFrames->setText( "0" );
-	progressUi.lblOutput->setText( "0 Mb" );
+    progressUi.lblInfo->setText( "Generating CDG" );
 	progressUi.lblTime->setText( "0:00.00" );
 
 	progressDialog.show();
@@ -442,7 +442,6 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 				progressUi.progressBar->setValue( timing / dialog_step );
 
 				progressUi.lblFrames->setText( QString::number( m_stream.size() ) );
-				progressUi.lblOutput->setText( QString( "%1 Kb" ) .arg( m_stream.size() * 24 / 1024 ) );
 				progressUi.lblTime->setText( markToTime( timing ) );
 
 				progressUi.image->setPixmap( QPixmap::fromImage( lastImage ) );

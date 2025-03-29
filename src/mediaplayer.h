@@ -1,6 +1,7 @@
 /**************************************************************************
- *  Spivak Karaoke PLayer - a free, cross-platform desktop karaoke player *
- *  Copyright (C) 2015-2016 George Yunaev, support@ulduzsoft.com          *
+ *  Karlyriceditor - a lyrics editor and CD+G / video export for Karaoke  *
+ *  songs.                                                                *
+ *  Copyright (C) 2009-2025 George Yunaev, gyunaev@ulduzsoft.com          *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
  *  it under the terms of the GNU General Public License as published by  *
@@ -15,6 +16,7 @@
  *  You should have received a copy of the GNU General Public License     *
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
+
 
 #ifndef MEDIAPLAYER_H
 #define MEDIAPLAYER_H
@@ -80,16 +82,15 @@ class MediaPlayer : public QObject
         // Loads the media file, and plays audio, video or both
         void    loadMedia( const QString &file, int load_options );
 
-        // Loads the media file, and plays audio, video or both from a device.
-        // Takes ownership of the device, and will delete it upon end
-        void    loadMedia( QIODevice * device, int load_options );
+        // Creates a video encoder pipeline
+        void    prepareVideoEncoder( const QString &inputAudioFile,
+                                     const QString &outputFile,
+                                     const QString &encodingProfile,
+                                     const QSize &resolution,
+                                     std::function<const QImage( qint64 )> frameRetriever );
 
         // This loads the media synchronously (by holding the process exec loop) and returns the state
         State   loadMediaSync( const QString &file, int load_options );
-
-        // Create a video encoder if we're encoding.
-        // This plugs it into the output of the pipeline and thus stops the audio output
-        void    createVideoEncoder( const QString& outfilename, const QString& profile );
 
         //
         // Player actions
@@ -144,32 +145,26 @@ class MediaPlayer : public QObject
 
         bool    adjustPitch(int value);
 
-        // Element creation
-        GstElement * createElement( const char * type, const char * name, bool mandatory = true );
-        GstElement * createVideoSink();
-
         // Source callbacks
         static void cb_source_need_data( GstAppSrc *src, guint length, gpointer user_data );
-        static gboolean cb_source_seek_data( GstAppSrc *src, guint64 offset, gpointer user_data );
+        static void cb_source_enough_data( GstAppSrc *src, gpointer user_data );
 
         // Video sink callback
         static GstFlowReturn cb_new_sample( GstAppSink *appsink, gpointer user_data );
-
-        // Decoder pad handling callbacks
-        static void cb_pad_added(GstElement *src, GstPad *new_pad, MediaPlayer *self );
-        static void cb_no_more_pads( GstElement *src, MediaPlayer *self );
-
-        // see http://gstreamer.freedesktop.org/data/doc/gstreamer/head/manual/html/section-dynamic-pipelines.html#section-dynamic-changing
-        static GstPadProbeReturn cb_event_probe_add_pitcher( GstPad * pad, GstPadProbeInfo * info, gpointer user_data );
 
         // Bus callback
         static GstBusSyncReply cb_busMessageDispatcher( GstBus *bus, GstMessage *message, gpointer userData );
 
         QString     m_mediaFile;
         QString     m_errorMsg;
-        QIODevice * m_mediaIODevice;
-
         gint64      m_duration;
+
+        // For video encoding
+        QSize       m_videoResolution;
+        GstElement* m_gst_source;
+        std::function<const QImage( qint64 )> m_frameRetriever;
+        qint64      m_videoPosition;
+        bool        m_EOFseen;
 
         // Those are created objects
         GstElement *m_gst_pipeline;

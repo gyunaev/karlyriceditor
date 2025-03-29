@@ -42,8 +42,6 @@ HEADERS += mainwindow.h \
     kfn_file_parser.h \
     dialog_timeadjustment.h \
     util.h \
-    videoencodingprofiles.h \
-    videogeneratorthread.h \
     dialog_export_params.h
 SOURCES += mainwindow.cpp \
     main.cpp \
@@ -77,8 +75,6 @@ SOURCES += mainwindow.cpp \
     kfn_file_parser.cpp \
     dialog_timeadjustment.cpp \
     util.cpp \
-    videoencodingprofiles.cpp \
-    videogeneratorthread.cpp \
     dialog_export_params.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \

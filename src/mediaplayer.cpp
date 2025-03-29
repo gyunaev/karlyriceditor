@@ -1,6 +1,7 @@
 /**************************************************************************
- *  Spivak Karaoke PLayer - a free, cross-platform desktop karaoke player *
- *  Copyright (C) 2015-2016 George Yunaev, support@ulduzsoft.com          *
+ *  Karlyriceditor - a lyrics editor and CD+G / video export for Karaoke  *
+ *  songs.                                                                *
+ *  Copyright (C) 2009-2025 George Yunaev, gyunaev@ulduzsoft.com          *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
  *  it under the terms of the GNU General Public License as published by  *
@@ -15,6 +16,7 @@
  *  You should have received a copy of the GNU General Public License     *
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
+
 
 #include <QCoreApplication>
 #include <QObject>
@@ -32,8 +34,8 @@ MediaPlayer::MediaPlayer( QObject * parent )
 {
     m_gst_pipeline = 0;
     m_gst_bus = 0;
+    m_gst_source = 0;
     m_lastVideoSample = 0;
-    m_mediaIODevice = 0;
 
     m_duration = -1;
     m_tempoRatePercent = 100;
@@ -51,18 +53,7 @@ void MediaPlayer::loadMedia(const QString &file, int load_options )
     reset();
 
     m_mediaFile = file;
-    m_mediaIODevice = 0;
     m_loadOptions = load_options;
-
-    loadMediaGeneric();
-}
-
-void MediaPlayer::loadMedia(QIODevice *device, int load_options)
-{
-    reset();
-
-    m_loadOptions = load_options;
-    m_mediaIODevice = device;
 
     loadMediaGeneric();
 }
@@ -112,7 +103,9 @@ void MediaPlayer::seekTo(qint64 pos)
 
 void MediaPlayer::stop()
 {
-    setPipelineState( GST_STATE_READY );
+    seekTo( 0 );
+    setPipelineState( GST_STATE_PAUSED );
+    m_lastKnownPosition = 0;
 }
 
 qint64 MediaPlayer::position()
@@ -293,16 +286,7 @@ void MediaPlayer::loadMediaGeneric()
 
     // The content of the pipeline - which could be video-only, audio-only or audio-video
     // See https://gstreamer.freedesktop.org/documentation/tutorials/basic/gstreamer-tools.html
-    QString pipeline;
-
-    // Data source for our pipeline
-    if ( m_mediaIODevice )
-        pipeline = "appsrc name=iosource";
-    else
-        pipeline = "filesrc name=filesource";
-
-    // Add a decoder with the name so it can be plugged in later
-    pipeline += " ! decodebin name=decoder";
+    QString pipeline = "filesrc name=filesource ! decodebin name=decoder";
 
     // Video decoding part
     if ( (m_loadOptions & MediaPlayer::LoadVideoStream) != 0 )
@@ -346,35 +330,82 @@ void MediaPlayer::loadMediaGeneric()
         gst_app_sink_set_callbacks( GST_APP_SINK(getElement( "videosink" )), &callbacks, this, NULL );
     }
 
-    // Input source - I/O device
-    if ( getElement( "iosource" ) )
+    // Set up the input source
+    g_object_set( getElement( "filesource" ), "location", m_mediaFile.toUtf8().constData(), NULL);
+
+    // Get the pipeline bus - store it since it has to be "unref after usage"
+    m_gst_bus = gst_element_get_bus( m_gst_pipeline );
+
+    if ( !m_gst_bus )
     {
-        GstElement * gst_source = getElement( "iosource" );
-
-        if ( m_mediaIODevice->isSequential() )
-        {
-            gst_app_src_set_size( GST_APP_SRC(gst_source), -1 );
-            gst_app_src_set_stream_type( GST_APP_SRC(gst_source), GST_APP_STREAM_TYPE_STREAM );
-        }
-        else
-        {
-            gst_app_src_set_size( GST_APP_SRC(gst_source), m_mediaIODevice->size() );
-            gst_app_src_set_stream_type( GST_APP_SRC(gst_source), GST_APP_STREAM_TYPE_SEEKABLE );
-        }
-
-        GstAppSrcCallbacks callbacks = { 0, 0, 0, 0, 0 };
-        callbacks.need_data = &MediaPlayer::cb_source_need_data;
-        callbacks.seek_data = &MediaPlayer::cb_source_seek_data;
-
-        gst_app_src_set_callbacks( GST_APP_SRC(gst_source), &callbacks, this, 0 );
-
-        // Our sources have bytes format
-        g_object_set( gst_source, "format", GST_FORMAT_BYTES, NULL);
+        reportError( "Can't obtrain the pipeline bus." );
+        return;
     }
 
-    // Input source - file
-    if ( getElement( "filesource" ) )
-        g_object_set( getElement( "filesource" ), "location", m_mediaFile.toUtf8().constData(), NULL);
+    // Set the handler for the bus
+    gst_bus_set_sync_handler( m_gst_bus, cb_busMessageDispatcher, this, 0 );
+
+    setPipelineState( GST_STATE_PAUSED );
+}
+
+
+void MediaPlayer::prepareVideoEncoder(const QString &inputAudioFile, const QString &outputFile, const QString &encodingProfile, const QSize& resolution, std::function<const QImage (qint64)> frameRetriever )
+{
+    reset();
+
+    m_errorsDetected = false;
+    m_frameRetriever = frameRetriever;
+    m_videoResolution = resolution;
+    m_videoPosition = 0;
+    m_EOFseen = false;
+
+    // The content of the pipeline - which could be video-only, audio-only or audio-video
+    // See https://gstreamer.freedesktop.org/documentation/tutorials/basic/gstreamer-tools.html
+    QString pipeline = QString( "appsrc name=videosource caps=\"video/x-raw,format=(string)BGRA,width=(int)%1,height=(int)%2,framerate=(fraction)25/1\" \
+                        ! enc.video_%u encodebin name=enc profile=\"%3\" \
+                        ! filesink name=mediafile \
+                        filesrc name=filesource \
+                        ! decodebin ! audio/x-raw \
+                        ! audioconvert \
+                        ! scaletempo name=tempo").arg( resolution.width() ).arg( resolution.height() ).arg( encodingProfile );
+
+    if ( pSettings->isRegistered() )
+        pipeline += " ! pitch name=" + pSettings->registeredDigest();
+
+    pipeline += " ! enc.audio_%u";
+
+    qDebug( "Gstreamer: setting up encoding pipeline: '%s'", qPrintable( pipeline ) );
+
+    GError * error = 0;
+    m_gst_pipeline = gst_parse_launch( qPrintable( pipeline ), &error );
+
+    if ( !m_gst_pipeline )
+    {
+        qWarning( "Gstreamer pipeline '%s' cannot be created; error %s\n", qPrintable( pipeline ), error->message );
+        reportError( tr("Encoding pipeline could not be created; most likely your GStreamer installation is incomplete.") );
+        return;
+    }
+
+    // Set up the input audio file
+    g_object_set( getElement( "filesource" ), "location", inputAudioFile.toUtf8().constData(), NULL);
+
+    // Set up the output media file
+    g_object_set( getElement( "mediafile" ), "location", outputFile.toUtf8().constData(), NULL);
+
+    // Set up input video source
+    m_gst_source = getElement( "videosource" );
+
+    gst_app_src_set_size( GST_APP_SRC(m_gst_source), -1 );
+    gst_app_src_set_stream_type( GST_APP_SRC(m_gst_source), GST_APP_STREAM_TYPE_STREAM );
+
+    GstAppSrcCallbacks callbacks = { 0, 0, 0, 0, 0 };
+    callbacks.need_data = &MediaPlayer::cb_source_need_data;
+    callbacks.enough_data = &MediaPlayer::cb_source_enough_data;
+
+    gst_app_src_set_callbacks( GST_APP_SRC(m_gst_source), &callbacks, this, 0 );
+
+    // Our sources have bytes format
+    g_object_set( m_gst_source, "format", GST_FORMAT_TIME, NULL);
 
     // Get the pipeline bus - store it since it has to be "unref after usage"
     m_gst_bus = gst_element_get_bus( m_gst_pipeline );
@@ -410,13 +441,11 @@ void MediaPlayer::reset()
         gst_object_unref( m_gst_pipeline );
     }
 
-    delete m_mediaIODevice;
-    m_mediaIODevice = 0;
-
     m_playState = StateInitial;
 
     m_gst_pipeline = 0;
     m_gst_bus = 0;
+    m_gst_source = 0;
     m_lastVideoSample = 0;
     m_errorsDetected = false;
     m_mediaLoading = true;
@@ -461,42 +490,44 @@ GstElement *MediaPlayer::getElement(const QString& name)
 
 void MediaPlayer::cb_source_need_data(GstAppSrc *src, guint length, gpointer user_data)
 {
+    // We render with 25FPS
+    const unsigned int FRAME_DURATION_MS = 1000 / 25;
+
     MediaPlayer * self = reinterpret_cast<MediaPlayer*>( user_data );
-    qint64 totalread = 0;
 
-    if ( !self->m_mediaIODevice->atEnd() )
+    if ( self->m_EOFseen )
     {
-        GstBuffer * buffer = gst_buffer_new_and_alloc( length );
-
-        GstMapInfo map;
-        gst_buffer_map( buffer, &map, GST_MAP_WRITE );
-
-        totalread = self->m_mediaIODevice->read( (char*) map.data, length );
-        gst_buffer_unmap( buffer, &map );
-
-        if ( totalread > 0)
-        {
-            GstFlowReturn ret = gst_app_src_push_buffer( src, buffer );
-
-            if (ret == GST_FLOW_ERROR) {
-                self->addlog( "WARNING", "appsrc: push buffer error" );
-            } else if (ret == GST_FLOW_FLUSHING) {
-                self->addlog( "WARNING", "appsrc: push buffer wrong state" );
-            }
-        }
+        gst_app_src_end_of_stream( GST_APP_SRC(self->m_gst_source) );
+        return;
     }
 
-    // We need to tell GStreamer this is end of stream
-    if ( totalread <= 0 )
-        gst_app_src_end_of_stream( src );
+    const QImage img = self->m_frameRetriever( self->m_videoPosition );
+
+    if ( img.isNull() )
+    {
+        gst_app_src_end_of_stream( GST_APP_SRC(self->m_gst_source) );
+        return;
+    }
+
+    // BGRA format
+    GstMapInfo map;
+    GstBuffer * buf = gst_buffer_new_allocate( nullptr, img.sizeInBytes(), nullptr);
+    gst_buffer_map( buf, &map, GST_MAP_WRITE);
+    memcpy( map.data, img.constBits(), img.sizeInBytes() );
+    gst_buffer_unmap( buf, &map );
+
+    buf->pts = self->m_videoPosition * GST_MSECOND;
+    buf->dts = buf->pts;
+    buf->duration = GST_CLOCK_TIME_NONE;
+    gst_app_src_push_buffer(GST_APP_SRC(self->m_gst_source), buf);
+
+    self->m_videoPosition += FRAME_DURATION_MS;
 }
 
-gboolean MediaPlayer::cb_source_seek_data(GstAppSrc *, guint64 offset, gpointer user_data)
+void MediaPlayer::cb_source_enough_data(GstAppSrc *src, gpointer user_data)
 {
-    MediaPlayer * self = reinterpret_cast<MediaPlayer*>( user_data );
-
-    // If we operate in raw mode, the offset is time - we should convert to the file offset
-    return self->m_mediaIODevice->seek( offset );
+    qDebug("cb_source_enough_data");
+    return;
 }
 
 GstFlowReturn MediaPlayer::cb_new_sample(GstAppSink *appsink, gpointer user_data)
@@ -549,6 +580,7 @@ GstBusSyncReply MediaPlayer::cb_busMessageDispatcher( GstBus *bus, GstMessage *m
     }
     else if ( GST_MESSAGE_TYPE (msg) == GST_MESSAGE_EOS )
     {
+        self->m_EOFseen = true;
         self->addlog( "DEBUG",  "GstMediaPlayer: media playback finished naturally, emitting finished()" );
         QMetaObject::invokeMethod( self, "finished", Qt::QueuedConnection );
     }
@@ -564,10 +596,11 @@ GstBusSyncReply MediaPlayer::cb_busMessageDispatcher( GstBus *bus, GstMessage *m
             GstState old_state, new_state, pending_state;
             gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
 
-            self->addlog( "DEBUG",  "GstMediaPlayer: pipeline state changed from %s to %s, pending %s",
+            self->addlog( "DEBUG",  "GstMediaPlayer: pipeline state changed from %s to %s, pending %s (%s)",
                            gst_element_state_get_name (old_state),
                            gst_element_state_get_name (new_state),
-                           gst_element_state_get_name (pending_state) );
+                           gst_element_state_get_name (pending_state),
+                           self->m_mediaLoading ? "loading" : "not-loading" );
 
             switch ( new_state )
             {

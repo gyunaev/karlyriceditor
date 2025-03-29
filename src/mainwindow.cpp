@@ -44,7 +44,6 @@
 #include "ui_dialog_about.h"
 #include "videogenerator.h"
 #include "cdggenerator.h"
-#include "videoencodingprofiles.h"
 #include "licensing.h"
 #include "util.h"
 #include "ui_dialog_registration.h"
@@ -63,9 +62,6 @@ MainWindow::MainWindow()
 
 	// Call UIC-generated code
 	setupUi( this );
-
-	// Video profiles
-	pVideoEncodingProfiles = new VideoEncodingProfiles();
 
 	// Initialize stuff
 	m_project = 0;
@@ -863,8 +859,9 @@ void MainWindow::act_projectExportVideoFile()
 	// Stop the player if playing
     playerStop();
 
-	VideoGenerator videogen( m_project );
-//FIXME    videogen.generate( lyrics, m_playerWidget->totalTime() );
+    // This one runs an event loop inside so it would delete itself
+    VideoGenerator * videogen = new VideoGenerator( m_project, lyrics );
+    videogen->generate();
 }
 
 void MainWindow::act_projectExportCDGFile()

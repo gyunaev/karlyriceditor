@@ -26,42 +26,39 @@
 #include "textrenderer.h"
 #include "dialog_export_params.h"
 #include "editor.h"
-#include "videogeneratorthread.h"
 
-
-VideoGenerator::VideoGenerator( Project * prj )
+VideoGenerator::VideoGenerator( Project * prj, const Lyrics &lyrics )
+    : QDialog(), m_lyrics(lyrics)
 {
     mProgress.setupUi( this );
 	m_project = prj;
-    mVideoGeneratorThread = 0;
+    m_encoder = 0;
+    m_totalTime = -1;
 }
 
-
-void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
+void VideoGenerator::generate()
 {
 	// Show the dialog with video options
-	DialogExportOptions dlg( m_project, lyrics, true );
+    DialogExportOptions dlg( m_project, m_lyrics, true );
 
 	if ( dlg.exec() != QDialog::Accepted )
+    {
+        deleteLater();
 		return;
+    }
 
-	// Get the video info
-	const VideoEncodingProfile * profile;
-	const VideoFormat * format;
-    unsigned int		audioEncodingType;
-	unsigned int		quality;
-
-    if ( !dlg.videoParams( &profile, &format, &audioEncodingType, &quality ) )
-		return;
+    // Video profile and size
+    QSize resolution = dlg.getVideoSize();
+    QString profile = dlg.videoProfile();
 
 	// Prepare the renderer
-    TextRenderer * lyricrenderer = new TextRenderer( format->width, format->height );
+    TextRenderer * lyricrenderer = new TextRenderer( resolution.width(), resolution.height() );
 
     // Must be set before lyrics
     lyricrenderer->setDefaultVerticalAlign( (TextRenderer::VerticalAlignment) m_project->tag( Project::Tag_Video_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
 
     // The order matters because setLyrics resets font and colors
-    lyricrenderer->setLyrics( lyrics );
+    lyricrenderer->setLyrics( m_lyrics );
 
     // Title
     lyricrenderer->setTitlePageData( dlg.m_artist,
@@ -75,7 +72,7 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
     int fontsize = m_project->tag(Project::Tag_Video_fontsize).toInt();
 
     if ( fontsize == 0 )
-        fontsize = lyricrenderer->autodetectFontSize( QSize(format->width, format->height), renderFont );
+        fontsize = lyricrenderer->autodetectFontSize( resolution, renderFont );
 
     renderFont.setPointSize( fontsize );
 
@@ -89,35 +86,12 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	// Preamble
 	if ( m_project->tag( Project::Tag_Video_preamble).toInt() != 0 )
         lyricrenderer->setPreambleData( 4, 5000, 8 );
-/*FIXME
-	// Video encoder
-    FFMpegVideoEncoder * encoder = new FFMpegVideoEncoder();
 
-	// audioEncodingMode: 0 - encode, 1 - copy, 2 - no audio
-    QString errmsg = encoder->createFile( dlg.m_outputVideo,
-										 profile,
-										 format,
-										 quality,
-                                         audioEncodingType == 1 ? 0 : pAudioPlayer );
+    m_processedFrames = 0;
+    m_lastImageUpdate.start();
+    m_totalRenderTime.start();
 
-	if ( !errmsg.isEmpty() )
-	{
-		QMessageBox::critical( 0,
-							  "Cannot write video",
-							  QString("Cannot create video file: %1") .arg(errmsg) );
-		return;
-	}
-
-    // Calculate the time step for rendering
-    qint64 time_step = (1000 * format->frame_rate_num) / format->frame_rate_den;
-
-    // Start the video encoding
-    mVideoGeneratorThread = new VideoGeneratorThread( encoder, lyricrenderer, total_length, time_step );
-    mVideoGeneratorThread->start();
-
-    // Connect the signals
-    connect( mVideoGeneratorThread, SIGNAL( finished(QString)), this, SLOT(finished(QString)), Qt::QueuedConnection );
-    connect( mVideoGeneratorThread, SIGNAL( progress(int, QString, QString, QString)), this, SLOT(progress(int, QString, QString, QString)), Qt::QueuedConnection );
+    connect( &m_progressUpdateTimer, SIGNAL(timeout()), this, SLOT(updateProgress()));
 
     // Pop up our progress dialog
     mProgress.progressBar->setMaximum( 99 );
@@ -125,39 +99,97 @@ void VideoGenerator::generate( const Lyrics& lyrics, qint64 total_length )
     mProgress.progressBar->setValue( -1 );
 
     mProgress.lblFrames->setText( "0" );
-    mProgress.lblOutput->setText( "0 Mb" );
     mProgress.lblTime->setText( "0:00.00" );
-*/
+
+    m_encoder = new MediaPlayer();
+    connect( m_encoder, SIGNAL(mediaLoadingFinished(MediaPlayer::State,QString)), this, SLOT(mediaLoadingFinished(MediaPlayer::State,QString)) );
+    connect( m_encoder, SIGNAL(durationChanged()), this, SLOT(mediaDurationChanged()) );
+    connect( m_encoder, SIGNAL(finished()), this, SLOT(mediaFinished()) );
+
+    // Launch the encoder process
+    m_encoder->prepareVideoEncoder( m_project->musicFile(),
+                                    dlg.m_outputVideo,
+                                    profile,
+                                    resolution,
+                                    [this, lyricrenderer] ( qint64 timing ) -> const QImage {
+
+                                        // Detect if the stream should end; we only do this once we have the length,
+                                        // as we do not know the duration until we start playing
+                                        if ( m_totalTime != -1 && timing >= m_totalTime )
+                                            return QImage();
+
+                                        m_currentTime = timing;
+                                        m_processedFrames++;
+
+                                        lyricrenderer->update(timing);
+
+                                        if ( m_lastImageUpdate.elapsed() > 450 )
+                                        {
+                                            m_lastImageUpdate.restart();
+
+                                            QMutexLocker m( &mProgressMutex );
+                                            m_lastRenderedImage = lyricrenderer->image();
+                                        }
+
+                                        return lyricrenderer->image();
+                                    });
+
     exec();
 }
 
-void VideoGenerator::progress( int progress, QString frames, QString size, QString timing )
+void VideoGenerator::mediaLoadingFinished(MediaPlayer::State newstate, QString error)
 {
-    mProgress.progressBar->setValue( progress );
+    if ( newstate == MediaPlayer::StateFailed )
+    {
+        QMessageBox::critical( 0,
+                               tr("Cannot set up encoder"),
+                               error );
 
-    mProgress.lblFrames->setText( frames );
-    mProgress.lblOutput->setText( size );
-    mProgress.lblTime->setText( timing );
-//FIXME    mProgress.image->setPixmap( QPixmap::fromImage( mVideoGeneratorThread->currentImage() ).scaled( mProgress.image->size() ) );
+        mediaFinished();
+    }
+    else
+    {
+        mProgress.lblInfo->setText("Encoding...");
+        m_progressUpdateTimer.start( 250 );
+        m_encoder->play();
+    }
 }
 
-void VideoGenerator::finished( QString errormsg )
+void VideoGenerator::mediaDurationChanged()
 {
-    // This slot is called when the encoding thread is finished, which may mean aborted, or error
-    if ( !errormsg.isEmpty() )
-        QMessageBox::critical( 0,
-                               "Video encoding failed",
-                               QString( "Failed to encode the video:\n%1").arg( errormsg ) );
+    m_totalTime = m_encoder->duration();
+}
 
-//FIXME    mVideoGeneratorThread->deleteLater();
+void VideoGenerator::mediaFinished()
+{
+    m_encoder->stop();
+    m_encoder->deleteLater();
 
     // Close the dialog window
     reject();
+    deleteLater();
 }
 
 void VideoGenerator::buttonAbort()
 {
-//FIXME    mVideoGeneratorThread->abort();
+    m_encoder->stop();
+    m_encoder->deleteLater();
+
+    reject();
+    deleteLater();
+}
+
+void VideoGenerator::updateProgress()
+{
+    mProgress.progressBar->setValue( m_currentTime * 100 / m_totalTime );
+    mProgress.lblFrames->setText( QString::number(m_processedFrames) );
+
+    // elapsed encoding time
+    unsigned int elapsed = m_totalRenderTime.elapsed() / 1000;
+    mProgress.lblTime->setText( QString::asprintf("%02d:%02d", elapsed / 60, elapsed % 60 ) );
+
+    QMutexLocker m( &mProgressMutex );
+    mProgress.image->setPixmap( QPixmap::fromImage( m_lastRenderedImage ).scaled( mProgress.image->size() ) );
 }
 
 void VideoGenerator::closeEvent(QCloseEvent *e)

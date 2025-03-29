@@ -50,17 +50,10 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
-         <widget class="QLabel" name="label_4">
+        <item row="2" column="1" alignment="Qt::AlignHCenter">
+         <widget class="QLabel" name="lblInfo">
           <property name="text">
-           <string>Output file size:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="2">
-         <widget class="QLabel" name="lblOutput">
-          <property name="text">
-           <string>0</string>
+           <string>Preparing....</string>
           </property>
          </widget>
         </item>
