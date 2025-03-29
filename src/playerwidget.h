@@ -21,76 +21,50 @@
 #define PLAYERWIDGET_H
 
 #include <QDockWidget>
-#include <QTimer>
 
 #include "playerbutton.h"
 #include "ui_playerwidget.h"
 
 class MediaPlayer;
-class Project;
+
 
 class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 {
     Q_OBJECT
 
 	public:
+        enum
+        {
+            Audio_ErrorState,
+            Audio_PausedState,
+            Audio_StoppedState,
+            Audio_PlayingState
+        };
+
 		PlayerWidget(QWidget *parent = 0);
 		~PlayerWidget();
 
-		// Sets the current music file from a project.
-        void openMusicFile( Project * project );
-
-		// Is music file ready to play?
-		bool	isReady() const { return m_ready; }
-
-		// Is playing?
-		bool	isPlaying() const;
-
-		qint64	currentTime() const;
-		qint64	totalTime() const;
-
 		static QString tickToString( qint64 tick );
-
-	signals:
-        void	tick( qint64 position, qint64 duration );
+        int     playerState() const;
 
 	public slots:
-		void	startPlaying();
-		void	btn_playerStop();
-		void	btn_playerPlayPause();
-		void	btn_playerSeekForward();
-		void	btn_playerSeekBackward();
-        void	seekToTime( qint64 time );
+        void	btnSeekForward();
+        void	btnSeekBackward();
+        void	updatePlayerState( int state );
+        void	setCurrentPosition(qint64 time );
+        void	setDuration( qint64 duration );
 
 	private slots:
-        void	updateTimer();
 		void	seekSliderMoved( int newvalue );
 		void	seekSliderUp();
 		void	seekSliderDown();
 
-        void    mediaLoaded();
-        void    mediaError( QString text );
-        void    mediaFinished();
-        void    mediaDurationAvailable();
-
 	private:
-		void	updatePlayerState( int state );
-
-	private:
-		bool			m_ready;
-		bool			m_sliderDown; // do not update position
-
-        // Timer to update the play status
-        QTimer          mUpdateTimer;
-
-        // Our audio player
-        MediaPlayer  *  mAudioPlayer;
-
-        // Song duration, when known
-        qint64          mDuration;
-
-        // Current slider value (to detect changes by user)
-        int             mCurrentSliderValue;
+        bool	m_sliderDown; // do not update position
+        bool    m_changingSliderPosition;
+        qint64  m_totalTime;
+        qint64  m_currentTime;
+        int     m_state;
 };
 
 #endif // PLAYERWIDGET_H

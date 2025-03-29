@@ -129,7 +129,7 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>image</string>
+        <string>No preview image available yet</string>
        </property>
       </widget>
      </item>

@@ -23,7 +23,6 @@
 #include <QWizardPage>
 
 #include "mediaplayer.h"
-
 #include "ui_wiznewproject_musicfile.h"
 #include "ui_wiznewproject_intro.h"
 #include "ui_wiznewproject_finish.h"
@@ -81,16 +80,16 @@ class PageMusicFile : public QWizardPage, public Ui::WizNewProject_MusicFile
 
 	public slots:
 		void	browse();
-        void    mediaLoaded();
-        void    mediaError( QString text );
-        void    mediaTagsAvailable( QString artist, QString title );
+
+        // Media player signals
+        void    mediaLoadingFinished( MediaPlayer::State state, QString text );
+        void    mediaTagsChanged( QString artist, QString title );
 
 	private:
 		Project *	m_project;
-        QString		m_musicFileName;
+		QString		m_lastMusicFile;
 		QString		m_hasLrcLyrics;
-
-        MediaPlayer mPlayer;
+        MediaPlayer* m_mediaPlayer;
 };
 
 

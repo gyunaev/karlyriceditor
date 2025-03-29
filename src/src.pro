@@ -1,30 +1,10 @@
 TEMPLATE = app
 TARGET = ../bin/karlyriceditor
-QT += core gui widgets concurrent
-DEFINES += USE_LICENSING
-
-win32: {
-        LIBS += -lwsock32 -ldxguid -lcrypto
-	QMAKE_CXXFLAGS += $$(EXTRACFLAGS)
-	QMAKE_CFLAGS += $$(EXTRACFLAGS)
-	QMAKE_LFLAGS += $$(EXTRALFLAGS)
-}
-
-mac: {
-    INCLUDEPATH += /Library/Frameworks/GStreamer.framework/Headers
-    LIBS += -L/Library/Frameworks/GStreamer.framework/Libraries
-}
-
-unix:!mac:{
-   CONFIG += link_pkgconfig
-   PKGCONFIG += libzip gstreamer-1.0 gstreamer-app-1.0 openssl
-} else: {
-    LIBS += -lgstapp-1.0 -lgstreamer-1.0 -lglib-2.0 -lgobject-2.0 libeay32.lib
-}
-
+DEPENDPATH += .
 
 # Input
 HEADERS += mainwindow.h \
+    mediaplayer.h \
     wizard_newproject.h \
     project.h \
     playerwidget.h \
@@ -49,20 +29,25 @@ HEADERS += mainwindow.h \
     lyricsrenderer.h \
     textrenderer.h \
     lyricswidget.h \
+    ffmpegvideodecoder.h \
+    ffmpegvideoencoder.h \
     videogenerator.h \
     lyricsevents.h \
     background.h \
-    export_params.h \
+    audioplayer.h \
+    ffmpeg_headers.h \
+    audioplayerprivate.h \
     licensing.h \
     karaokelyricstextkar.h \
     kfn_file_parser.h \
     dialog_timeadjustment.h \
     util.h \
     videoencodingprofiles.h \
-    mediaplayer.h \
-    logger.h
+    videogeneratorthread.h \
+    dialog_export_params.h
 SOURCES += mainwindow.cpp \
     main.cpp \
+    mediaplayer.cpp \
     wizard_newproject.cpp \
     project.cpp \
     playerwidget.cpp \
@@ -87,15 +72,14 @@ SOURCES += mainwindow.cpp \
     videogenerator.cpp \
     lyricsevents.cpp \
     background.cpp \
-    export_params.cpp \
     licensing.cpp \
     karaokelyricstextkar.cpp \
     kfn_file_parser.cpp \
     dialog_timeadjustment.cpp \
     util.cpp \
     videoencodingprofiles.cpp \
-    mediaplayer.cpp \
-    logger.cpp
+    videogeneratorthread.cpp \
+    dialog_export_params.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \
     wiznewproject_lyrictype.ui \
@@ -115,3 +99,32 @@ FORMS += mainwindow.ui \
     dialog_registration.ui \
     dialog_timeadjustment.ui \
     video_profile_dialog.ui
+
+QT += widgets
+
+# Handle libzip and GStreamer dependency with pkgconfig on Linux, specify exact paths on Mac
+unix:!mac:{
+    CONFIG += link_pkgconfig
+    PKGCONFIG += gstreamer-1.0 gstreamer-app-1.0
+} else: {
+    INCLUDEPATH += /Library/Frameworks/GStreamer.framework/Headers
+    LIBS += -L/Library/Frameworks/GStreamer.framework/Libraries -lgstapp-1.0 -lgstreamer-1.0 -lglib-2.0 -lgobject-2.0
+}
+
+LIBS += -lcrypto
+# Windows builds debug/release libs in different directories while other platforms use a single dir
+win32: {
+
+    RC_ICONS += images/application.ico
+    QMAKE_CXXFLAGS+=/Zi
+    QMAKE_LFLAGS+= /INCREMENTAL:NO /Debug
+    LIBS += crypt32.lib
+
+    CONFIG(debug, debug|release) {
+        LIBSUBDIR="debug"
+    } else: {
+        LIBSUBDIR="release"
+    }
+} else: {
+    LIBSUBDIR=""
+}

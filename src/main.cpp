@@ -17,11 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#include <QApplication>
-
-#include "logger.h"
 #include "mainwindow.h"
-
+#include <QApplication>
 
 int main(int argc, char *argv[])
 {
@@ -32,8 +29,6 @@ int main(int argc, char *argv[])
 	QCoreApplication::setOrganizationName("karlyriceditor.com");
 	QCoreApplication::setOrganizationDomain("karlyriceditor.com");
 	QCoreApplication::setApplicationName("karlyriceditor");
-
-    Logger::init();
 
 	MainWindow wnd;
 	wnd.show();

@@ -19,11 +19,12 @@
 
 #include <QFile>
 #include <QColor>
-#include <QRegExp>
 #include <QPainter>
+#include <QRegularExpression>
 
 #include "lyricsevents.h"
 #include "background.h"
+#include "mediaplayer.h"
 
 enum
 {
@@ -84,19 +85,24 @@ QString LyricsEvents::validateEvent( const QString& text )
 
 bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * errmsg )
 {
-	QRegExp check("^(\\w+)=(.*)$");
+    QRegularExpression check("^(\\w+)=(.*)$");
     QString key, value;
 
     if ( text.trimmed() != "DEFAULT" )
     {
-        if ( text.trimmed().indexOf( check ) == -1 )
+        QString s = text.trimmed();
+        QRegularExpressionMatch match = check.match( s );
+
+        if ( !match.hasMatch() )
             return "Invalid event format; must be like IMAGE=path";
 
-        key = check.cap( 1 );
-        value = check.cap( 2 );
+        key = match.captured( 1 );
+        value = match.captured( 2 );
     }
     else
+    {
         key = text.trimmed();
+    }
 
 	if ( key == "IMAGE" )
 	{
@@ -126,13 +132,14 @@ bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * err
 
 		return true;
 	}
-/*	else if ( key == "VIDEO" )
+	else if ( key == "VIDEO" )
 	{
-        QString filename = value;
-		QRegExp videopathstart("^(.*);STARTFRAME=(\\d+)$");
+		QString filename = value;
+        QRegularExpression videopathstart("^(.*);STARTFRAME=(\\d+)$");
+        QRegularExpressionMatch match = videopathstart.match( value );
 
-		if ( value.indexOf( videopathstart ) != -1 )
-			filename = videopathstart.cap(1);
+        if ( match.hasMatch() )
+            filename = match.captured(1);
 
 		if ( !QFile::exists( filename ) )
 		{
@@ -142,9 +149,9 @@ bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * err
 			return false;
 		}
 
-		FFMpegVideoDecoder vd;
+        MediaPlayer mpl;
 
-		if ( !vd.openFile( filename ) )
+        if ( mpl.loadMediaSync( filename, MediaPlayer::LoadVideoStream ) == MediaPlayer::StateFailed )
 		{
 			if ( errmsg )
 				*errmsg = QString("File %1 is not a supported video") .arg(filename);
@@ -159,8 +166,8 @@ bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * err
 		}
 
 		return true;
-    }
-*/    else if ( key == "DEFAULT" )
+	}
+    else if ( key == "DEFAULT" )
     {
         if ( event )
         {
@@ -172,7 +179,7 @@ bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * err
     }
     else if ( key == "COLOR" )
     {
-        if ( !QColor::isValidColor(value) )
+        if ( !QColor::isValidColorName(value) )
         {
             if ( errmsg )
                 *errmsg = QString("Color %1 is not valid") .arg(value);
@@ -298,8 +305,8 @@ void LyricsEvents::draw( qint64 timing, QImage& image )
     if ( !bg )
         return;
 
-	// Same event as before?
-	if ( found.key() != m_eventTiming )
+    // Same event as before?
+    if ( found.key() != m_eventTiming )
 	{
 		m_eventTiming = found.key();
 		cache_changed = true;

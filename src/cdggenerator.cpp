@@ -27,7 +27,7 @@
 
 #include "editor.h"
 #include "cdggenerator.h"
-#include "export_params.h"
+#include "dialog_export_params.h"
 #include "ui_dialog_encodingprogress.h"
 
 
@@ -351,18 +351,35 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	// Prepare the renderer
 	TextRenderer lyricrenderer( CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT );
 
+    // This must be set before lyrics
+    lyricrenderer.setDefaultVerticalAlign( (TextRenderer::VerticalAlignment) m_project->tag( Project::Tag_CDG_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
+
     // Lyrics must be set before anything else as it overrides the data
     lyricrenderer.setLyrics( lyrics );
 
+    // Title
+    lyricrenderer.setTitlePageData( dlg.m_artist,
+                                    dlg.m_title,
+                                    dlg.m_createdBy,
+                                    m_project->tag( Project::Tag_CDG_titletime, "5" ).toInt() * 1000 );
+
     // Rendering font
     QFont renderFont( m_project->tag(Project::Tag_CDG_font) );
-    renderFont.setPointSize( m_project->tag(Project::Tag_CDG_fontsize).toInt() );
+    int fontsize = m_project->tag(Project::Tag_CDG_fontsize).toInt();
 
     // Is anti-aliasing enabled?
     if ( m_enableAntiAlias )
         renderFont.setStyleStrategy( QFont::PreferAntialias );
     else
         renderFont.setStyleStrategy( QFont::NoAntialias );
+
+    // Apply boldness and aliasing first as it affects the maximum size
+    renderFont.setWeight( (QFont::Weight) dlg.fontVideoStyle->currentData().toInt( ) );
+
+    if ( fontsize == 0 )
+        fontsize = lyricrenderer.autodetectFontSize( QSize(CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT), renderFont );
+
+    renderFont.setPointSize( fontsize );
 
     lyricrenderer.setRenderFont( renderFont );
 
@@ -371,12 +388,6 @@ void CDGGenerator::generate( const Lyrics& lyrics, qint64 total_length )
 	lyricrenderer.setColorTitle( m_colorInfo );
 	lyricrenderer.setColorSang( m_colorInactive );
 	lyricrenderer.setColorToSing( m_colorActive );
-
-	// Title
-	lyricrenderer.setTitlePageData( dlg.m_artist,
-									dlg.m_title,
-									dlg.m_createdBy,
-									m_project->tag( Project::Tag_CDG_titletime, "5" ).toInt() * 1000 );
 
 	// Preamble
 	lyricrenderer.setPreambleData( 4, 5000, 8 );

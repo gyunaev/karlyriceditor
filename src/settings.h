@@ -30,7 +30,16 @@ class Settings
 
 		void	edit();
 
+        void    updateLastUsedDirectory( const QString& lastdir );
+
+        //FIXME
+        bool    isRegistered() const { return true; };
+        QString registeredDigest() const  { return "abdhsc"; };
+
 	public:
+        // Last used directory for opending files
+        QString     m_LastUsedDirectory;
+
 		// There is a delay between a note is being singed, and Phonon sends its tick()
 		// signal. To compensate for this delay, output lyrics should include it.
 		int			m_phononSoundDelay;
@@ -92,6 +101,7 @@ class Settings
 		QColor		m_previewBackground;
 		QColor		m_previewTextInactive;
 		QColor		m_previewTextActive;
+
 };
 
 extern Settings * pSettings;

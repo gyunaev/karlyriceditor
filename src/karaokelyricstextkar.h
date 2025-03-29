@@ -85,7 +85,7 @@ class CKaraokeLyricsTextKAR : public CKaraokeLyricsText
 			int sec = (mstime - min * 60000) / 1000;
 			int msec = mstime - (min * 60000 + sec * 1000 );
 
-			QString timing = QString().sprintf( "[%02d:%02d.%02d]", min, sec, msec / 10 );
+            QString timing = QString::asprintf( "[%02d:%02d.%02d]", min, sec, msec / 10 );
 
 			if ( flags & LYRICS_NEW_PARAGRAPH )
 				m_lyrics += "\n\n";

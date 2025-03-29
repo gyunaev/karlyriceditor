@@ -20,19 +20,36 @@
 #ifndef VIDEOGENERATOR_H
 #define VIDEOGENERATOR_H
 
-#include <QSize>
+#include <QDialog>
 
 #include "lyrics.h"
 #include "project.h"
 
-class VideoGenerator
+#include "ui_dialog_encodingprogress.h"
+
+class VideoGeneratorThread;
+
+class VideoGenerator : public QDialog
 {
+    Q_OBJECT
+
 	public:
 		VideoGenerator( Project * prj );
 		void generate( const Lyrics& lyrics, qint64 total_length );
 
+    public slots:
+        void    progress( int progress, QString frames, QString size, QString timing );
+        void    finished( QString errormsg );
+        void    buttonAbort();
+
+    protected:
+        void    closeEvent(QCloseEvent *e);
+
 	private:
 		Project *	m_project;
+
+        VideoGeneratorThread * mVideoGeneratorThread;
+        Ui::DialogEncodingProgress  mProgress;
 };
 
 #endif // VIDEOGENERATOR_H

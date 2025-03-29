@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>590</width>
+    <width>559</width>
     <height>111</height>
    </rect>
   </property>
@@ -20,7 +20,7 @@
    <set>Qt::BottomDockWidgetArea|Qt::TopDockWidgetArea</set>
   </property>
   <property name="windowTitle">
-   <string>P&amp;layer controls</string>
+   <string>Player controls</string>
   </property>
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -137,9 +137,6 @@ p, li { white-space: pre-wrap; }
        </item>
        <item>
         <widget class="QSlider" name="seekSlider">
-         <property name="tracking">
-          <bool>false</bool>
-         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>

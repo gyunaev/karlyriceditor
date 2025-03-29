@@ -25,25 +25,18 @@
 #include "mainwindow.h"
 #include "project.h"
 
-enum
-{
-	Audio_ErrorState,
-	Audio_PausedState,
-	Audio_StoppedState,
-	Audio_PlayingState
-};
-
-MediaPlayer * pAudioPlayer;
-
 
 PlayerWidget::PlayerWidget(QWidget *parent)
 	: QDockWidget(parent), Ui::PlayerWidget()
 {
 	setupUi(this);
 
-	m_ready = false;
 	m_sliderDown = false;
-    mDuration = 0;
+    m_changingSliderPosition = false;
+    m_totalTime = 0;
+    m_currentTime = 0;
+
+    setWindowTitle( tr("Player controls") );
 
 	// Set up icons
 	btnFwd->setPixmap( QPixmap(":images/dryicons_forward.png") );
@@ -51,66 +44,17 @@ PlayerWidget::PlayerWidget(QWidget *parent)
 	btnRew->setPixmap( QPixmap(":images/dryicons_rewind.png") );
 	btnStop->setPixmap( QPixmap(":images/dryicons_stop") );
 
-	// Connect button slots
-	connect( btnFwd, SIGNAL( clicked() ), this, SLOT(btn_playerSeekForward()) );
-	connect( btnRew, SIGNAL( clicked() ), this, SLOT(btn_playerSeekBackward()) );
-	connect( btnPausePlay, SIGNAL( clicked() ), this, SLOT(btn_playerPlayPause()) );
-	connect( btnStop, SIGNAL( clicked() ), this, SLOT(btn_playerStop()) );
-
-    // Initialize the update timer
-    connect( &mUpdateTimer, &QTimer::timeout, this, &PlayerWidget::updateTimer );
-    mUpdateTimer.setInterval( 250 );
-
-	// Create the audio player, and initialize it
-    mAudioPlayer = new MediaPlayer();
-
-    // Connect the player signals
-    connect( mAudioPlayer, &MediaPlayer::loaded, this, &PlayerWidget::mediaLoaded );
-    connect( mAudioPlayer, &MediaPlayer::error, this, &PlayerWidget::mediaError );
-    connect( mAudioPlayer, &MediaPlayer::finished, this, &PlayerWidget::mediaFinished );
-    connect( mAudioPlayer, &MediaPlayer::durationChanged, this, &PlayerWidget::mediaDurationAvailable );
-
 	// Connect the seek slider
-    connect( seekSlider, SIGNAL(valueChanged(int)), this, SLOT(seekSliderMoved(int)) );
+	connect( seekSlider, SIGNAL(sliderMoved(int)), this, SLOT(seekSliderMoved(int)) );
 	connect( seekSlider, SIGNAL(sliderPressed()), this, SLOT(seekSliderDown()) );
 	connect( seekSlider, SIGNAL(sliderReleased()), this, SLOT(seekSliderUp()) );
+    connect( seekSlider, SIGNAL(valueChanged(int)), this, SLOT(seekSliderMoved(int)) );
+    connect( btnFwd, SIGNAL(clicked()), this, SLOT(btnSeekForward()) );
+    connect( btnRew, SIGNAL(clicked()), this, SLOT(btnSeekBackward()) );
 }
 
 PlayerWidget::~PlayerWidget()
 {
-    delete mAudioPlayer;
-}
-
-void PlayerWidget::updateTimer()
-{
-    qint64 tickvalue = currentTime();
-    emit tick(  tickvalue, totalTime() );
-
-    lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( tickvalue ) ) );
-
-    if ( mDuration == 0 )
-    {
-        seekSlider->setEnabled( false );
-        lblTimeRemaining->setText( tr("---") );
-    }
-    else
-    {
-        seekSlider->setEnabled( true );
-
-        qint64 remaining = qMax( (qint64) 0, totalTime() - tickvalue );
-        lblTimeRemaining->setText( tr("<b>-%1</b>") .arg( tickToString( remaining ) ) );
-
-        if ( !m_sliderDown )
-        {
-            int value = currentTime() * seekSlider->maximum() / mDuration;
-
-            if ( seekSlider->value() != value )
-            {
-                mCurrentSliderValue = value;
-                seekSlider->setValue( value );
-            }
-        }
-    }
 }
 
 QString PlayerWidget::tickToString( qint64 tickvalue )
@@ -119,91 +63,30 @@ QString PlayerWidget::tickToString( qint64 tickvalue )
 	int second = (tickvalue-minute*60000)/1000;
 	int msecond = (tickvalue-minute*60000-second*1000) / 100; // round milliseconds to 0-9 range}
 
-    QString outtime;
-    outtime.sprintf( "%02d:%02d.%d", minute, second, msecond );
-    return outtime;
+	QTime ct( 0, minute, second, msecond );
+    return ct.toString( "mm:ss" );
 }
 
-void PlayerWidget::openMusicFile( Project * project )
+int PlayerWidget::playerState() const
 {
-    mDuration = 0;
-    mAudioPlayer->loadMedia( project->musicFile(), MediaPlayer::LoadAudioStream );
+    return m_state;
 }
 
-void PlayerWidget::btn_playerStop()
+
+void PlayerWidget::btnSeekForward()
 {
-    if ( isPlaying() )
-    {
-        mAudioPlayer->seekTo( 0 );
-        mAudioPlayer->stop();
-    }
-
-    updatePlayerState( Audio_StoppedState );
-    mUpdateTimer.stop();
+    pMainWindow->playerSeekToTime( qMin( m_totalTime, m_currentTime + 5000 ) );
 }
 
-void PlayerWidget::btn_playerPlayPause()
+void PlayerWidget::btnSeekBackward()
 {
-    if ( isPlaying() )
-	{
-        mAudioPlayer->stop();
-        mUpdateTimer.stop();
-		updatePlayerState( Audio_PausedState );
-	}
-	else
-	{
-        mAudioPlayer->play();
-        mUpdateTimer.start();
-		updatePlayerState( Audio_PlayingState );
-	}
+    pMainWindow->playerSeekToTime( qMax( 0, m_currentTime - 5000 ) );
 }
 
-void PlayerWidget::btn_playerSeekForward()
-{
-    seekToTime( currentTime() + 5000 );
-}
-
-void PlayerWidget::btn_playerSeekBackward()
-{
-    seekToTime( currentTime() - 5000 );
-}
-
-void PlayerWidget::seekToTime(qint64 time)
-{
-    if ( mAudioPlayer->state() == MediaPlayer::StatePlaying || mAudioPlayer->state() == MediaPlayer::StatePaused )
-    {
-        if ( time < 0 )
-            time = 0;
-
-        mAudioPlayer->seekTo( time );
-    }
-}
-
-void PlayerWidget::startPlaying()
-{
-    if ( mAudioPlayer->state() == MediaPlayer::StatePlaying || mAudioPlayer->state() == MediaPlayer::StatePaused )
-	{
-        mAudioPlayer->stop();
-        mAudioPlayer->reset();
-	}
-
-    mAudioPlayer->play();
-    mUpdateTimer.start();
-	updatePlayerState( Audio_PlayingState );
-}
-
-qint64 PlayerWidget::currentTime() const
-{
-    return mAudioPlayer->position();
-}
-
-qint64 PlayerWidget::totalTime() const
-{
-    return mDuration;
-}
 
 void PlayerWidget::updatePlayerState( int newstate )
 {
+    m_state = newstate;
 	bool ready = true, enable_playpause = false, enable_seek = false, enable_stop = false;
 
 	switch ( newstate )
@@ -220,7 +103,6 @@ void PlayerWidget::updatePlayerState( int newstate )
 
 		case Audio_StoppedState:
 			btnPausePlay->setPixmap( QPixmap( ":images/dryicons_play.png" ) );
-			m_ready = true;
 			enable_playpause = true;
 			break;
 
@@ -245,79 +127,55 @@ void PlayerWidget::updatePlayerState( int newstate )
 	}
 	else
 	{
-        lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( currentTime() ) ) );
-
-        if ( mDuration > 0 )
-            lblTimeRemaining->setText( tr("<b>-%1</b>") .arg( tickToString( qMax( (qint64) 0, mDuration - currentTime() ) ) ) );
-        else
-            lblTimeRemaining->setText( tr("---") );
+        qint64 remaining = qMax( (qint64) 0, m_totalTime - m_currentTime );
+        lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( m_currentTime ) ) );
+		lblTimeRemaining->setText( tr("<b>-%1</b>") .arg( tickToString( remaining ) ) );
 	}
+}
 
-	pMainWindow->updateState();
+void PlayerWidget::setCurrentPosition(qint64 time)
+{
+    m_currentTime = time;
+
+    qint64 remaining = qMax( (qint64) 0, m_totalTime - m_currentTime );
+    lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( m_currentTime ) ) );
+    lblTimeRemaining->setText( tr("<b>-%1</b>") .arg( tickToString( remaining ) ) );
+
+    if ( !m_sliderDown && m_totalTime > 0 )
+    {
+        int value = m_currentTime * seekSlider->maximum() / m_totalTime;
+
+        if ( seekSlider->value() != value )
+        {
+            m_changingSliderPosition = true;
+            seekSlider->setValue( value );
+        }
+    }
+}
+
+void PlayerWidget::setDuration(qint64 duration)
+{
+    m_totalTime = duration;
+    setCurrentPosition( m_currentTime );
 }
 
 
 void PlayerWidget::seekSliderUp()
 {
-    mAudioPlayer->seekTo( seekSlider->value() * totalTime() / seekSlider->maximum() );
+    pMainWindow->playerSeekToTime( seekSlider->value() * m_totalTime / seekSlider->maximum() );
 	m_sliderDown = false;
 }
 
 void PlayerWidget::seekSliderDown()
 {
-    m_sliderDown = true;
-}
-
-void PlayerWidget::mediaLoaded()
-{
-    // Media is successfully loaded
-    mDuration = mAudioPlayer->duration();
-
-    if ( mDuration > 0 )
-        pMainWindow->project()->setSongLength( mDuration);
-
-    setWindowTitle( tr("Player controls - %1 by %2")
-                    .arg( pMainWindow->project()->tag( Project::Tag_Title ) )
-                    .arg( pMainWindow->project()->tag( Project::Tag_Artist ) ) );
-
-
-    updatePlayerState( Audio_StoppedState );
-}
-
-void PlayerWidget::mediaError(QString text)
-{
-    if ( pMainWindow->project() )
-    {
-        QMessageBox::critical( 0,
-                           tr("Cannot open media file"),
-                           tr("Cannot play media file %1: %2")
-                                .arg( pMainWindow->project()->musicFile() )
-                                .arg( text ) );
-
-        updatePlayerState( Audio_ErrorState );
-    }
-}
-
-void PlayerWidget::mediaFinished()
-{
-    btn_playerStop();
-}
-
-void PlayerWidget::mediaDurationAvailable()
-{
-    mDuration = mAudioPlayer->duration();
+	m_sliderDown = true;
 }
 
 void PlayerWidget::seekSliderMoved( int newvalue )
 {
-    // Slider change is called because we changed its position programmatically
-    if ( newvalue == mCurrentSliderValue )
-        return;
-
-    mAudioPlayer->seekTo( newvalue * totalTime() / seekSlider->maximum() );
+    if ( !m_changingSliderPosition )
+        pMainWindow->playerSeekToTime( newvalue * m_totalTime / seekSlider->maximum() );
+    else
+        m_changingSliderPosition = false;
 }
 
-bool PlayerWidget::isPlaying() const
-{
-    return mAudioPlayer->state() == MediaPlayer::StatePlaying;
-}

@@ -16,74 +16,68 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#include <QtConcurrent>
-#include <QApplication>
+#include <QCoreApplication>
+#include <QObject>
+#include <QPainter>
+#include <QFile>
+#include <QUrl>
 
 #include <gst/gst.h>
 
 #include "mediaplayer.h"
-#include "logger.h"
+#include "settings.h"
 
-#if defined (ENADLE_PLUGIN_SUPPORT)
-    #include "pluginmanager.h"
-#endif
-
-// FIXME: part-missing-plugins.txt
-
-MediaPlayer::MediaPlayer()
+MediaPlayer::MediaPlayer( QObject * parent )
+    : QObject( parent )
 {
     m_gst_pipeline = 0;
     m_gst_bus = 0;
-
-    m_gst_source = 0;
-    m_gst_decoder = 0;
-    m_gst_audioconverter = 0;
-    m_gst_audio_volume = 0;
-    m_gst_audiosink = 0;
-    m_gst_audio_karaokesplitter = 0;
-    m_gst_audio_tempo = 0;
-    m_gst_audio_pitchadjust = 0;
-    m_gst_video_colorconv = 0;
-    m_gst_video_sink = 0;
     m_lastVideoSample = 0;
     m_mediaIODevice = 0;
 
     m_duration = -1;
     m_tempoRatePercent = 100;
-    m_playState = StateReset;
+    m_playState = StateInitial;
     m_errorsDetected = false;
-    m_pitchPlugin = 0;
 }
 
 MediaPlayer::~MediaPlayer()
-{    
+{
     reset();
 }
 
-void MediaPlayer::loadMedia(const QString &file, MediaPlayer::LoadOptions options )
+void MediaPlayer::loadMedia(const QString &file, int load_options )
 {
     reset();
 
-    // Local file?
-    if ( QFile::exists(file) )
-        m_mediaFile = QUrl::fromLocalFile(file).toString();
-    else
-        m_mediaFile = file;
-
+    m_mediaFile = file;
     m_mediaIODevice = 0;
-    m_loadOptions = options;
+    m_loadOptions = load_options;
 
-    QtConcurrent::run( this, &MediaPlayer::threadLoadMedia );
+    loadMediaGeneric();
 }
 
-void MediaPlayer::loadMedia(QIODevice *device, MediaPlayer::LoadOptions options)
+void MediaPlayer::loadMedia(QIODevice *device, int load_options)
 {
     reset();
 
-    m_loadOptions = options;
+    m_loadOptions = load_options;
     m_mediaIODevice = device;
 
-    QtConcurrent::run( this, &MediaPlayer::threadLoadMedia );
+    loadMediaGeneric();
+}
+
+MediaPlayer::State MediaPlayer::loadMediaSync( const QString &filename, int load_options  )
+{
+    loadMedia( filename, load_options );
+
+    // Player will load things asynchronously so we will not return until it's either loaded or failed
+    while ( state() == StateInitial )
+    {
+        QCoreApplication::processEvents( QEventLoop::ExcludeUserInputEvents, 250 );
+    }
+
+    return state();
 }
 
 void MediaPlayer::play()
@@ -127,8 +121,9 @@ qint64 MediaPlayer::position()
 
     if ( !gst_element_query_position( m_gst_pipeline, GST_FORMAT_TIME, &pos ) )
     {
-        Logger::debug( "GstMediaPlayer: querying position failed" );
-        return 0;
+        // this may happen while we're seeking, for example
+        addlog( "DEBUG",  "GstMediaPlayer: querying position failed" );
+        return m_lastKnownPosition;
     }
 
     m_lastKnownPosition = pos / GST_MSECOND;
@@ -154,7 +149,17 @@ qint64 MediaPlayer::duration()
 
 MediaPlayer::State MediaPlayer::state() const
 {
-    return (State) m_playState.load();
+    return (State) m_playState.loadAcquire();
+}
+
+bool MediaPlayer::isMediaReady() const
+{
+    return state() != State::StateInitial;
+}
+
+bool MediaPlayer::isPlaying() const
+{
+    return state() == State::StatePlaying;
 }
 
 void MediaPlayer::mediaTags(QString &artist, QString &title)
@@ -168,12 +173,8 @@ bool MediaPlayer::setCapabilityValue( MediaPlayer::Capability cap, int value)
     switch ( cap )
     {
     case MediaPlayer::CapChangeVolume:
-        if ( m_gst_audio_volume )
-        {
-            g_object_set( G_OBJECT(m_gst_audio_volume), "volume", (double) value / 100, NULL );
-            return true;
-        }
-        break;
+        g_object_set( G_OBJECT( getElement("volume")), "volume", (double) value / 100, NULL );
+        return true;
 
     case MediaPlayer::CapChangePitch:
         return adjustPitch( value );
@@ -183,7 +184,7 @@ bool MediaPlayer::setCapabilityValue( MediaPlayer::Capability cap, int value)
         // The UI gives us tempo rate as percentage, from 0 to 100 with 50 being normal value.
         // Thus we convert it into 75% - 125% range
         m_tempoRatePercent = 75 + value / 2;
-        Logger::debug( "MediaPlayer: tempo change: UI %d -> player %d", value, m_tempoRatePercent );
+        addlog( "DEBUG",  "MediaPlayer_GStreamer: tempo change: UI %d -> player %d", value, m_tempoRatePercent );
         position();
         seekTo( m_lastKnownPosition );
 
@@ -193,9 +194,6 @@ bool MediaPlayer::setCapabilityValue( MediaPlayer::Capability cap, int value)
                                    Qt::QueuedConnection );
 
         break;
-
-    case MediaPlayer::CapVoiceRemoval:
-        return toggleKaraokeSplitter( value );
     }
 
     return false;
@@ -205,23 +203,14 @@ MediaPlayer::Capabilities MediaPlayer::capabilities()
 {
     MediaPlayer::Capabilities caps( 0 );
 
-    if ( m_gst_audio_volume )
+    if ( getElement("volume") )
         caps |= MediaPlayer::CapChangeVolume;
 
-    if ( m_pitchPlugin )
+    if ( pSettings->isRegistered() && getElement(pSettings->registeredDigest()) )
         caps |= MediaPlayer::CapChangePitch;
 
-    if ( m_gst_audio_tempo )
+    if ( getElement("tempo") )
         caps |= MediaPlayer::CapChangeTempo;
-
-    // This element is not precreated (as it is rarely needed)
-    GstElement * splitter = gst_element_factory_make("audiokaraoke", "karaoketest" );
-
-    if ( splitter )
-    {
-        g_object_unref( splitter );
-        caps |= MediaPlayer::CapVoiceRemoval;
-    }
 
     return caps;
 }
@@ -229,30 +218,15 @@ MediaPlayer::Capabilities MediaPlayer::capabilities()
 
 bool MediaPlayer::adjustPitch( int newvalue )
 {
-    if ( !m_gst_audio_pitchadjust )
+    GstElement * pitch = getElement(pSettings->registeredDigest() );
+
+    if ( !pitch )
         return false;
 
     // Let's spread it to 0.5 ... +1.5
     double value = (newvalue / 200.0) + 0.75;
 
-    g_object_set( G_OBJECT(m_gst_audio_pitchadjust), m_pitchPlugin->parameterName(), value, NULL );
-
-    return true;
-}
-
-bool MediaPlayer::toggleKaraokeSplitter( int value )
-{
-    // Do nothing if the status did not change
-    if ( (m_gst_audio_karaokesplitter && value) || (!m_gst_audio_karaokesplitter && !value) )
-        return true;
-
-    // To enable or disable the splitter, we insert or remove it.
-    // The m_gst_karaokesplitter goes to a specific place which is between m_gst_audioconverter and m_gst_volume
-
-    // To start we block the m_gst_audioconverter - this will trigger cb_event_probe_toggle_splitter() callback once it is blocked
-    GstPad * srcpad = gst_element_get_static_pad( m_gst_audioconverter, "src" );
-    gst_pad_add_probe( srcpad, GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, cb_event_probe_toggle_splitter, this, NULL );
-
+    g_object_set( G_OBJECT(pitch), "pitch", value, NULL );
     return true;
 }
 
@@ -305,7 +279,7 @@ void MediaPlayer::drawVideoFrame(QPainter &p, const QRect &rect)
     gst_buffer_unmap( buffer, &map );
 }
 
-void MediaPlayer::threadLoadMedia()
+void MediaPlayer::loadMediaGeneric()
 {
     m_duration = -1;
     m_errorsDetected = false;
@@ -314,143 +288,105 @@ void MediaPlayer::threadLoadMedia()
     if ( !gst_is_initialized() )
     {
         //qputenv( "GST_DEBUG", "*:4" );
-#ifdef WIN32
-        QString env = QString("GST_PLUGIN_PATH=%1\\gstreamer\\") .arg( QApplication::applicationDirPath() );
-        env.replace( "/", "\\" );
-        _putenv( qPrintable(env) );
-
-        Logger::debug( "GstMediaPlayer: setting %s", qPrintable( env ) );
-#endif
         gst_init(0, 0);
     }
 
-    // Create the empty pipeline (this must be done first)
-    m_gst_pipeline = gst_pipeline_new ("karaokepipeline");
+    // The content of the pipeline - which could be video-only, audio-only or audio-video
+    // See https://gstreamer.freedesktop.org/documentation/tutorials/basic/gstreamer-tools.html
+    QString pipeline;
+
+    // Data source for our pipeline
+    if ( m_mediaIODevice )
+        pipeline = "appsrc name=iosource";
+    else
+        pipeline = "filesrc name=filesource";
+
+    // Add a decoder with the name so it can be plugged in later
+    pipeline += " ! decodebin name=decoder";
+
+    // Video decoding part
+    if ( (m_loadOptions & MediaPlayer::LoadVideoStream) != 0 )
+       pipeline += " decoder. ! video/x-raw ! videoconvert ! video/x-raw,format=BGRA ! appsink name=videosink";
+
+    // Audio decoding part
+    if ( (m_loadOptions & MediaPlayer::LoadAudioStream) != 0 )
+    {
+       pipeline += " decoder. ! audio/x-raw ! audioconvert ! scaletempo name=tempo";
+
+       if ( pSettings->isRegistered() )
+           pipeline += " ! pitch name=" + pSettings->registeredDigest();
+
+        pipeline += " ! volume name=volume ! autoaudiosink";
+    }
+
+    qDebug( "Gstreamer: setting up pipeline: '%s'", qPrintable( pipeline ) );
+
+    GError * error = 0;
+    m_gst_pipeline = gst_parse_launch( qPrintable( pipeline ), &error );
 
     if ( !m_gst_pipeline )
     {
-        reportError( "Pipeline could not be created." );
+        qWarning( "Gstreamer pipeline '%s' cannot be created; error %s\n", qPrintable( pipeline ), error->message );
+        reportError( tr("Pipeline could not be created; most likely your GStreamer installation is incomplete.") );
         return;
     }
 
-    // Create the pipeline bus
+    //
+    // Setup various elements if we have them
+    //
+
+    // Video sink - video output
+    if ( getElement( "videosink" ) )
+    {
+        // Setup the video sink callbacks
+        GstAppSinkCallbacks callbacks;
+        memset( &callbacks, 0, sizeof(callbacks) );
+        callbacks.new_sample = cb_new_sample;
+
+        gst_app_sink_set_callbacks( GST_APP_SINK(getElement( "videosink" )), &callbacks, this, NULL );
+    }
+
+    // Input source - I/O device
+    if ( getElement( "iosource" ) )
+    {
+        GstElement * gst_source = getElement( "iosource" );
+
+        if ( m_mediaIODevice->isSequential() )
+        {
+            gst_app_src_set_size( GST_APP_SRC(gst_source), -1 );
+            gst_app_src_set_stream_type( GST_APP_SRC(gst_source), GST_APP_STREAM_TYPE_STREAM );
+        }
+        else
+        {
+            gst_app_src_set_size( GST_APP_SRC(gst_source), m_mediaIODevice->size() );
+            gst_app_src_set_stream_type( GST_APP_SRC(gst_source), GST_APP_STREAM_TYPE_SEEKABLE );
+        }
+
+        GstAppSrcCallbacks callbacks = { 0, 0, 0, 0, 0 };
+        callbacks.need_data = &MediaPlayer::cb_source_need_data;
+        callbacks.seek_data = &MediaPlayer::cb_source_seek_data;
+
+        gst_app_src_set_callbacks( GST_APP_SRC(gst_source), &callbacks, this, 0 );
+
+        // Our sources have bytes format
+        g_object_set( gst_source, "format", GST_FORMAT_BYTES, NULL);
+    }
+
+    // Input source - file
+    if ( getElement( "filesource" ) )
+        g_object_set( getElement( "filesource" ), "location", m_mediaFile.toUtf8().constData(), NULL);
+
+    // Get the pipeline bus - store it since it has to be "unref after usage"
     m_gst_bus = gst_element_get_bus( m_gst_pipeline );
 
     if ( !m_gst_bus )
     {
-        reportError( "Pipeline bus could not be created." );
+        reportError( "Can't obtrain the pipeline bus." );
         return;
     }
 
     // Set the handler for the bus
     gst_bus_set_sync_handler( m_gst_bus, cb_busMessageDispatcher, this, 0 );
-
-    // Create our media source, which could be either QIODevice/appsrc or a file
-    // this also creates a decoder
-    setupSource();
-
-    // Those are mandatory
-    if ( !m_gst_pipeline || !m_gst_source || !m_gst_decoder )
-    {
-        reportError( "Not all elements could be created." );
-        return;
-    }
-
-    // Link and set up source and decoder if they are not the same object.
-    if ( m_gst_source != m_gst_decoder )
-    {
-        if ( !gst_element_link( m_gst_source, m_gst_decoder ) )
-        {
-            reportError( "Cannot link source and decoder." );
-            return;
-        }
-    }
-
-    // If we do not have raw data, connect to the pad-added signal
-    g_signal_connect( m_gst_decoder, "pad-added", G_CALLBACK (cb_pad_added), this );
-
-    // Pre-create video elements if we need them
-    if ( (m_loadOptions & MediaPlayer::LoadVideoStream) != 0 )
-    {
-        m_gst_video_colorconv = createElement( "videoconvert", "videoconvert" );
-        m_gst_video_sink = createVideoSink();
-
-        if ( !m_gst_video_colorconv || !m_gst_video_sink )
-        {
-            reportError( "Not all elements could be created." );
-            return;
-        }
-
-        // Link the color converter and video sink
-        if ( !gst_element_link( m_gst_video_colorconv, m_gst_video_sink ) )
-        {
-            reportError( "Cannor link video elements" );
-            return;
-        }
-    }
-
-    // Pre-create audio elements if we need them
-    if ( (m_loadOptions & MediaPlayer::LoadAudioStream) != 0 )
-    {
-#if defined (ENADLE_PLUGIN_SUPPORT)
-        // Load the pitch plugin if it is available
-        m_pitchPlugin = pPluginManager->loadPitchChanger();
-#endif
-
-        // Create the audio elements, and add them to the bin
-        m_gst_audioconverter = createElement ("audioconvert", "convert");
-        m_gst_audio_volume = createElement("volume", "volume");
-        m_gst_audiosink = createElement ("autoaudiosink", "sink");
-
-        // Those are mandatory
-        if ( !m_gst_audioconverter || !m_gst_audiosink || !m_gst_audio_volume )
-        {
-            reportError( "Not all elements could be created." );
-            return;
-        }
-
-        // This one is optional, although it seems to be present everywhere
-        m_gst_audio_tempo = createElement( "scaletempo", "tempo", false );
-
-        // If we have the pitch changer
-        if ( m_pitchPlugin && m_pitchPlugin->init() )
-            m_gst_audio_pitchadjust = createElement( m_pitchPlugin->elementName(), "audiopitchchanger", false );
-        else
-            m_gst_audio_pitchadjust = 0;
-
-        // Start linking
-        bool linksucceed = true;
-        GstElement * last = m_gst_audioconverter;
-
-        if ( m_gst_audio_pitchadjust )
-        {
-            m_gst_audioconverter2 = createElement ("audioconvert", "convert2");
-
-            linksucceed = gst_element_link_many( m_gst_audioconverter, m_gst_audio_pitchadjust, m_gst_audioconverter2, NULL );
-            last = m_gst_audioconverter2;
-        }
-
-        // Now link in volume
-        linksucceed = gst_element_link( last, m_gst_audio_volume );
-        last = m_gst_audio_volume;
-
-        // Now link in tempo if it is available
-        if ( linksucceed && m_gst_audio_tempo )
-        {
-            linksucceed = gst_element_link( last, m_gst_audio_tempo );
-            last = m_gst_audio_tempo;
-        }
-
-        // And finally the audio sink
-        if ( linksucceed )
-            linksucceed = gst_element_link( last, m_gst_audiosink );
-
-        if ( !linksucceed )
-        {
-            reportError( "Audio elements could not be linked." );
-            return;
-        }
-    }
 
     setPipelineState( GST_STATE_PAUSED );
 }
@@ -477,26 +413,14 @@ void MediaPlayer::reset()
     delete m_mediaIODevice;
     m_mediaIODevice = 0;
 
-    m_playState = StateReset;
+    m_playState = StateInitial;
 
     m_gst_pipeline = 0;
     m_gst_bus = 0;
-
-    m_gst_source = 0;
-    m_gst_decoder = 0;
-    m_gst_audioconverter = 0;
-    m_gst_audio_volume = 0;
-    m_gst_audiosink = 0;
-    m_gst_audio_karaokesplitter = 0;
-    m_gst_audio_tempo = 0;
-    m_gst_audio_pitchadjust = 0;
-    m_gst_video_colorconv = 0;
-    m_gst_video_sink = 0;
     m_lastVideoSample = 0;
     m_errorsDetected = false;
     m_mediaLoading = true;
     m_tempoRatePercent = 100;
-    m_pitchPlugin = 0;
 
     m_mediaArtist.clear();
     m_mediaTitle.clear();
@@ -512,176 +436,27 @@ void MediaPlayer::setPipelineState(GstState state)
 
 void MediaPlayer::reportError(const QString &text)
 {
-    Logger::error( "GstMediaPlayer: Reported error: %s", qPrintable(text));
-
+    addlog( "ERROR", "GstMediaPlayer: Reported error: %s", qPrintable(text));
     m_errorMsg = text;
+    m_playState = StateFailed;
 
-    // Avoid sending multiple error messages; one is enough
-    if ( !m_errorsDetected )
+    // If we're loading media, send the error message here
+    if ( m_mediaLoading )
     {
-        m_errorsDetected = true;
-        QMetaObject::invokeMethod( this, "error", Qt::QueuedConnection, Q_ARG( QString, m_errorMsg ) );
+        QMetaObject::invokeMethod( this,
+                                   "mediaLoadingFinished",
+                                   Qt::QueuedConnection,
+                                   Q_ARG( State, StateFailed ),
+                                   Q_ARG( QString,  m_errorMsg ) );
     }
 }
 
-GstElement *MediaPlayer::createElement(const char *type, const char *name, bool mandatory)
+GstElement *MediaPlayer::getElement(const QString& name)
 {
-    GstElement * e = gst_element_factory_make ( type, name );
-
-    if ( !e )
-    {
-        if ( mandatory )
-            reportError( QString("Cannot create element %1 for %2").arg( type ).arg(name) );
-
-        return 0;
-    }
-
-    gst_bin_add( GST_BIN (m_gst_pipeline), e );
-    return e;
-}
-
-GstElement *MediaPlayer::createVideoSink()
-{
-    GstElement * sink = createElement("appsink", "videosink");
-
-    if ( !sink )
+    if ( !m_gst_pipeline )
         return 0;
 
-    // Set the caps - so far we only want our image to be RGB
-    GstCaps *sinkCaps = gst_caps_new_simple( "video/x-raw", "format", G_TYPE_STRING, "BGRA", NULL );
-    gst_app_sink_set_caps( GST_APP_SINK( sink ), sinkCaps );
-    gst_caps_unref(sinkCaps);
-
-    // Set up the callbacks
-    GstAppSinkCallbacks callbacks = { 0, 0, 0, 0, 0 };
-    callbacks.new_sample = cb_new_sample;
-
-    gst_app_sink_set_callbacks( GST_APP_SINK(sink), &callbacks, this, NULL );
-    return sink;
-}
-
-
-/* This function will be called by the pad-added signal */
-void MediaPlayer::cb_pad_added (GstElement *src, GstPad *new_pad, MediaPlayer * self )
-{
-    GstPad *sink_pad = 0;
-    GstPadLinkReturn ret;
-    GstCaps *new_pad_caps = NULL;
-    GstStructure *new_pad_struct = NULL;
-    const gchar *new_pad_type = NULL;
-
-    Logger::debug( "GstMediaPlayer: received new pad '%s' from '%s'", GST_PAD_NAME (new_pad), GST_ELEMENT_NAME (src) );
-
-    /* Check the new pad's type */
-    new_pad_caps = gst_pad_query_caps (new_pad, NULL);
-    new_pad_struct = gst_caps_get_structure (new_pad_caps, 0);
-    new_pad_type = gst_structure_get_name (new_pad_struct);
-
-    if ( g_str_has_prefix (new_pad_type, "video/x-raw") )
-    {
-        if ( (self->m_loadOptions & MediaPlayer::LoadVideoStream) == 0 )
-        {
-            Logger::debug( "GstMediaPlayer:  Stream has video type, but video is not enabled, ignoring." );
-            goto exit;
-        }
-
-        // Link the decoder pad with the color converter
-        sink_pad = gst_element_get_static_pad ( self->m_gst_video_colorconv, "sink");
-
-        // If our converter is already linked, we have nothing to do here
-        if ( gst_pad_is_linked (sink_pad) )
-        {
-            Logger::debug( "GstMediaPlayer:  We are already linked. Ignoring.");
-            goto exit;
-        }
-
-        // Attempt the link
-        ret = gst_pad_link( new_pad, sink_pad );
-
-        if ( GST_PAD_LINK_FAILED (ret) )
-        {
-            self->reportError( "link failed" );
-        }
-        else
-        {
-            Logger::debug( "GstMediaPlayer:   Video link succeeded (type '%s').", new_pad_type );
-        }
-    }
-    else if ( g_str_has_prefix (new_pad_type, "audio/x-raw") )
-    {
-        if ( (self->m_loadOptions & MediaPlayer::LoadAudioStream) == 0 )
-        {
-            Logger::debug( "GstMediaPlayer:  Stream has audio type, but audio is not enabled, ignoring." );
-            goto exit;
-        }
-
-        // Connect the pads
-        sink_pad = gst_element_get_static_pad (self->m_gst_audioconverter, "sink");
-
-        // Attempt the link
-        ret = gst_pad_link (new_pad, sink_pad);
-
-        if (GST_PAD_LINK_FAILED (ret))
-        {
-            Logger::debug( "GstMediaPlayer:  Audio link failed (type '%s').", new_pad_type );
-        }
-        else
-        {
-            Logger::debug( "GstMediaPlayer:  Audio link succeeded (type '%s').", new_pad_type );
-        }
-    }
-    else
-        Logger::debug( "GstMediaPlayer:  It has type '%s' which is not handled here, ignoring", new_pad_type );
-
-exit:
-    // Unreference the new pad's caps, if we got them
-    if (new_pad_caps != NULL)
-        gst_caps_unref (new_pad_caps);
-
-    // Unreference the sink pad
-    if ( sink_pad )
-        gst_object_unref (sink_pad);
-}
-
-void MediaPlayer::setupSource()
-{
-    // If we got QIODevice, we use appsrc
-    if ( m_mediaIODevice )
-    {
-        m_gst_source = createElement("appsrc", "source");
-
-        if ( m_mediaIODevice->isSequential() )
-        {
-            gst_app_src_set_size( GST_APP_SRC(m_gst_source), -1 );
-            gst_app_src_set_stream_type( GST_APP_SRC(m_gst_source), GST_APP_STREAM_TYPE_STREAM );
-        }
-        else
-        {
-            gst_app_src_set_size( GST_APP_SRC(m_gst_source), m_mediaIODevice->size() );
-            gst_app_src_set_stream_type( GST_APP_SRC(m_gst_source), GST_APP_STREAM_TYPE_SEEKABLE );
-        }
-
-        GstAppSrcCallbacks callbacks = { 0, 0, 0, 0, 0 };
-        callbacks.need_data = &MediaPlayer::cb_source_need_data;
-        callbacks.seek_data = &MediaPlayer::cb_source_seek_data;
-
-        gst_app_src_set_callbacks( GST_APP_SRC(m_gst_source), &callbacks, this, 0 );
-
-        // Our sources have bytes format
-        g_object_set( m_gst_source, "format", GST_FORMAT_BYTES, NULL);
-
-        m_gst_decoder = createElement ("decodebin", "decoder");
-    }
-    else
-    {
-        // For a regular file we do not need appsrc and decodebin
-        m_gst_source = createElement("uridecodebin", "source");
-
-        // We already set decoder so it is not created
-        m_gst_decoder = m_gst_source;
-
-        g_object_set( m_gst_source, "uri", m_mediaFile.toUtf8().constData(), NULL);
-    }
+    return gst_bin_get_by_name (GST_BIN(m_gst_pipeline), qPrintable(name));
 }
 
 void MediaPlayer::cb_source_need_data(GstAppSrc *src, guint length, gpointer user_data)
@@ -704,9 +479,9 @@ void MediaPlayer::cb_source_need_data(GstAppSrc *src, guint length, gpointer use
             GstFlowReturn ret = gst_app_src_push_buffer( src, buffer );
 
             if (ret == GST_FLOW_ERROR) {
-                qWarning()<<"appsrc: push buffer error";
+                self->addlog( "WARNING", "appsrc: push buffer error" );
             } else if (ret == GST_FLOW_FLUSHING) {
-                qWarning()<<"appsrc: push buffer wrong state";
+                self->addlog( "WARNING", "appsrc: push buffer wrong state" );
             }
         }
     }
@@ -727,7 +502,7 @@ gboolean MediaPlayer::cb_source_seek_data(GstAppSrc *, guint64 offset, gpointer 
 GstFlowReturn MediaPlayer::cb_new_sample(GstAppSink *appsink, gpointer user_data)
 {
     MediaPlayer * self = reinterpret_cast<MediaPlayer*>( user_data );
-    GstSample * sample = gst_app_sink_pull_sample(  appsink );
+    GstSample * sample = gst_app_sink_pull_sample( appsink );
 
     if ( sample )
     {
@@ -740,57 +515,6 @@ GstFlowReturn MediaPlayer::cb_new_sample(GstAppSink *appsink, gpointer user_data
     }
 
     return GST_FLOW_OK;
-}
-
-GstPadProbeReturn MediaPlayer::cb_event_probe_toggle_splitter(GstPad *pad, GstPadProbeInfo *info, gpointer user_data)
-{
-    MediaPlayer * self = reinterpret_cast<MediaPlayer*>( user_data );
-
-    // remove the probe first
-    gst_pad_remove_probe( pad, GST_PAD_PROBE_INFO_ID (info) );
-
-    // Is the element already in the bin?
-    if ( self->m_gst_audio_karaokesplitter == 0 )
-    {
-        Logger::debug( "GstMediaPlayer:  karaokesplitter is not enabled, enabling");
-        self->m_gst_audio_karaokesplitter = self->createElement ("audiokaraoke", "karaoke", false );
-
-        // This might happen if the player requested it despite us returning no such capability
-        if ( !self->m_gst_audio_karaokesplitter )
-            return GST_PAD_PROBE_OK;
-
-        // Add splitter into the bin
-        gst_bin_add( GST_BIN (self->m_gst_pipeline), self->m_gst_audio_karaokesplitter );
-
-        // Unlink the place for the splitter
-        gst_element_unlink( self->m_gst_audioconverter, self->m_gst_audio_volume );
-
-        // Link it in
-        gst_element_link_many( self->m_gst_audioconverter, self->m_gst_audio_karaokesplitter, self->m_gst_audio_volume, NULL );
-
-        // And start playing it
-        gst_element_set_state( self->m_gst_audio_karaokesplitter, GST_STATE_PLAYING );
-
-        Logger::debug( "GstMediaPlayer: karaoke splitter enabled");
-    }
-    else
-    {
-        Logger::debug( "GstMediaPlayer: karaokesplitter is enabled, disabling");
-
-        // Stop the splitter
-        gst_element_set_state( self->m_gst_audio_karaokesplitter, GST_STATE_NULL );
-
-        // Remove splitter from the bin (it unlinks it too)
-        gst_bin_remove( GST_BIN (self->m_gst_pipeline), self->m_gst_audio_karaokesplitter );
-        self->m_gst_audio_karaokesplitter = 0;
-
-        // And link the disconnected elements again
-        gst_element_link_many( self->m_gst_audioconverter, self->m_gst_audio_volume, NULL );
-
-        Logger::debug( "GstMediaPlayer: karaoke splitter disabled");
-    }
-
-    return GST_PAD_PROBE_OK;
 }
 
 GstBusSyncReply MediaPlayer::cb_busMessageDispatcher( GstBus *bus, GstMessage *msg, gpointer user_data )
@@ -815,7 +539,7 @@ GstBusSyncReply MediaPlayer::cb_busMessageDispatcher( GstBus *bus, GstMessage *m
     }
     else if ( GST_MESSAGE_TYPE (msg) == GST_MESSAGE_DURATION_CHANGED )
     {
-        Logger::debug( "GstMediaPlayer: duration changed message" );
+        self->addlog( "DEBUG",  "GstMediaPlayer: duration changed message" );
         self->m_duration = -1;
 
         // Call the signal invoker
@@ -825,7 +549,7 @@ GstBusSyncReply MediaPlayer::cb_busMessageDispatcher( GstBus *bus, GstMessage *m
     }
     else if ( GST_MESSAGE_TYPE (msg) == GST_MESSAGE_EOS )
     {
-        Logger::debug( "GstMediaPlayer: media playback finished naturally, emitting finished()" );
+        self->addlog( "DEBUG",  "GstMediaPlayer: media playback finished naturally, emitting finished()" );
         QMetaObject::invokeMethod( self, "finished", Qt::QueuedConnection );
     }
     else if ( GST_MESSAGE_TYPE (msg) == GST_MESSAGE_STATE_CHANGED )
@@ -840,7 +564,7 @@ GstBusSyncReply MediaPlayer::cb_busMessageDispatcher( GstBus *bus, GstMessage *m
             GstState old_state, new_state, pending_state;
             gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
 
-            Logger::debug( "GstMediaPlayer: pipeline state changed from %s to %s, pending %s",
+            self->addlog( "DEBUG",  "GstMediaPlayer: pipeline state changed from %s to %s, pending %s",
                            gst_element_state_get_name (old_state),
                            gst_element_state_get_name (new_state),
                            gst_element_state_get_name (pending_state) );
@@ -858,20 +582,31 @@ GstBusSyncReply MediaPlayer::cb_busMessageDispatcher( GstBus *bus, GstMessage *m
                     {
                         self->m_mediaLoading = false;
 
-                        Logger::debug( "GstMediaPlayer: Media state set to PAUSED, %s",
+                        self->addlog( "DEBUG",  "GstMediaPlayer: Media state set to PAUSED, %s",
                                        self->m_errorsDetected ? "but errors were detected, no event" : "sending loaded event");
 
-                        if ( !self->m_errorsDetected )
-                            QMetaObject::invokeMethod( self, "loaded", Qt::QueuedConnection );
+                        if ( self->m_errorsDetected )
+                        {
+                            qErrnoWarning("strange, pipeline paused while errors!");
+                        }
+                        else
+                        {
+                            // Notify that we've finished loading (successfully or not)
+                            QMetaObject::invokeMethod( self,
+                                                   "mediaLoadingFinished",
+                                                   Qt::QueuedConnection,
+                                                   Q_ARG( State, StatePaused ),
+                                                   Q_ARG( QString, "" ) );
+                        }
                     }
                     break;
 
                 case GST_STATE_READY:
-                    self->m_playState = (State) StateStopped;
+                    // We ignore this state as it's meaningless for us
                     break;
 
                 default:
-                    Logger::error( "GStreamerPlayer: warning unhandled state %d", new_state );
+                    self->addlog( "ERROR",  "GStreamerPlayer: warning unhandled state %d", new_state );
                     break;
             }
         }
@@ -885,14 +620,14 @@ GstBusSyncReply MediaPlayer::cb_busMessageDispatcher( GstBus *bus, GstMessage *m
 
         if ( self->m_mediaArtist.isEmpty() && gst_tag_list_get_string( tags, "artist", &value ) )
         {
-            Logger::debug( "GstMediaPlayer: got artist tag %s", value );
+            self->addlog( "DEBUG",  "GstMediaPlayer: got artist tag %s", value );
             self->m_mediaArtist = QString::fromUtf8( value );
             g_free( value );
         }
 
         if ( self->m_mediaTitle.isEmpty() && gst_tag_list_get_string( tags, "title", &value ) )
         {
-            Logger::debug( "GstMediaPlayer: got title tag %s", value );
+            self->addlog( "DEBUG",  "GstMediaPlayer: got title tag %s", value );
             self->m_mediaTitle = QString::fromUtf8( value );
             g_free( value );
         }
@@ -910,4 +645,16 @@ GstBusSyncReply MediaPlayer::cb_busMessageDispatcher( GstBus *bus, GstMessage *m
 
     gst_message_unref (msg);
     return GST_BUS_DROP;
+}
+
+void MediaPlayer::addlog(const char *type, const char *fmt, ... )
+{
+    va_list vl;
+    char buf[1024];
+
+    va_start( vl, fmt );
+    vsnprintf( buf, sizeof(buf) - 1, fmt, vl );
+    va_end( vl );
+
+    qInfo( "%s %s", type, buf );
 }

@@ -85,7 +85,7 @@ void TextRenderer::setLyrics( const Lyrics& lyrics )
 				if ( ln + 1 < block.size() )	// Beginning of next line in this block
 					calcenlinetime = block[ln].first().timing;
 				else if ( bl + 1 < lyrics.totalBlocks() ) // Beginning of next block
-					calcenlinetime = block[ln+1].first().timing;
+                    calcenlinetime = lyrics.block( bl+1 ).first().first().timing;
 				else // last line in last block
 					calcenlinetime = endlinetime + 2000; // 2 sec
 
@@ -279,6 +279,11 @@ void TextRenderer::setColorAlpha( int alpha )
 	m_colorTitle.setAlpha( alpha );
 	m_colorToSing.setAlpha( alpha );
     m_colorSang.setAlpha( alpha );
+}
+
+void TextRenderer::setDefaultVerticalAlign(TextRenderer::VerticalAlignment align)
+{
+    m_currentAlignment = align;
 }
 
 void TextRenderer::setTitlePageData( const QString& artist, const QString& title, const QString& userCreatedBy, unsigned int msec )
@@ -557,7 +562,7 @@ QRect TextRenderer::boundingRect( int blockid, const QFont& font )
 			metrics = QFontMetrics( curFont );
 		}
 
-		linewidth += metrics.width( block[cur] );
+        linewidth += metrics.horizontalAdvance( block[cur] );
 		lineheight = qMax( lineheight, metrics.height() );
 		cur++;
 	}
@@ -567,148 +572,148 @@ QRect TextRenderer::boundingRect( int blockid, const QFont& font )
 
 void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
 {
-	QString block = m_lyricBlocks[blockid].text;
+    QString block = m_lyricBlocks[blockid].text;
 
-	// Prepare the painter
-	QPainter painter( &m_image );
-	painter.setFont( m_renderFont );
+    // Prepare the painter
+    QPainter painter( &m_image );
+    painter.setFont( m_renderFont );
 
     if ( m_cdgMode )
-        painter.setRenderHints( QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing | QPainter::HighQualityAntialiasing, false );
+        painter.setRenderHints( QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing, false );
 
     // Used in calculations only
-	QFont curFont( m_renderFont );
-	QFontMetrics metrics( curFont );
-	QColor fallbackColor = m_colorToSing;
+    QFont curFont( m_renderFont );
+    QFontMetrics metrics( curFont );
+    QColor fallbackColor = m_colorToSing;
 
-	if ( pos == -1 )
-		painter.setPen( m_colorToSing );
-	else
-		painter.setPen( m_colorSang );
+    if ( pos == -1 )
+        painter.setPen( m_colorToSing );
+    else
+        painter.setPen( m_colorSang );
 
-	// Get the height offset from the rect.
-	int start_y = 0;
-	int verticalAlignment = m_lyricBlocks[blockid].verticalAlignment;
+    // Get the height offset from the rect.
+    int start_y = 0;
+    int verticalAlignment = m_lyricBlocks[blockid].verticalAlignment;
 
-	// Draw title in the center, the rest according to the current vertical alignment
-	if ( blockid == 0 || verticalAlignment == VerticalMiddle )
-		start_y = (m_image.height() - boundingRect.height()) / 2 + painter.fontMetrics().height();
-	else if ( verticalAlignment == VerticalTop )
-		start_y = painter.fontMetrics().height() + m_image.width() / 50;	// see drawPreamble() for the offset
-	else
-		start_y = (m_image.height() - boundingRect.height());
+    // Draw title in the center, the rest according to the current vertical alignment
+    if ( blockid == 0 || verticalAlignment == VerticalMiddle )
+        start_y = (m_image.height() - boundingRect.height()) / 2 + painter.fontMetrics().height();
+    else if ( verticalAlignment == VerticalTop )
+        start_y = painter.fontMetrics().height() + m_image.width() / 50;	// see drawPreamble() for the offset
+    else
+        start_y = (m_image.height() - boundingRect.height());
 
-	// Draw the whole text
-	int linestart = 0;
-	int linewidth = 0;
-	int cur = 0;
+    // Draw the whole text
+    int linestart = 0;
+    int linewidth = 0;
+    int cur = 0;
 
-	while ( 1 )
-	{
-		// Line/text end
-		if ( cur >= block.length() || block[cur] == '\n' )
-		{
-			// Now we know the width, calculate the start offset
-			int start_x = (m_image.width() - linewidth) / 2;
+    while ( 1 )
+    {
+        // Line/text end
+        if ( cur >= block.length() || block[cur] == '\n' )
+        {
+            // Now we know the width, calculate the start offset
+            int start_x = (m_image.width() - linewidth) / 2;
 
-			// Draw the line
-			for ( int i = linestart; i < cur; i++ )
-			{
-				// Handle the font change events
-				QMap< unsigned int, int >::const_iterator fontchange = m_lyricBlocks[blockid].fonts.find( i );
+            // Draw the line
+            for ( int i = linestart; i < cur; i++ )
+            {
+                // Handle the font change events
+                QMap< unsigned int, int >::const_iterator fontchange = m_lyricBlocks[blockid].fonts.find( i );
 
-				if ( fontchange != m_lyricBlocks[blockid].fonts.end() )
-				{
-					painter.setFont( QFont(painter.font().family(), painter.font().pointSize() + fontchange.value() ) );
-				}
+                if ( fontchange != m_lyricBlocks[blockid].fonts.end() )
+                {
+                    painter.setFont( QFont(painter.font().family(), painter.font().pointSize() + fontchange.value() ) );
+                }
 
-				// Handle the color change events if pos doesn't cover them
-				QMap< unsigned int, QString >::const_iterator colchange = m_lyricBlocks[blockid].colors.find( i );
+                // Handle the color change events if pos doesn't cover them
+                QMap< unsigned int, QString >::const_iterator colchange = m_lyricBlocks[blockid].colors.find( i );
 
-				if ( colchange != m_lyricBlocks[blockid].colors.end() )
-				{
-					QColor newcolor( colchange.value() );
-					fallbackColor = newcolor;
+                if ( colchange != m_lyricBlocks[blockid].colors.end() )
+                {
+                    QColor newcolor( colchange.value() );
+                    fallbackColor = newcolor;
 
-					if ( i > pos )
-						painter.setPen( newcolor );
-				}
+                    if ( i > pos )
+                        painter.setPen( newcolor );
+                }
 
-				if ( pos != -1 && i >= pos )
-				{
-					painter.setPen( fallbackColor );
-				}
+                if ( pos != -1 && i >= pos )
+                {
+                    painter.setPen( fallbackColor );
+                }
 
-				// Outline
-				const int OL = 1;
-				painter.save();
-				painter.setPen( Qt::black );
-				painter.drawText( start_x - OL, start_y - OL, (QString) block[i] );
-				painter.drawText( start_x + OL, start_y - OL, (QString) block[i] );
-				painter.drawText( start_x - OL, start_y + OL, (QString) block[i] );
-				painter.drawText( start_x + OL, start_y + OL, (QString) block[i] );
-				painter.restore();
+                // Outline
+                const int OL = 1;
+                painter.save();
+                painter.setPen( Qt::black );
+                painter.drawText( start_x - OL, start_y - OL, (QString) block[i] );
+                painter.drawText( start_x + OL, start_y - OL, (QString) block[i] );
+                painter.drawText( start_x - OL, start_y + OL, (QString) block[i] );
+                painter.drawText( start_x + OL, start_y + OL, (QString) block[i] );
+                painter.restore();
 
-				painter.drawText( start_x, start_y, (QString) block[i] );
-				start_x += painter.fontMetrics().width( block[i] );
-			}
+                painter.drawText( start_x, start_y, (QString) block[i] );
+                start_x += painter.fontMetrics().horizontalAdvance( block[i] );
+            }
 
-			if ( cur >= block.length() )
-				break; // we're done here
+            if ( cur >= block.length() )
+                break; // we're done here
 
-			// Start the next line
-			start_y += painter.fontMetrics().height();
-			cur++;
-			linewidth = 0;
-			linestart = cur;
-			continue;
-		}
+            // Start the next line
+            start_y += painter.fontMetrics().height();
+            cur++;
+            linewidth = 0;
+            linestart = cur;
+            continue;
+        }
 
-		// We're calculating line width here, so check for any font change events
-		QMap< unsigned int, int >::const_iterator fontchange = m_lyricBlocks[blockid].fonts.find( cur );
+        // We're calculating line width here, so check for any font change events
+        QMap< unsigned int, int >::const_iterator fontchange = m_lyricBlocks[blockid].fonts.find( cur );
 
-		if ( fontchange != m_lyricBlocks[blockid].fonts.end() )
-		{
-			curFont.setPointSize( curFont.pointSize() + fontchange.value() );
-			metrics = QFontMetrics( curFont );
-		}
+        if ( fontchange != m_lyricBlocks[blockid].fonts.end() )
+        {
+            curFont.setPointSize( curFont.pointSize() + fontchange.value() );
+            metrics = QFontMetrics( curFont );
+        }
 
-		linewidth += metrics.width( block[cur] );
-		cur++;
-	}
+        linewidth += metrics.horizontalAdvance( block[cur] );
+        cur++;
+    }
 }
 
 void TextRenderer::drawPreamble()
 {
-	// Is there anything to draw?
-	if ( m_preambleTimeLeft <= PREAMBLE_SQUARE + 50 )
-		return;
+    // Is there anything to draw?
+    if ( m_preambleTimeLeft <= PREAMBLE_SQUARE + 50 )
+        return;
 
-	int cutoff_time = m_preambleTimeLeft - PREAMBLE_SQUARE - 50;
+    int cutoff_time = m_preambleTimeLeft - PREAMBLE_SQUARE - 50;
 
-	int preamble_spacing = m_image.width() / 100;
-	int preamble_width = (m_image.width() - preamble_spacing * m_preambleCount ) / m_preambleCount;
+    int preamble_spacing = m_image.width() / 100;
+    int preamble_width = (m_image.width() - preamble_spacing * m_preambleCount ) / m_preambleCount;
 
-	QPainter painter( &m_image );
-	painter.setPen( Qt::black );
-	painter.setBrush( m_colorTitle );
+    QPainter painter( &m_image );
+    painter.setPen( Qt::black );
+    painter.setBrush( m_colorTitle );
 
     if ( m_cdgMode )
-        painter.setRenderHints( QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing | QPainter::HighQualityAntialiasing, false );
+        painter.setRenderHints( QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing, false );
 
     // Draw a square for each PREAMBLE_SQUARE; we do not draw anything for the last one, and speed up it 0.15sec
-	for ( int i = 0; i < (int) m_preambleCount; i++ )
-	{
-		if ( i * PREAMBLE_SQUARE > cutoff_time )
-			continue;
+    for ( int i = 0; i < (int) m_preambleCount; i++ )
+    {
+        if ( i * PREAMBLE_SQUARE > cutoff_time )
+            continue;
 
-		painter.drawRect( preamble_spacing + i * (preamble_spacing + preamble_width),
-						  preamble_spacing,
-						  preamble_width,
-						  m_preambleHeight );
-	}
+        painter.drawRect( preamble_spacing + i * (preamble_spacing + preamble_width),
+                          preamble_spacing,
+                          preamble_width,
+                          m_preambleHeight );
+    }
 
-	m_lastDrawnPreamble = m_preambleTimeLeft;
+    m_lastDrawnPreamble = m_preambleTimeLeft;
 }
 
 

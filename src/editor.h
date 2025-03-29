@@ -24,6 +24,7 @@
 #include <QImage>
 #include <QTime>
 #include <QTextObjectInterface>
+#include <QRegularExpression>
 
 #include "lyrics.h"
 #include "validator.h"
@@ -38,17 +39,19 @@ static inline QString markToTime( qint64 mark )
 	int sec = (mark - min * 60000) / 1000;
 	int msec = mark - (min * 60000 + sec * 1000 );
 
-	return QString().sprintf( "%02d:%02d.%02d", min, sec, msec / 10 );
+    return QString::asprintf( "%02d:%02d.%02d", min, sec, msec / 10 );
 }
 
 static inline qint64 timeToMark( QString data )
 {
-	QRegExp rxtime( "^(\\d+):(\\d+)\\.(\\d+)$");
+    QRegularExpression rxtime( "^(\\d+):(\\d+)\\.(\\d+)$");
 
-	if ( data.indexOf( rxtime ) == -1 )
+    QRegularExpressionMatch match = rxtime.match( data );
+
+    if ( !match.hasMatch() )
 		return -1;
 
-	return rxtime.cap( 1 ).toInt() * 60000 + rxtime.cap( 2 ).toInt() * 1000 + rxtime.cap( 3 ).toInt() * 10;
+    return match.captured( 1 ).toInt() * 60000 + match.captured( 2 ).toInt() * 1000 + match.captured( 3 ).toInt() * 10;
 }
 
 

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>592</width>
-    <height>583</height>
+    <width>574</width>
+    <height>770</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -121,15 +121,10 @@
            </widget>
           </item>
           <item row="2" column="2">
-           <widget class="QComboBox" name="boxVideoAudio">
+           <widget class="QComboBox" name="boxAudioEncodingType">
             <item>
              <property name="text">
               <string>encode according to profile</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>copy original content</string>
              </property>
             </item>
             <item>
@@ -175,16 +170,61 @@
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="label_25">
+             <widget class="QComboBox" name="fontVideoStyle"/>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_9">
               <property name="text">
                <string>Size:</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QSpinBox" name="fontVideoSize">
+             <widget class="QComboBox" name="boxFontVideoSizeType">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="whatsThis">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;You can use this box to change the font size strategy.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If you choose &lt;span style=&quot; font-weight:600;&quot;&gt;Fixed&lt;/span&gt;, all lyrics in the document will be set to the size you specified. You can specify any size up to the maximum size which still fits the screen.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If you choose &lt;span style=&quot; font-weight:600;&quot;&gt;Fit&lt;/span&gt;, all lyrics in the document will be set to the largest font size which still fits to the screen. This size will be shown in the control box.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>Fixed</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Fit</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="spinFontSize">
               <property name="whatsThis">
                <string>Font size for preview window. Larger values are suggested (24 and up)</string>
+              </property>
+              <property name="suffix">
+               <string>px</string>
+              </property>
+              <property name="prefix">
+               <string/>
               </property>
               <property name="minimum">
                <number>4</number>
@@ -197,20 +237,6 @@
               </property>
              </widget>
             </item>
-            <item>
-             <widget class="QPushButton" name="btnDetectSize">
-              <property name="text">
-               <string>Detect size</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnTestSize">
-              <property name="text">
-               <string>Test size</string>
-              </property>
-             </widget>
-            </item>
            </layout>
           </item>
           <item>
@@ -218,24 +244,23 @@
             <item>
              <widget class="QLabel" name="label_26">
               <property name="text">
-               <string>Keep title at least </string>
+               <string>Show title at least</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QSpinBox" name="titleVideoMin">
+              <property name="suffix">
+               <string> sec</string>
+              </property>
+              <property name="prefix">
+               <string/>
+              </property>
               <property name="maximum">
                <number>120</number>
               </property>
               <property name="value">
                <number>2</number>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_27">
-              <property name="text">
-               <string>seconds</string>
               </property>
              </widget>
             </item>
@@ -251,6 +276,35 @@
                </size>
               </property>
              </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_10">
+              <property name="text">
+               <string>Vertical align:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="boxTextVerticalAlign">
+              <property name="whatsThis">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specifies vertical alignment (i.e. text position on the screen).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>Bottom</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Center</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Top</string>
+               </property>
+              </item>
+             </widget>
             </item>
            </layout>
           </item>
@@ -537,11 +591,9 @@
   <tabstop>boxVideoTarget</tabstop>
   <tabstop>boxVideoProfile</tabstop>
   <tabstop>boxVideoQuality</tabstop>
-  <tabstop>boxVideoAudio</tabstop>
+  <tabstop>boxAudioEncodingType</tabstop>
   <tabstop>fontVideo</tabstop>
-  <tabstop>fontVideoSize</tabstop>
-  <tabstop>btnDetectSize</tabstop>
-  <tabstop>btnTestSize</tabstop>
+  <tabstop>spinFontSize</tabstop>
   <tabstop>titleVideoMin</tabstop>
   <tabstop>btnVideoColorBg</tabstop>
   <tabstop>btnVideoColorInactive</tabstop>

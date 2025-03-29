@@ -40,7 +40,7 @@ class TestWindow : public QDialog, public Ui::DialogTestWindow
         void    editorTick( qint64 tick );
 
 	public slots:
-        void    slotUpdate( qint64 position, qint64 duration );
+        void    tick( qint64 current, qint64 total );
         void    locateButtonClicked();
 
 	protected:

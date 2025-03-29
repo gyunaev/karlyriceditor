@@ -22,10 +22,12 @@
 #include <QMessageBox>
 #include <QFileDialog>
 
+#include "mediaplayer.h"
 #include "project.h"
 #include "version.h"
 #include "wizard_newproject.h"
 #include "kfn_file_parser.h"
+#include "settings.h"
 #include "util.h"
 
 namespace WizardNewProject
@@ -80,12 +82,12 @@ PageMusicFile::PageMusicFile( Project * project, QWidget *parent )
 	setupUi( this );
 
 	m_project = project;
-	connect( btnBrowse, SIGNAL( clicked() ), this, SLOT( browse() ) );
 
-    // Media player
-    connect( &mPlayer, &MediaPlayer::loaded, this, &PageMusicFile::mediaLoaded );
-    connect( &mPlayer, &MediaPlayer::error, this, &PageMusicFile::mediaError );
-    connect( &mPlayer, &MediaPlayer::tagsChanged, this, &PageMusicFile::mediaTagsAvailable );
+    m_mediaPlayer = new MediaPlayer();
+    connect( m_mediaPlayer, SIGNAL(mediaLoadingFinished(State,QString)), this,SLOT(mediaLoadingFinished(MediaPlayer::State,QString)) );
+    connect( m_mediaPlayer, SIGNAL(tagsChanged(QString,QString)), this,SLOT(mediaTagsChanged(QString,QString)) );
+
+	connect( btnBrowse, SIGNAL( clicked() ), this, SLOT( browse() ) );
 }
 
 PageMusicFile::~PageMusicFile()
@@ -95,7 +97,8 @@ PageMusicFile::~PageMusicFile()
 void PageMusicFile::browse()
 {
 	QString filename = QFileDialog::getOpenFileName( 0,
-			tr("Choose a music file to load"), "." );
+            tr("Choose a music file to load"),
+            pSettings->m_LastUsedDirectory );
 
 	if ( filename.isEmpty() )
 		return;
@@ -174,22 +177,31 @@ void PageMusicFile::browse()
 							   tr("The file %1 cannot be imported: the lyrics cannot be parsed: %s") .arg( filename ) .arg( parser.errorMsg() ) );
 	}
 
-    // Store the music file and disable the field while loading
-    m_musicFileName = filename;
-
-    // Try to open it - results in slots
-    mPlayer.loadMedia( filename, MediaPlayer::LoadAudioStream );
+    // Try to open it; we will receive signals
+    m_lastMusicFile = filename;
+    m_mediaPlayer->loadMedia( filename, MediaPlayer::LoadAudioStream );
 }
 
-void PageMusicFile::mediaLoaded()
+void PageMusicFile::mediaLoadingFinished(MediaPlayer::State state, QString text)
 {
-    // We are good
-    leSongFile->setText( m_musicFileName );
-
-    // If there's an LRC file nearby, ask whether the user wants to load it (and get the values from it)
-    if ( m_hasLrcLyrics.isEmpty() )
+    if ( state == MediaPlayer::StateFailed )
     {
-        QString lrcfile = Util::removeFileExtention( m_musicFileName ) + "lrc";
+        QMessageBox::critical( 0,
+                               tr("Cannot open the music file"),
+                               tr("Cannot open the music file.\n\n%1") .arg(text) );
+
+        m_lastMusicFile.clear();
+    }
+    else
+    {
+        // Store the music file
+        leSongFile->setText( m_lastMusicFile );
+
+        // If there's an LRC file nearby, ask whether the user wants to load it (and get the values from it)
+        if ( !m_hasLrcLyrics.isEmpty() )
+            return;
+
+        QString lrcfile = Util::removeFileExtention( m_lastMusicFile ) + "lrc";
         QFile file( lrcfile );
 
         if ( file.open( QIODevice::ReadOnly ) )
@@ -205,22 +217,19 @@ void PageMusicFile::mediaLoaded()
 
             }
         }
+
+        // Store the last used import directory
+        pSettings->updateLastUsedDirectory( QDir(m_lastMusicFile).dirName() );
     }
 }
 
-void PageMusicFile::mediaError(QString text)
-{
-    // Print error
-    QMessageBox::critical( 0,
-                           tr("Cannot open the music file"),
-                           tr("Cannot open the music file.\n\n%1") .arg(text) );
-}
 
-void PageMusicFile::mediaTagsAvailable(QString artist, QString title)
+void PageMusicFile::mediaTagsChanged(QString artist, QString title)
 {
     leArtist->setText( artist );
     leTitle->setText( title );
 }
+
 
 bool PageMusicFile::validatePage()
 {
@@ -251,6 +260,9 @@ bool PageMusicFile::validatePage()
 	m_project->setMusicFile( leSongFile->text() );
 	m_project->setTag( Project::Tag_Title, leTitle->text() );
 	m_project->setTag( Project::Tag_Artist, leArtist->text() );
+
+	if ( !leAlbum->text().isEmpty() )
+		m_project->setTag( Project::Tag_Album, leAlbum->text() );
 
 	if ( !m_hasLrcLyrics.isEmpty() )
 		m_project->convertLyrics( m_hasLrcLyrics );

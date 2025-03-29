@@ -20,6 +20,7 @@
 #include <QFile>
 #include <QDataStream>
 #include <QMessageBox>
+#include <QRegularExpression>
 
 #include "mainwindow.h"
 #include "project.h"
@@ -28,6 +29,7 @@
 #include "lyrics.h"
 #include "karaokelyricstextkar.h"
 #include "cdggenerator.h"
+#include "textrenderer.h"
 #include "kfn_file_parser.h"
 #include "util.h"
 
@@ -94,6 +96,9 @@ enum
 
     PD_TAG_EXPORT_FILENAME_CDG,  // if specified
     PD_TAG_EXPORT_FILENAME_VIDEO,  // if specified
+
+    PD_TAG_EXPORT_CDG_TEXT_ALIGN_VERTICAL,
+    PD_TAG_EXPORT_VIDEO_TEXT_ALIGN_VERTICAL,
 };
 
 
@@ -117,7 +122,7 @@ void Project::clear()
 {
 	m_projectData.clear();
 	m_projectData[ PD_SIGNATURE ] = "BONIFACI";
-	m_projectData[ PD_VERSION ] = 1;
+    m_projectData[ PD_VERSION ] = QChar(1);
 	m_projectData[ PD_TAG_OFFSET ] = QString::number( pSettings->m_phononSoundDelay );
 	m_projectData[ PD_TAG_APPLICATION ] = APP_NAME;
 	m_projectData[ PD_TAG_APPVERSION ] = QString("%1.%2").arg( APP_VERSION_MAJOR ).arg( APP_VERSION_MINOR );
@@ -130,7 +135,10 @@ void Project::clear()
 	m_projectData[ PD_TAG_CDG_FONT ] = "Droid Sans";
 	m_projectData[ PD_TAG_CDG_FONTSIZE ] = "12";
 	m_projectData[ PD_TAG_CDG_MINTITLE ] = "5";
-	m_projectData[ PD_TAG_CDG_PREAMBLE ] = "1";
+    m_projectData[ PD_TAG_CDG_PREAMBLE ] = "1";
+
+    m_projectData[ PD_TAG_EXPORT_CDG_TEXT_ALIGN_VERTICAL ] = QString::number( TextRenderer::VerticalBottom );
+    m_projectData[ PD_TAG_EXPORT_VIDEO_TEXT_ALIGN_VERTICAL ] = QString::number( TextRenderer::VerticalBottom );
 
 	m_totalSongLength = 0;
 }
@@ -360,6 +368,14 @@ int	Project::tagToId( Tag tag  ) const
         case Tag_ExportFilenameVideo:
             tagid = PD_TAG_EXPORT_FILENAME_VIDEO;
             break;
+
+        case Tag_CDG_TextAlignVertical:
+            tagid = PD_TAG_EXPORT_CDG_TEXT_ALIGN_VERTICAL;
+            break;
+
+        case Tag_Video_TextAlignVertical:
+            tagid = PD_TAG_EXPORT_VIDEO_TEXT_ALIGN_VERTICAL;
+            break;
     }
 
 	return tagid;
@@ -526,11 +542,10 @@ QByteArray Project::exportLyricsAsLRC1()
 				Lyrics::Syllable lentry = line[pos];
 
 				// Insert timing mark
-				QString timetag;
 				int minute, second, msecond;
 
 				splitTimeMark( lentry.timing, &minute, &second, &msecond );
-				timetag.sprintf( "%02d:%02d.%02d", minute, second, msecond / 10 );
+                QString timetag = QString::asprintf( "%02d:%02d.%02d", minute, second, msecond / 10 );
 
 				if ( pos == 0 )
 					lrc += "[" + timetag + "]";
@@ -595,11 +610,10 @@ QByteArray Project::exportLyricsAsLRC2()
 				Lyrics::Syllable lentry = line[pos];
 
 				// Insert timing mark
-				QString timetag;
 				int minute, second, msecond;
 
 				splitTimeMark( lentry.timing, &minute, &second, &msecond );
-				timetag.sprintf( "%02d:%02d.%02d", minute, second, msecond / 10 );
+                QString timetag = QString::asprintf( "%02d:%02d.%02d", minute, second, msecond / 10 );
 
 				if ( pos == 0 )
 					lrc += "[" + timetag + "]";
@@ -888,13 +902,13 @@ bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics, b
 
 		if ( header )
 		{
-			QRegExp regex( "^<([a-zA-Z]+):\\s*(.*)\\s*>$" );
-			regex.setMinimal( true );
+            QRegularExpression regex( "^<([a-zA-Z]+):\\s*(.*?)\\s*>$" );
+            QRegularExpressionMatch match = regex.match( line );
 
-			if ( regex.indexIn( line ) != -1 )
+            if ( match.hasMatch() )
 			{
-				QString tag = regex.cap( 1 );
-				QString value = regex.cap( 2 );
+                QString tag = match.captured( 1 );
+                QString value = match.captured( 2 );
 				int tagid = -1;
 
 				if ( tag == "ti" )
@@ -935,18 +949,21 @@ bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics, b
 		// We may fall-through, so no else
 		if ( !header )
 		{
-			QRegExp regex( "<(\\d+):(\\d+)(.\\d+)?>([^<]*)" );
+            QRegularExpression regex( "<(\\d+):(\\d+)(.\\d+)?>([^<]*)" );
+            QRegularExpressionMatch m;
 			int pos = 0;
 
-			while ( (pos = regex.indexIn( line, pos )) != -1 )
+            while ( (m = regex.match( line, pos )).hasMatch() )
 			{
+                pos = m.capturedStart();
+
 				if ( pos != 0 )
 					type_lrc2 = true;
 
-				QStringList match = regex.capturedTexts();
-				int minutes = match[1].toInt();
-				int seconds = match[2].toInt();
-				QString text = match[3];
+                QStringList match = m.capturedTexts();
+                int minutes = match[1].toInt();
+                int seconds = match[2].toInt();
+                QString text = match[3];
 				int ms = 0;
 
 				// msecs require more precise handling
@@ -996,23 +1013,23 @@ bool Project::importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics, b
 
 bool Project::importLyricsTxt( const QStringList & readlyrics, Lyrics& lyrics )
 {
-	lyrics.clear();
+    lyrics.clear();
 
-	if ( readlyrics.isEmpty() )
-		return false;
+    if ( readlyrics.isEmpty() )
+        return false;
 
     // TXT could be UltraStar or PowerKaraoke or KBP
-	if ( readlyrics.first().indexOf( QRegExp( "^#[a-zA-Z]+:\\s*.*\\s*$" ) ) != -1 )
-		return importLyricsUStar( readlyrics, lyrics );
-	else if ( readlyrics.first().indexOf( QRegExp( "^([0-9.]+) ([0-9.]+) (.+)" ) ) != -1 )
-		return importLyricsPowerKaraoke( readlyrics, lyrics );
+    if ( readlyrics.first().indexOf( QRegularExpression( "^#[a-zA-Z]+:\\s*.*\\s*$" ) ) != -1 )
+        return importLyricsUStar( readlyrics, lyrics );
+    else if ( readlyrics.first().indexOf( QRegularExpression( "^([0-9.]+) ([0-9.]+) (.+)" ) ) != -1 )
+        return importLyricsPowerKaraoke( readlyrics, lyrics );
     else if ( readlyrics.contains( "PAGEV2") )
         return importLyricsKaraokeBuilder( readlyrics, lyrics );
 
     QMessageBox::critical( 0,
-						   QObject::tr("Invalid text file"),
-						   QObject::tr("This file is not a valid UltraStar nor PowerKaraoke lyric file") );
-	return false;
+                           QObject::tr("Invalid text file"),
+                           QObject::tr("This file is not a valid UltraStar nor PowerKaraoke lyric file") );
+    return false;
 }
 
 static int powerKaraokeTime( QString time )
@@ -1067,7 +1084,8 @@ bool Project::importLyricsKOK( const QStringList & readlyrics, Lyrics& lyrics )
 bool Project::importLyricsPowerKaraoke( const QStringList & readlyrics, Lyrics& lyrics )
 {
 	// For the PowerKaraoke format there is no header, just times.
-	QRegExp regex("^([0-9.:]+) ([0-9.:]+) (.*)");
+    QRegularExpression regex("^([0-9.:]+) ([0-9.:]+) (.*)");
+    QRegularExpressionMatch m;
 
 	// Analyze each line
 	for ( int i = 0; i < readlyrics.size(); i++ )
@@ -1078,7 +1096,7 @@ bool Project::importLyricsPowerKaraoke( const QStringList & readlyrics, Lyrics& 
 			continue;
 
 		// Try to match the sync first
-		if ( line.indexOf( regex ) == -1 )
+        if ( !(m = regex.match( line )).hasMatch() )
 		{
 			QMessageBox::critical( 0,
 								   QObject::tr("Invalid PowerKaraoke file"),
@@ -1086,9 +1104,8 @@ bool Project::importLyricsPowerKaraoke( const QStringList & readlyrics, Lyrics& 
 			return false;
 		}
 
-		int start = powerKaraokeTime( regex.cap( 1 ) );
-		//int end = powerKaraokeTime( regex.cap( 2 ) );
-		QString text = regex.cap( 3 ).trimmed();
+        int start = powerKaraokeTime( m.captured( 1 ) );
+        QString text = m.captured( 3 ).trimmed();
 
 		lyrics.curLyricSetTime( start );
 
@@ -1118,7 +1135,7 @@ bool Project::importLyricsPowerKaraoke( const QStringList & readlyrics, Lyrics& 
 bool Project::importLyricsKaraokeBuilder( const QStringList & readlyrics, Lyrics& lyrics )
 {
     // Lyric match regex like ZA/            592/622/0
-    QRegExp regex("(.*)/ +([0-9]+)/([0-9]+)/([0-9]+)");
+    QRegularExpression regex("(.*)/ +([0-9]+)/([0-9]+)/([0-9]+)");
 
     // We split blocks by PAGEV2, and ignore the first one (it is header)
     int blockcount = 0;
@@ -1156,7 +1173,9 @@ bool Project::importLyricsKaraokeBuilder( const QStringList & readlyrics, Lyrics
         }
 
         // Try to match the sync first
-        if ( line.indexOf( regex ) == -1 )
+        QRegularExpressionMatch m = regex.match( line );
+
+        if ( !m.hasMatch() )
         {
             QMessageBox::critical( 0,
                                    QObject::tr("Invalid KaraokeBuilder file"),
@@ -1164,8 +1183,8 @@ bool Project::importLyricsKaraokeBuilder( const QStringList & readlyrics, Lyrics
             return false;
         }
 
-        int start = regex.cap( 2 ).toInt() * 10;
-        QString text = regex.cap( 1 );
+        int start = m.captured( 2 ).toInt() * 10;
+        QString text = m.captured( 1 );
 
         lyrics.curLyricSetTime( start );
         lyrics.curLyricAppendText( text );
@@ -1179,7 +1198,8 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 {
 	bool header = true;
 	bool relative = false;
-	int bpm = -1, gap = -1;
+	double bpm = -1;
+	double gap = -1;
 	double msecs_per_beat = 0;
 	int last_time_ms = 0;
 	int next_time_ms = 0;
@@ -1191,12 +1211,13 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 
 		if ( header )
 		{
-			QRegExp regex( "^#([a-zA-Z]+):\\s*(.*)\\s*$" );
+            QRegularExpression regex( "^#([a-zA-Z]+):\\s*(.*)\\s*$" );
+            QRegularExpressionMatch m = regex.match( line );
 
-			if ( regex.indexIn( line ) != -1 )
+            if ( m.hasMatch() )
 			{
-				QString tag = regex.cap( 1 );
-				QString value = regex.cap( 2 );
+                QString tag = m.captured( 1 );
+                QString value = m.captured( 2 );
 				int tagid = -1;
 
 				if ( tag == "TITLE" )
@@ -1220,9 +1241,9 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 				else if ( tag == "EDITION" )
 					tagid = PD_TAG_EDITION;
 				else if ( tag == "BPM" )
-					bpm = value.toInt();
+					bpm = value.toDouble();
 				else if ( tag == "GAP" )
-					gap = value.toInt();
+					gap = value.toDouble();
 				else if ( tag == "RELATIVE" )
 					relative = value.compare( "yes" );
 				else
@@ -1234,7 +1255,7 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 			else
 			{
 				// Tag not found; either header ended, or invalid file
-				if ( bpm == -1 || gap == -1 )
+				if ( bpm < 0 || gap < 0 )
 				{
 					QMessageBox::critical( 0,
 										   QObject::tr("Invalid UltraStar file"),
@@ -1242,7 +1263,7 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 					return false;
 				}
 
-				msecs_per_beat = (int) ((60.0 / (double) bpm / 4.0) * 1000.0);
+				msecs_per_beat = (60.0 / bpm / 4.0) * 1000.0;
 				header = false;
 			}
 		}
@@ -1263,7 +1284,7 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 			if ( line[0] == 'E' )
 				break;
 
-			QStringList parsed = line.split( QRegExp("\\s+") );
+            QStringList parsed = line.split( QRegularExpression("\\s+") );
 
 			if ( parsed.size() < 3 )
 			{

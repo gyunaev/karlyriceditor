@@ -20,7 +20,7 @@
 #include "kfn_file_parser.h"
 
 #include <QMap>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QStringList>
 
 #define KFN_SUPPORT_ENCRYPTION
@@ -149,7 +149,7 @@ void KFNFileParser::close()
 QString	KFNFileParser::musicFileExtention() const
 {
 	if ( m_entryMusic == -1 )
-		return QString::null;
+		return QString();
 
 	const Entry& entry = m_entries[m_entryMusic];
 
@@ -180,25 +180,25 @@ bool KFNFileParser::writeMusicFile( QFile& outfile )
 QString	KFNFileParser::lyricsAsLRC()
 {
 	if ( m_entrySongIni == -1 )
-		return QString::null;
+		return QString();
 
 	const Entry& entry = m_entries[m_entrySongIni];
 
 	QByteArray data = extract( entry );
 
 	if ( data.isEmpty() )
-		return QString::null;
+		return QString();
 
 	QString songini = QString::fromUtf8( data.data(), data.size() );
-	songini.replace( QRegExp("[\r\n]+"), "\n" );
+    songini.replace( QRegularExpression("[\r\n]+"), "\n" );
 	QStringList lines = songini.split( "\n" );
 
 	// Parse the song.ini and fill up the sync and text arrays
 	QStringList texts;
 	QList< int > syncs;
 
-	QRegExp patternSync( "^Sync[0-9]+=(.+)" );
-	QRegExp patternText( "^Text[0-9]+=(.*)" );
+    QRegularExpression patternSync( "^Sync[0-9]+=(.+)" );
+    QRegularExpression patternText( "^Text[0-9]+=(.*)" );
 
 	// Analyze each line
 	for ( int i = 0; i < lines.size(); i++ )
@@ -206,22 +206,26 @@ QString	KFNFileParser::lyricsAsLRC()
 		QString line = lines[i];
 
 		// Try to match the sync first
-		if ( line.indexOf( patternSync ) != -1 )
+        QRegularExpressionMatch m = patternSync.match( line );
+
+        if ( m.hasMatch() )
 		{
 			// Syncs are split by comma
-			QStringList values = patternSync.cap( 1 ).split(",");
+            QStringList values = m.captured( 1 ).split(",");
 
 			for ( int v = 0; v < values.size(); v++ )
 				syncs.push_back( values[v].toInt() );
 		}
 
 		// Now the text
-		if ( line.indexOf( patternText ) != -1 )
+        m = patternText.match( line );
+
+        if ( m.hasMatch() )
 		{
-			if ( !patternText.cap( 1 ).isEmpty() )
+            if ( !m.captured( 1 ).isEmpty() )
 			{
 				// Text is split by word and optionally by the slash
-				QStringList values = patternText.cap( 1 ).split(" ");
+                QStringList values = m.captured( 1 ).split(" ");
 
 				for ( int v = 0; v < values.size(); v++ )
 				{
@@ -314,8 +318,7 @@ QByteArray KFNFileParser::extract( const Entry& entry )
 
 #if defined (KFN_SUPPORT_ENCRYPTION)
 	// A file is encrypted, decrypt it
-    EVP_CIPHER_CTX * ctx = EVP_CIPHER_CTX_new();
-    EVP_CIPHER_CTX_init( ctx );
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
 
     EVP_DecryptInit_ex( ctx, EVP_aes_128_ecb(), 0, (const unsigned char*) m_aesKey.data(), 0 );
 
@@ -335,7 +338,7 @@ QByteArray KFNFileParser::extract( const Entry& entry )
 
 		if ( bytesRead != toRead )
 		{
-            EVP_CIPHER_CTX_cleanup( ctx );
+            EVP_CIPHER_CTX_free( ctx );
 			m_errorMsg = "File truncated";
 			return QByteArray();
 		}
@@ -343,7 +346,7 @@ QByteArray KFNFileParser::extract( const Entry& entry )
 		// Decrypt the content
         if ( !EVP_DecryptUpdate( ctx, (unsigned char*) outbuf, &toWrite, (unsigned char*) buffer, bytesRead ) )
 		{
-            EVP_CIPHER_CTX_cleanup( ctx );
+            EVP_CIPHER_CTX_free( ctx );
 			m_errorMsg = "Decryption failed";
 			return QByteArray();
 		}
@@ -353,7 +356,7 @@ QByteArray KFNFileParser::extract( const Entry& entry )
 		total_in += bytesRead;
 	}
 
-    EVP_CIPHER_CTX_cleanup( ctx );
+    EVP_CIPHER_CTX_free( ctx );
 	return array;
 #else
 	m_errorMsg = "File is encrypted, but decryption support is not compiled in";

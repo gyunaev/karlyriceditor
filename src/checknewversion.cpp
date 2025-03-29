@@ -20,6 +20,7 @@
 #include <QUrl>
 #include <QStringList>
 #include <QMetaType>
+#include <QRegularExpression>
 
 #if !defined (WIN32)
 	#include <sys/socket.h>
@@ -94,7 +95,7 @@ void CheckNewVersion::fatalError( int code )
 
 	closeSocket();
 	emit error( code );
-	deleteLater();
+    QThread::exit( 0 );
 }
 
 void CheckNewVersion::reportStatus( int status )
@@ -201,20 +202,13 @@ void CheckNewVersion::run()
 	reportStatus( Status_SendingRequest );
 
 	const char * reqmsg = qPrintable( request );
-	unsigned int offset = 0, length = strlen( reqmsg );
+    unsigned int length = strlen( reqmsg );
 
-	while ( offset < length )
-	{
-		int sentamount = ::send( m_sockfd, reqmsg + offset, length - offset, 0 );
-
-		if ( sentamount <= 0 )
-		{
-			fatalError( Error_Sending );
-			return;
-		}
-
-		offset += sentamount;
-	}
+    if ( ::send( m_sockfd, reqmsg, length, 0 ) != length )
+    {
+        fatalError( Error_Receiving );
+        return;
+    }
 
 	// Receive the response
 	reportStatus( Status_ReceivingResponse );
@@ -242,7 +236,10 @@ void CheckNewVersion::run()
 	}
 
 	// Make sure server didn't return error
-	if ( header.isEmpty() || header[0].indexOf( QRegExp( "^http/1.\\d\\s+2\\d\\d", Qt::CaseInsensitive )) == -1 )
+    QRegularExpression regex( "^http/1.\\d\\s+2\\d\\d", QRegularExpression::CaseInsensitiveOption );
+    QRegularExpressionMatch match;
+
+    if ( header.isEmpty() || !(match = regex.match( header[0] )).hasMatch() )
 	{
 #if defined (ENABLE_DEBUG_MESSAGES)
 		if ( !header.isEmpty() )
@@ -253,11 +250,15 @@ void CheckNewVersion::run()
 	}
 
 	// Find content-length
-	QRegExp clr( "^content-length: (\\d+)$" );
-	clr.setCaseSensitivity( Qt::CaseInsensitive );
+    QRegularExpression clr( "^content-length: (\\d+)$", QRegularExpression::CaseInsensitiveOption );
 
-	if ( header.indexOf( clr ) != -1 )
-		contentlen = clr.cap( 1 ).toInt();
+    for ( auto a : header )
+    {
+        match = clr.match( a );
+
+        if ( match.hasMatch() )
+            contentlen = match.captured( 1 ).toInt();
+    }
 
 	// Read the rest of content until we have contentlen or connection closed
 	while ( contentlen == -1 || contentlen < m_inputOffset )
@@ -285,15 +286,16 @@ void CheckNewVersion::run()
 	reportStatus( Status_Proceeding );
 
 	m_inputBuffer.replace( '\r', '\n' );
-	QStringList content_list = QString::fromUtf8( m_inputBuffer ).split( '\n', QString::SkipEmptyParts );
+    QStringList content_list = QString::fromUtf8( m_inputBuffer ).split( '\n', Qt::SkipEmptyParts );
 	QMap<QString,QString> contentMap;
 
 	// Validate the file, and parse it into map
 	for ( int i = 0; i < content_list.size(); i++ )
 	{
-		QRegExp reg( "^(\\w+)\\s*:(.*)$" );
+        QRegularExpression reg( "^(\\w+)\\s*:(.*)$" );
+        QRegularExpressionMatch match = reg.match( content_list[i] );
 
-		if ( content_list[i].indexOf( reg ) == -1 )
+        if ( !match.hasMatch() )
 		{
 #if defined (ENABLE_DEBUG_MESSAGES)
 			qDebug("CheckNewVersion::run: invalid line found: '%s'", qPrintable( content_list[i] ) );
@@ -303,10 +305,10 @@ void CheckNewVersion::run()
 		}
 
 		// Decode \n back to 0x0A
-		QString value = reg.cap( 2 ).trimmed();
+        QString value = match.captured( 2 ).trimmed();
 		value.replace( "\\n", "\n" );
 		value.replace( "\\\\", "\\" );
-		contentMap[ reg.cap(1) ] = value;
+        contentMap[ match.captured(1) ] = value;
 	}
 
 	// Validate signature
@@ -357,7 +359,7 @@ QString CheckNewVersion::readLine()
 
 		// No line in buffer yet
 		if ( m_inputOffset + 1 > m_inputBuffer.size() )
-			return QString::null;
+            return QString();
 
 		int bytes = ::recv( m_sockfd, m_inputBuffer.data() + m_inputOffset, m_inputBuffer.size() - m_inputOffset, 0 );
 
@@ -376,5 +378,5 @@ QString CheckNewVersion::readLine()
 		m_inputOffset += bytes;
 	}
 
-	return QString::null;
+    return QString();
 }

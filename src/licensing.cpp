@@ -21,30 +21,27 @@
 #include <QString>
 #include <QSettings>
 
-#if defined (USE_LICENSING)
-	#include <openssl/x509.h>
-	#include <openssl/x509_vfy.h>
-#endif
+#include <openssl/x509.h>
+#include <openssl/x509_vfy.h>
 
 #include "licensing.h"
 
 Licensing * pLicensing;
 
-
-static const char * CA_DER_CERT = "MIICkDCCAfmgAwIBAgIJAJvgo443LFCmMA0GCSqGSIb3DQEBBQUAMIGAMTEwLwYD"
-									"VQQDDChrYXJseXJpY2VkaXRvci5jb20uY2VydGlmaWNhdGUuYXV0aG9yaXR5MRMw"
-									"EQYDVQQIDApDYWxpZm9ybmlhMQswCQYDVQQGEwJVUzEpMCcGCSqGSIb3DQEJARYa"
-									"c3VwcG9ydEBrYXJseXJpY2VkaXRvci5jb20wHhcNMTEwNDIwMDg1MTE2WhcNMjEw"
-									"NDE3MDg1MTE2WjCBgDExMC8GA1UEAwwoa2FybHlyaWNlZGl0b3IuY29tLmNlcnRp"
-									"ZmljYXRlLmF1dGhvcml0eTETMBEGA1UECAwKQ2FsaWZvcm5pYTELMAkGA1UEBhMC"
-									"VVMxKTAnBgkqhkiG9w0BCQEWGnN1cHBvcnRAa2FybHlyaWNlZGl0b3IuY29tMIGf"
-									"MA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCv6WOtHgsndu8IaZyP2xgke0rHAWJv"
-									"y5cPpRNWNB/2G5ogbL629A9a3ehVIRpAbJyHHiSuNX+wc4YiczwxZjW32KU3QFKf"
-									"XtCPDOVX5OdToMnKIEngSD65QiYSv/RqCW45z+Mc0LqWAE9BftEybpdUfubYV5pY"
-									"r6pckkKWpPb1xQIDAQABoxAwDjAMBgNVHRMEBTADAQH/MA0GCSqGSIb3DQEBBQUA"
-									"A4GBAC08oP+QzbT8TfQUqXTnAxSQNVWZAPHL4wOQMbC/MDumdg2N8iYDPFEX3QKE"
-									"vfWiqr3nwmOrAZxAQh6iqMa73JqaVm6h2oqrAcf9XnaoR63G+gk1EluDD9AK8MKf"
-									"b3IE9nt1TDhlJkbGG8rMD692HkpMGggsco93PQLWmtvcyIIo";
+static const char * CA_DER_CERT =   "MIICkDCCAfmgAwIBAgIJALZZydkrowO7MA0GCSqGSIb3DQEBBQUAMIGAMTEwLwYD"
+                                    "VQQDDChrYXJseXJpY2VkaXRvci5jb20uY2VydGlmaWNhdGUuYXV0aG9yaXR5MRMw"
+                                    "EQYDVQQIDApDYWxpZm9ybmlhMQswCQYDVQQGEwJVUzEpMCcGCSqGSIb3DQEJARYa"
+                                    "c3VwcG9ydEBrYXJseXJpY2VkaXRvci5jb20wHhcNMTkwODA1MDQxOTM0WhcNMjkw"
+                                    "ODAyMDQxOTM0WjCBgDExMC8GA1UEAwwoa2FybHlyaWNlZGl0b3IuY29tLmNlcnRp"
+                                    "ZmljYXRlLmF1dGhvcml0eTETMBEGA1UECAwKQ2FsaWZvcm5pYTELMAkGA1UEBhMC"
+                                    "VVMxKTAnBgkqhkiG9w0BCQEWGnN1cHBvcnRAa2FybHlyaWNlZGl0b3IuY29tMIGf"
+                                    "MA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDHwxIkDWg/nIFBLI1AoQNnXINCkeO2"
+                                    "ckL2Y5ehLwjVBQdmqcnYw7Jhk0hsMZ3fMnpreQDvET/kCuPar9LxNl+badKDj4Ar"
+                                    "oAP9xUF+X2DdmX81UpuKFmNBGb1oMXhhqv0a2kV6//w5Z3z/6NTy9Z/Ze+8DT4IM"
+                                    "BPZa4V8cPkDXjwIDAQABoxAwDjAMBgNVHRMEBTADAQH/MA0GCSqGSIb3DQEBBQUA"
+                                    "A4GBAFVGsJxwxM7OXRMs1lYpw1S0aDd8+14/lbdfMdOMqzooeWDqaVhtwPNxsq8y"
+                                    "rGQcRyDuMKkT0zn7mdFAVApTlOZB11Iw+lEXEo7HpzDNojPSVzk3HGJKWz0rNfR/"
+                                    "x4zP4SozW3iqSM21mUJ1iAlkCVEr8KIfejgRCFs5BlybsEqz";
 
 static const char * CA_SUBJECT = "karlyriceditor.com.certificate.authority";
 
@@ -73,11 +70,7 @@ Licensing::~Licensing()
 
 bool Licensing::isEnabled() const
 {
-#if defined (USE_LICENSING)
 	return true;
-#else
-	return false;
-#endif
 }
 
 
@@ -93,18 +86,13 @@ QDate Licensing::expires() const
 
 bool Licensing::init()
 {
-#if defined (USE_LICENSING)
 	OpenSSL_add_all_algorithms();
 	return true;
-#else
-	return false;
-#endif
 }
 
 
 bool Licensing::validate( const QString& license )
 {
-#if defined (USE_LICENSING)
 	char subject[1024];
 	ASN1_TIME *naft;
 	X509 * cert = 0;
@@ -278,10 +266,6 @@ cleanup:
 		X509_STORE_free( certStore );
 
 	return d->m_valid;
-
-#else
-	return false;
-#endif
 }
 
 bool Licensing::isValid() const
