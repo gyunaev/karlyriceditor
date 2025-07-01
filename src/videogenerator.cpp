@@ -27,13 +27,13 @@
 #include "dialog_export_params.h"
 #include "editor.h"
 
-VideoGenerator::VideoGenerator( Project * prj, const Lyrics &lyrics )
+VideoGenerator::VideoGenerator( Project * prj, const Lyrics &lyrics, qint64 totaltime )
     : QDialog(), m_lyrics(lyrics)
 {
     mProgress.setupUi( this );
 	m_project = prj;
     m_encoder = 0;
-    m_totalTime = -1;
+    m_totalTime = totaltime;
 }
 
 void VideoGenerator::generate()
@@ -115,7 +115,7 @@ void VideoGenerator::generate()
 
                                         // Detect if the stream should end; we only do this once we have the length,
                                         // as we do not know the duration until we start playing
-                                        if ( m_totalTime != -1 && timing >= m_totalTime )
+                                        if ( m_encoder == 0 || (m_totalTime != -1 && timing >= m_totalTime) )
                                             return QImage();
 
                                         m_currentTime = timing;
@@ -155,13 +155,9 @@ void VideoGenerator::mediaLoadingFinished(MediaPlayer::State newstate, QString e
     }
 }
 
-void VideoGenerator::mediaDurationChanged()
-{
-    m_totalTime = m_encoder->duration();
-}
-
 void VideoGenerator::mediaFinished()
 {
+    qDebug("media finished");
     m_encoder->stop();
     m_encoder->deleteLater();
 
@@ -174,6 +170,7 @@ void VideoGenerator::buttonAbort()
 {
     m_encoder->stop();
     m_encoder->deleteLater();
+    m_encoder = 0;
 
     reject();
     deleteLater();
@@ -181,7 +178,7 @@ void VideoGenerator::buttonAbort()
 
 void VideoGenerator::updateProgress()
 {
-    mProgress.progressBar->setValue( m_currentTime * 100 / m_totalTime );
+    mProgress.progressBar->setValue( (m_currentTime * 100) / m_totalTime );
     mProgress.lblFrames->setText( QString::number(m_processedFrames) );
 
     // elapsed encoding time
@@ -189,7 +186,9 @@ void VideoGenerator::updateProgress()
     mProgress.lblTime->setText( QString::asprintf("%02d:%02d", elapsed / 60, elapsed % 60 ) );
 
     QMutexLocker m( &mProgressMutex );
-    mProgress.image->setPixmap( QPixmap::fromImage( m_lastRenderedImage ).scaled( mProgress.image->size() ) );
+
+    if ( !m_lastRenderedImage.isNull() )
+        mProgress.image->setPixmap( QPixmap::fromImage( m_lastRenderedImage ).scaled( mProgress.image->size() ) );
 }
 
 void VideoGenerator::closeEvent(QCloseEvent *e)

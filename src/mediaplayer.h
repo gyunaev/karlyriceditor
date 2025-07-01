@@ -165,6 +165,7 @@ class MediaPlayer : public QObject
         std::function<const QImage( qint64 )> m_frameRetriever;
         qint64      m_videoPosition;
         bool        m_EOFseen;
+        bool        m_enoughData;
 
         // Those are created objects
         GstElement *m_gst_pipeline;

@@ -48,6 +48,7 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 		void	previewSliderMoved( int newvalue );
         void    recalculateLargestFontSize();
         void    fontSizeStrategyChanged(int index);
+        void    videoProfileChanged( int index );
 
 		void	accept();
 

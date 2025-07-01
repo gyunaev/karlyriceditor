@@ -177,7 +177,6 @@ bool MediaPlayer::setCapabilityValue( MediaPlayer::Capability cap, int value)
         // The UI gives us tempo rate as percentage, from 0 to 100 with 50 being normal value.
         // Thus we convert it into 75% - 125% range
         m_tempoRatePercent = 75 + value / 2;
-        addlog( "DEBUG",  "MediaPlayer_GStreamer: tempo change: UI %d -> player %d", value, m_tempoRatePercent );
         position();
         seekTo( m_lastKnownPosition );
 
@@ -280,7 +279,7 @@ void MediaPlayer::loadMediaGeneric()
     // Initialize gstreamer if not initialized yet
     if ( !gst_is_initialized() )
     {
-        //qputenv( "GST_DEBUG", "*:4" );
+        //qputenv( "GST_DEBUG", "*:2" );
         gst_init(0, 0);
     }
 
@@ -362,7 +361,8 @@ void MediaPlayer::prepareVideoEncoder(const QString &inputAudioFile, const QStri
     // The content of the pipeline - which could be video-only, audio-only or audio-video
     // See https://gstreamer.freedesktop.org/documentation/tutorials/basic/gstreamer-tools.html
     QString pipeline = QString( "appsrc name=videosource caps=\"video/x-raw,format=(string)BGRA,width=(int)%1,height=(int)%2,framerate=(fraction)25/1\" \
-                        ! enc.video_%u encodebin name=enc profile=\"%3\" \
+                        ! video/x-raw \
+                        ! enc.video_%u encodebin2 name=enc profile=\"%3\" \
                         ! filesink name=mediafile \
                         filesrc name=filesource \
                         ! decodebin ! audio/x-raw \
@@ -404,7 +404,7 @@ void MediaPlayer::prepareVideoEncoder(const QString &inputAudioFile, const QStri
 
     gst_app_src_set_callbacks( GST_APP_SRC(m_gst_source), &callbacks, this, 0 );
 
-    // Our sources have bytes format
+    // Our sources have time format
     g_object_set( m_gst_source, "format", GST_FORMAT_TIME, NULL);
 
     // Get the pipeline bus - store it since it has to be "unref after usage"
@@ -497,14 +497,17 @@ void MediaPlayer::cb_source_need_data(GstAppSrc *src, guint length, gpointer use
 
     if ( self->m_EOFseen )
     {
+        qDebug("EOS");
         gst_app_src_end_of_stream( GST_APP_SRC(self->m_gst_source) );
         return;
     }
 
     const QImage img = self->m_frameRetriever( self->m_videoPosition );
 
+    // Empty image indicates the stream has ended
     if ( img.isNull() )
     {
+        qDebug("NULL pixmap, EOS");
         gst_app_src_end_of_stream( GST_APP_SRC(self->m_gst_source) );
         return;
     }
@@ -524,10 +527,9 @@ void MediaPlayer::cb_source_need_data(GstAppSrc *src, guint length, gpointer use
     self->m_videoPosition += FRAME_DURATION_MS;
 }
 
-void MediaPlayer::cb_source_enough_data(GstAppSrc *src, gpointer user_data)
+void MediaPlayer::cb_source_enough_data(GstAppSrc *, gpointer )
 {
-    qDebug("cb_source_enough_data");
-    return;
+    // unused
 }
 
 GstFlowReturn MediaPlayer::cb_new_sample(GstAppSink *appsink, gpointer user_data)
@@ -556,6 +558,8 @@ GstBusSyncReply MediaPlayer::cb_busMessageDispatcher( GstBus *bus, GstMessage *m
     GError *err;
     gchar *debug_info;
 
+    //qDebug("msg type %s", gst_message_type_get_name( GST_MESSAGE_TYPE (msg) ) );
+
     if ( GST_MESSAGE_TYPE (msg) == GST_MESSAGE_ERROR )
     {
         gst_message_parse_error (msg, &err, &debug_info);
@@ -570,7 +574,7 @@ GstBusSyncReply MediaPlayer::cb_busMessageDispatcher( GstBus *bus, GstMessage *m
     }
     else if ( GST_MESSAGE_TYPE (msg) == GST_MESSAGE_DURATION_CHANGED )
     {
-        self->addlog( "DEBUG",  "GstMediaPlayer: duration changed message" );
+        self->addlog( "DEBUG",  "GstMediaPlayer: duration changed message from %s", GST_OBJECT_NAME( GST_MESSAGE_SRC (msg) ) );
         self->m_duration = -1;
 
         // Call the signal invoker

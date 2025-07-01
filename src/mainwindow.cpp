@@ -860,7 +860,7 @@ void MainWindow::act_projectExportVideoFile()
     playerStop();
 
     // This one runs an event loop inside so it would delete itself
-    VideoGenerator * videogen = new VideoGenerator( m_project, lyrics );
+    VideoGenerator * videogen = new VideoGenerator( m_project, lyrics, m_mediaPlayer->duration() );
     videogen->generate();
 }
 

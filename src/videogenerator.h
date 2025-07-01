@@ -36,12 +36,11 @@ class VideoGenerator : public QDialog
     Q_OBJECT
 
 	public:
-        VideoGenerator( Project * prj, const Lyrics &lyrics );
+        VideoGenerator( Project * prj, const Lyrics &lyrics, qint64 totaltime );
         void generate();
 
     public slots:
         void    mediaLoadingFinished( MediaPlayer::State newstate, QString error );
-        void    mediaDurationChanged();
         void    mediaFinished();
 
         void    buttonAbort();

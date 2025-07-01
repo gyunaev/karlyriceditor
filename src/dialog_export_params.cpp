@@ -31,9 +31,10 @@
 #include "cdg.h"
 
 // Video profiles
-static const QMap< QString, QString > videoProfileMap = {
+static const QVector< QPair< QString, QString > > videoProfileMap = {
+    { "MP4 video with x264/aac" , "video/quicktime:video/x-h264:audio/mpeg" },
     { "OGG video with theora/vorbis" , "application/ogg:video/x-theora:audio/x-vorbis" },
-    { "MP4 video with h264/aac" , "application/mp4:video/x-h264:audio/x-aac" },
+    { "Custom GStreamer video (for advanced users)" , "CUSTOM" },
 };
 
 DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyrics,  bool video, QWidget *parent )
@@ -69,10 +70,11 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 
     // Video resolution combobox
     connect( boxVideoResolution, SIGNAL(currentIndexChanged(int)), this, SLOT(recalculateLargestFontSize() ) );
+    connect( boxVideoProfile, SIGNAL(currentIndexChanged(int)), this, SLOT(videoProfileChanged(int) ) );
 
     // Video profiles setup
-    for ( const auto v : videoProfileMap.keys() )
-        boxVideoProfile->addItem( v, videoProfileMap[v] );
+    for ( const auto& v : videoProfileMap )
+        boxVideoProfile->addItem( v.first, v.second );
 
     // Add font video styles and choose "normal" to match previous behavior
     fontVideoStyle->addItem( "Thin", QFont::Thin );
@@ -98,6 +100,8 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
         leOutputFile->setText( m_project->tag( Project::Tag_ExportFilenameVideo, "" ) );
 
         boxTextVerticalAlign->setCurrentIndex( m_project->tag( Project::Tag_Video_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
+
+        //leCustomProfile->hide();
 	}
 	else
 	{
@@ -331,7 +335,12 @@ QSize DialogExportOptions::getVideoSize() const
 
 QString DialogExportOptions::videoProfile() const
 {
-    return boxVideoProfile->currentData().toString();
+    QString value = boxVideoProfile->currentData().toString();
+
+    if ( value == "CUSTOM" )
+        return leCustomProfile->text();
+
+    return value;
 }
 
 void DialogExportOptions::activateTab( int index )
@@ -443,4 +452,9 @@ void DialogExportOptions::fontSizeStrategyChanged(int index)
         spinFontSize->setValue( spinFontSize->maximum() );
         spinFontSize->setEnabled( false );
     }
+}
+
+void DialogExportOptions::videoProfileChanged(int index)
+{
+    leCustomProfile->setHidden( boxVideoProfile->itemData( index ).toString() != "CUSTOM" );
 }
