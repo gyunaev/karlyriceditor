@@ -29,15 +29,11 @@ HEADERS += mainwindow.h \
     lyricsrenderer.h \
     textrenderer.h \
     lyricswidget.h \
-    ffmpegvideodecoder.h \
-    ffmpegvideoencoder.h \
     videogenerator.h \
     lyricsevents.h \
     background.h \
     audioplayer.h \
-    ffmpeg_headers.h \
     audioplayerprivate.h \
-    licensing.h \
     karaokelyricstextkar.h \
     kfn_file_parser.h \
     dialog_timeadjustment.h \
@@ -70,7 +66,6 @@ SOURCES += mainwindow.cpp \
     videogenerator.cpp \
     lyricsevents.cpp \
     background.cpp \
-    licensing.cpp \
     karaokelyricstextkar.cpp \
     kfn_file_parser.cpp \
     dialog_timeadjustment.cpp \
@@ -96,7 +91,7 @@ FORMS += mainwindow.ui \
     dialog_timeadjustment.ui \
     video_profile_dialog.ui
 
-QT += widgets
+QT += core widgets network
 
 # Handle libzip and GStreamer dependency with pkgconfig on Linux, specify exact paths on Mac
 unix:!mac:{

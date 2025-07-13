@@ -119,7 +119,7 @@ class MediaPlayer : public QObject
         bool    setCapabilityValue( Capability cap, int value );
 
         // Returns the supported player capabilities, which are settable (if available)
-        Capabilities capabilities();
+        Capabilities capabilities() const;
 
         // Draws a last video frame using painter p on a rect. Does nothing if video is
         // not played, or not available.
@@ -132,7 +132,7 @@ class MediaPlayer : public QObject
         void    reset();
 
         // Sets up the source according to file type
-        GstElement *getElement(const QString &name);
+        GstElement *getElement(const QString &name) const;
 
         // Change the pipeline state, and emit error if failed
         void    setPipelineState( GstState state );
@@ -142,8 +142,6 @@ class MediaPlayer : public QObject
 
         // Logging through signal
         void    addlog( const char *type, const char * str, ... );
-
-        bool    adjustPitch(int value);
 
         // Source callbacks
         static void cb_source_need_data( GstAppSrc *src, guint length, gpointer user_data );
@@ -171,10 +169,7 @@ class MediaPlayer : public QObject
         GstElement *m_gst_pipeline;
         GstBus   *  m_gst_bus;
 
-        // Current tempo percentage rate; default value is 100%, allowed range is 75-125
-        int         m_tempoRatePercent;
         qint64      m_lastKnownPosition;
-
         int         m_loadOptions;
 
         // Current pipeline state

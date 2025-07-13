@@ -107,6 +107,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
         void	playerStop();
         void	playerPlayPause();
         void	playerWidget_updateUI();
+        void    playerSettingsChanged();
 
 	protected:
 		void	closeEvent(QCloseEvent *event);

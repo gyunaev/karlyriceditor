@@ -44,7 +44,6 @@ PlayerWidget::PlayerWidget(QWidget *parent)
 	btnRew->setPixmap( QPixmap(":images/dryicons_rewind.png") );
 	btnStop->setPixmap( QPixmap(":images/dryicons_stop") );
 
-	// Connect the seek slider
 	connect( seekSlider, SIGNAL(sliderMoved(int)), this, SLOT(seekSliderMoved(int)) );
 	connect( seekSlider, SIGNAL(sliderPressed()), this, SLOT(seekSliderDown()) );
 	connect( seekSlider, SIGNAL(sliderReleased()), this, SLOT(seekSliderUp()) );
@@ -84,7 +83,7 @@ void PlayerWidget::btnSeekBackward()
 }
 
 
-void PlayerWidget::updatePlayerState( int newstate )
+void PlayerWidget::updatePlayerState( int newstate, const MediaPlayer * player )
 {
     m_state = newstate;
 	bool ready = true, enable_playpause = false, enable_seek = false, enable_stop = false;
@@ -119,6 +118,8 @@ void PlayerWidget::updatePlayerState( int newstate )
 	btnFwd->setEnabled( enable_seek );
 	btnPausePlay->setEnabled( enable_playpause );
 	btnStop->setEnabled( enable_stop );
+    spinPitch->setEnabled( ready );
+    spinTempo->setEnabled( ready );
 
 	if ( !ready )
 	{
@@ -159,6 +160,11 @@ void PlayerWidget::setDuration(qint64 duration)
     setCurrentPosition( m_currentTime );
 }
 
+void PlayerWidget::applySettings(MediaPlayer *player)
+{
+    player->setCapabilityValue( MediaPlayer::CapChangePitch, spinPitch->value() );
+    player->setCapabilityValue( MediaPlayer::CapChangeTempo, spinTempo->value() );
+}
 
 void PlayerWidget::seekSliderUp()
 {

@@ -231,12 +231,12 @@ void DialogExportOptions::browseOutputFile()
 
 	if ( m_videomode )
 	{
-		QString exportdir = QSettings().value( "general/exportdirvideo", "" ).toString();
+        QString exportdir = QSettings().value( "advanced/exportdirvideo", "" ).toString();
 		outfile = QFileDialog::getSaveFileName( 0, tr("Export video to a file"), exportdir );
 	}
 	else
 	{
-		QString exportdir = QSettings().value( "general/exportdircdg", "" ).toString();
+        QString exportdir = QSettings().value( "advanced/exportdircdg", "" ).toString();
 		outfile = QFileDialog::getSaveFileName( 0, tr("Export CD+G graphics to a file"), exportdir, "CD+G (*.cdg)" );
 	}
 
@@ -246,9 +246,9 @@ void DialogExportOptions::browseOutputFile()
 	QFileInfo finfo( outfile );
 
 	if ( m_videomode )
-		QSettings().setValue( "general/exportdirvideo", finfo.dir().absolutePath() );
+        QSettings().setValue( "advanced/exportdirvideo", finfo.dir().absolutePath() );
 	else
-		QSettings().setValue( "general/exportdircdg", finfo.dir().absolutePath() );
+        QSettings().setValue( "advanced/exportdircdg", finfo.dir().absolutePath() );
 
 	leOutputFile->setText( outfile );
 }

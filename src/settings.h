@@ -22,6 +22,7 @@
 
 #include <QString>
 #include <QColor>
+#include <QDateTime>
 
 class Settings
 {
@@ -29,12 +30,11 @@ class Settings
 		Settings();
 
 		void	edit();
-
         void    updateLastUsedDirectory( const QString& lastdir );
 
-        //FIXME
-        bool    isRegistered() const { return true; };
-        QString registeredDigest() const  { return "abdhsc"; };
+        // Validates and fills up the Registration info
+        QString         validateCert( const QString& pemdata );
+        bool            isRegistered() const;
 
 	public:
         // Last used directory for opending files
@@ -102,6 +102,10 @@ class Settings
 		QColor		m_previewTextInactive;
 		QColor		m_previewTextActive;
 
+        // Registration info
+        QString         registeredName;
+        QString         registeredDigest;
+        QDateTime       registeredUntil;
 };
 
 extern Settings * pSettings;

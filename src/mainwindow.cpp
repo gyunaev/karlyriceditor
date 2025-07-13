@@ -44,7 +44,6 @@
 #include "ui_dialog_about.h"
 #include "videogenerator.h"
 #include "cdggenerator.h"
-#include "licensing.h"
 #include "util.h"
 #include "ui_dialog_registration.h"
 
@@ -67,15 +66,6 @@ MainWindow::MainWindow()
 	m_project = 0;
 	m_testWindow = 0;
     m_mediaPlayer = 0;
-
-	// Licensing
-	pLicensing = new Licensing();
-
-	if ( pLicensing->init() )
-	{
-		QString key = QSettings().value( "general/registrationkey", "" ).toString();
-		pLicensing->validate( key );
-	}
 
 	// Create dock widgets
     m_playerWidget = new PlayerWidget( this );
@@ -103,7 +93,7 @@ MainWindow::MainWindow()
 	m_validatorIconFailed.addFile( ":/images/dryicons_application_deny.png", QSize(), QIcon::Normal, QIcon::Off );
 
 	// Restore current directory
-	QDir::setCurrent( QSettings().value( "general/currentdirectory", "." ).toString() );
+    QDir::setCurrent( QSettings().value( "advanced/currentdirectory", "." ).toString() );
 
     m_playerUIupdateTimer.setInterval( 100 );
     connect( &m_playerUIupdateTimer, SIGNAL(timeout()), this, SLOT(playerWidget_updateUI()) );
@@ -156,7 +146,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 	}
 
 	// Save current directory
-	QSettings().setValue( "general/currentdirectory", QDir::currentPath() );
+    QSettings().setValue( "advanced/currentdirectory", QDir::currentPath() );
 
 	QMainWindow::closeEvent( event );
 	event->accept();
@@ -200,6 +190,8 @@ void MainWindow::connectActions()
     connect( m_playerWidget,SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPlayer(bool)) );
     connect( m_playerWidget->btnPausePlay,SIGNAL(clicked()), this, SLOT(playerPlayPause()) );
     connect( m_playerWidget->btnStop,SIGNAL(clicked()), this, SLOT(playerStop()) );
+    connect( m_playerWidget->spinPitch, SIGNAL(valueChanged(int)), this, SLOT(playerSettingsChanged()) );
+    connect( m_playerWidget->spinTempo, SIGNAL(valueChanged(int)), this, SLOT(playerSettingsChanged()) );
 
 	// Text editor
 	connect( actionUndo, SIGNAL( triggered()), editor, SLOT( undo()) );
@@ -208,9 +200,7 @@ void MainWindow::connectActions()
 
 	// Registration
 	connect( actionRegistration, SIGNAL( triggered()), this, SLOT( act_helpRegistration()) );
-
-	if ( !pLicensing->isEnabled() )
-		actionRegistration->setVisible( false );
+    actionRegistration->setVisible( true );
 }
 
 void MainWindow::createToolbars()
@@ -458,7 +448,7 @@ void MainWindow::setCurrentProject( Project * proj )
     connect( m_mediaPlayer, SIGNAL(finished()), this, SLOT(playerStop()) );
 
     m_mediaPlayer->loadMedia( m_project->musicFile(), MediaPlayer::LoadAudioStream );
-    m_playerWidget->updatePlayerState( PlayerWidget::Audio_ErrorState );
+    m_playerWidget->updatePlayerState( PlayerWidget::Audio_ErrorState, m_mediaPlayer );
 }
 
 void MainWindow::act_editInsertTag()
@@ -861,7 +851,7 @@ void MainWindow::act_projectExportVideoFile()
 
     // This one runs an event loop inside so it would delete itself
     VideoGenerator * videogen = new VideoGenerator( m_project, lyrics, m_mediaPlayer->duration() );
-    videogen->generate();
+    videogen->generate( m_playerWidget );
 }
 
 void MainWindow::act_projectExportCDGFile()
@@ -884,10 +874,7 @@ void MainWindow::act_projectExportCDGFile()
 
 void MainWindow::act_helpRegistration()
 {
-	if ( !pLicensing->isEnabled() )
-		return;
-
-	if ( !pLicensing->isValid() )
+    if ( !pSettings->isRegistered() )
 	{
 		while ( 1 )
 		{
@@ -905,16 +892,14 @@ void MainWindow::act_helpRegistration()
 				return;
 
 			QString key = ui.leKey->toPlainText();
+            QString err = pSettings->validateCert( key );
 
-			if ( pLicensing->validate( key ) )
-			{
-				QSettings().setValue( "general/registrationkey", key );
+            if ( err.isEmpty() )
 				break;
-			}
 
 			QMessageBox::critical( 0,
 								  tr("Registration failed"),
-								  tr("Registration failed: %1") .arg( pLicensing->errMsg() ) );
+                                  tr("Registration failed: %1") .arg( err ) );
 			continue;
 		}
 	}
@@ -925,8 +910,8 @@ void MainWindow::act_helpRegistration()
 	ui.setupUi( &dlg );
 
 	// Set the data
-	ui.lblExpires->setText( pLicensing->expires().toString() );
-	ui.lblSubject->setText( pLicensing->subject() );
+    ui.lblExpires->setText( pSettings->registeredUntil.toString() );
+    ui.lblSubject->setText( pSettings->registeredName );
 
 	// Remove the "cancel" button from the button box
 	ui.buttonBox->removeButton( ui.buttonBox->button(QDialogButtonBox::Cancel ));
@@ -952,24 +937,35 @@ void MainWindow::act_adjustTiming()
 
 void MainWindow::playerStop()
 {
-    m_playerWidget->updatePlayerState( PlayerWidget::Audio_StoppedState );
+    m_playerWidget->updatePlayerState( PlayerWidget::Audio_StoppedState, m_mediaPlayer );
     m_mediaPlayer->stop();
     m_playerUIupdateTimer.stop();
     updateState();
+}
+
+void MainWindow::playerSettingsChanged()
+{
+    if ( !pSettings->isRegistered() )
+    {
+        GentleMessageBox::warning( 0, "dialogs/nonregistered", "Requires registration", "This setting will only have effect in a registered version" );
+        return;
+    }
+
+    m_playerWidget->applySettings( m_mediaPlayer );
 }
 
 void MainWindow::playerPlayPause()
 {
     if ( m_mediaPlayer->state() == MediaPlayer::StatePlaying )
     {
-        m_playerWidget->updatePlayerState( PlayerWidget::Audio_PausedState );
+        m_playerWidget->updatePlayerState( PlayerWidget::Audio_PausedState, m_mediaPlayer );
         m_playerUIupdateTimer.stop();
         m_mediaPlayer->pause();
     }
     else
     {
         // Start playing
-        m_playerWidget->updatePlayerState( PlayerWidget::Audio_PlayingState );
+        m_playerWidget->updatePlayerState( PlayerWidget::Audio_PlayingState, m_mediaPlayer );
         m_playerUIupdateTimer.start();
         m_mediaPlayer->play();
     }
@@ -995,7 +991,9 @@ void MainWindow::mediaDurationChanged()
 
     if ( totaltime > 0 )
     {
-        m_project->setSongLength( totaltime );
+        if ( m_project )
+            m_project->setSongLength( totaltime );
+
         m_playerWidget->setDuration( totaltime );
     }
 }
@@ -1017,7 +1015,7 @@ void MainWindow::mediaLoadingFinished(MediaPlayer::State state, QString text)
     }
     else
     {
-        m_playerWidget->updatePlayerState( PlayerWidget::Audio_StoppedState );
+        m_playerWidget->updatePlayerState( PlayerWidget::Audio_StoppedState, m_mediaPlayer );
     }
 
     updateState();

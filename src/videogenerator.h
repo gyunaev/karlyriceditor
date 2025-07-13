@@ -30,6 +30,7 @@
 #include "ui_dialog_encodingprogress.h"
 
 class MediaPlayer;
+class PlayerWidget;
 
 class VideoGenerator : public QDialog
 {
@@ -37,7 +38,7 @@ class VideoGenerator : public QDialog
 
 	public:
         VideoGenerator( Project * prj, const Lyrics &lyrics, qint64 totaltime );
-        void generate();
+        void generate(PlayerWidget *widget);
 
     public slots:
         void    mediaLoadingFinished( MediaPlayer::State newstate, QString error );

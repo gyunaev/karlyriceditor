@@ -38,7 +38,6 @@ MediaPlayer::MediaPlayer( QObject * parent )
     m_lastVideoSample = 0;
 
     m_duration = -1;
-    m_tempoRatePercent = 100;
     m_playState = StateInitial;
     m_errorsDetected = false;
 }
@@ -86,11 +85,7 @@ void MediaPlayer::pause()
 
 void MediaPlayer::seekTo(qint64 pos)
 {
-    // Calculate the new tempo rate as it is used to change the tempo (that's actually the only way in GStreamer)
-    //
-    double temporate = m_tempoRatePercent / 100.0;
-
-    GstEvent * seek_event = gst_event_new_seek( temporate,
+    GstEvent * seek_event = gst_event_new_seek( 1.0,
                                                 GST_FORMAT_TIME,
                                                 (GstSeekFlags)(GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE),
                                                 GST_SEEK_TYPE_SET,
@@ -137,7 +132,7 @@ qint64 MediaPlayer::duration()
         m_duration = dur / GST_MSECOND;
     }
 
-    return (m_duration * 100) / m_tempoRatePercent;
+    return m_duration;
 }
 
 MediaPlayer::State MediaPlayer::state() const
@@ -170,57 +165,32 @@ bool MediaPlayer::setCapabilityValue( MediaPlayer::Capability cap, int value)
         return true;
 
     case MediaPlayer::CapChangePitch:
-        return adjustPitch( value );
+        g_object_set( G_OBJECT( getElement(pSettings->registeredDigest) ), "pitch", (double) value / 100, NULL );
 
     case MediaPlayer::CapChangeTempo:
-
-        // The UI gives us tempo rate as percentage, from 0 to 100 with 50 being normal value.
-        // Thus we convert it into 75% - 125% range
-        m_tempoRatePercent = 75 + value / 2;
-        position();
-        seekTo( m_lastKnownPosition );
-
-        // Because the total song duration now changed, we need to inform the widgets
-        QMetaObject::invokeMethod( this,
-                                   "durationChanged",
-                                   Qt::QueuedConnection );
-
+        g_object_set( G_OBJECT( getElement(pSettings->registeredDigest) ), "tempo", (double) value / 100, NULL );
         break;
     }
 
     return false;
 }
 
-MediaPlayer::Capabilities MediaPlayer::capabilities()
+MediaPlayer::Capabilities MediaPlayer::capabilities() const
 {
     MediaPlayer::Capabilities caps( 0 );
 
     if ( getElement("volume") )
         caps |= MediaPlayer::CapChangeVolume;
 
-    if ( pSettings->isRegistered() && getElement(pSettings->registeredDigest()) )
+    if ( pSettings->isRegistered() && getElement(pSettings->registeredDigest) )
+    {
         caps |= MediaPlayer::CapChangePitch;
-
-    if ( getElement("tempo") )
         caps |= MediaPlayer::CapChangeTempo;
+    }
 
     return caps;
 }
 
-
-bool MediaPlayer::adjustPitch( int newvalue )
-{
-    GstElement * pitch = getElement(pSettings->registeredDigest() );
-
-    if ( !pitch )
-        return false;
-
-    // Let's spread it to 0.5 ... +1.5
-    double value = (newvalue / 200.0) + 0.75;
-
-    g_object_set( G_OBJECT(pitch), "pitch", value, NULL );
-    return true;
-}
 
 void MediaPlayer::drawVideoFrame(QPainter &p, const QRect &rect)
 {
@@ -294,10 +264,10 @@ void MediaPlayer::loadMediaGeneric()
     // Audio decoding part
     if ( (m_loadOptions & MediaPlayer::LoadAudioStream) != 0 )
     {
-       pipeline += " decoder. ! audio/x-raw ! audioconvert ! scaletempo name=tempo";
+       pipeline += " decoder. ! audio/x-raw ! audioconvert ";
 
        if ( pSettings->isRegistered() )
-           pipeline += " ! pitch name=" + pSettings->registeredDigest();
+           pipeline += " ! pitch name=" + pSettings->registeredDigest;
 
         pipeline += " ! volume name=volume ! autoaudiosink";
     }
@@ -366,11 +336,10 @@ void MediaPlayer::prepareVideoEncoder(const QString &inputAudioFile, const QStri
                         ! filesink name=mediafile \
                         filesrc name=filesource \
                         ! decodebin ! audio/x-raw \
-                        ! audioconvert \
-                        ! scaletempo name=tempo").arg( resolution.width() ).arg( resolution.height() ).arg( encodingProfile );
+                        ! audioconvert ").arg( resolution.width() ).arg( resolution.height() ).arg( encodingProfile );
 
     if ( pSettings->isRegistered() )
-        pipeline += " ! pitch name=" + pSettings->registeredDigest();
+        pipeline += " ! pitch name=" + pSettings->registeredDigest;
 
     pipeline += " ! enc.audio_%u";
 
@@ -449,7 +418,6 @@ void MediaPlayer::reset()
     m_lastVideoSample = 0;
     m_errorsDetected = false;
     m_mediaLoading = true;
-    m_tempoRatePercent = 100;
 
     m_mediaArtist.clear();
     m_mediaTitle.clear();
@@ -480,7 +448,7 @@ void MediaPlayer::reportError(const QString &text)
     }
 }
 
-GstElement *MediaPlayer::getElement(const QString& name)
+GstElement *MediaPlayer::getElement(const QString& name) const
 {
     if ( !m_gst_pipeline )
         return 0;
@@ -488,7 +456,7 @@ GstElement *MediaPlayer::getElement(const QString& name)
     return gst_bin_get_by_name (GST_BIN(m_gst_pipeline), qPrintable(name));
 }
 
-void MediaPlayer::cb_source_need_data(GstAppSrc *src, guint length, gpointer user_data)
+void MediaPlayer::cb_source_need_data(GstAppSrc *, guint , gpointer user_data)
 {
     // We render with 25FPS
     const unsigned int FRAME_DURATION_MS = 1000 / 25;
@@ -497,7 +465,6 @@ void MediaPlayer::cb_source_need_data(GstAppSrc *src, guint length, gpointer use
 
     if ( self->m_EOFseen )
     {
-        qDebug("EOS");
         gst_app_src_end_of_stream( GST_APP_SRC(self->m_gst_source) );
         return;
     }
@@ -507,7 +474,6 @@ void MediaPlayer::cb_source_need_data(GstAppSrc *src, guint length, gpointer use
     // Empty image indicates the stream has ended
     if ( img.isNull() )
     {
-        qDebug("NULL pixmap, EOS");
         gst_app_src_end_of_stream( GST_APP_SRC(self->m_gst_source) );
         return;
     }
@@ -571,6 +537,16 @@ GstBusSyncReply MediaPlayer::cb_busMessageDispatcher( GstBus *bus, GstMessage *m
 
         g_clear_error( &err );
         g_free( debug_info );
+    }
+    else if ( GST_MESSAGE_TYPE (msg) == GST_MESSAGE_ASYNC_DONE )
+    {
+        self->addlog( "DEBUG",  "GstMediaPlayer: async-done" );
+        self->m_duration = -1;
+
+        // Call the signal invoker
+        QMetaObject::invokeMethod( self,
+                                   "durationChanged",
+                                   Qt::QueuedConnection );
     }
     else if ( GST_MESSAGE_TYPE (msg) == GST_MESSAGE_DURATION_CHANGED )
     {

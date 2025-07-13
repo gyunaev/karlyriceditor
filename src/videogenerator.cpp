@@ -26,6 +26,8 @@
 #include "textrenderer.h"
 #include "dialog_export_params.h"
 #include "editor.h"
+#include "playerwidget.h"
+#include "settings.h"
 
 VideoGenerator::VideoGenerator( Project * prj, const Lyrics &lyrics, qint64 totaltime )
     : QDialog(), m_lyrics(lyrics)
@@ -36,7 +38,7 @@ VideoGenerator::VideoGenerator( Project * prj, const Lyrics &lyrics, qint64 tota
     m_totalTime = totaltime;
 }
 
-void VideoGenerator::generate()
+void VideoGenerator::generate( PlayerWidget * widget )
 {
 	// Show the dialog with video options
     DialogExportOptions dlg( m_project, m_lyrics, true );
@@ -107,11 +109,12 @@ void VideoGenerator::generate()
     connect( m_encoder, SIGNAL(finished()), this, SLOT(mediaFinished()) );
 
     // Launch the encoder process
+    m_paramsSet = false;
     m_encoder->prepareVideoEncoder( m_project->musicFile(),
                                     dlg.m_outputVideo,
                                     profile,
                                     resolution,
-                                    [this, lyricrenderer] ( qint64 timing ) -> const QImage {
+                                    [this, widget, lyricrenderer] ( qint64 timing ) -> const QImage {
 
                                         // Detect if the stream should end; we only do this once we have the length,
                                         // as we do not know the duration until we start playing
@@ -133,6 +136,9 @@ void VideoGenerator::generate()
 
                                         return lyricrenderer->image();
                                     });
+
+    if ( pSettings->isRegistered() )
+        widget->applySettings( m_encoder );
 
     exec();
 }

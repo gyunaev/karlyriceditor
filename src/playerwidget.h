@@ -50,9 +50,10 @@ class PlayerWidget : public QDockWidget, public Ui::PlayerWidget
 	public slots:
         void	btnSeekForward();
         void	btnSeekBackward();
-        void	updatePlayerState( int state );
+        void	updatePlayerState( int state, const MediaPlayer * player );
         void	setCurrentPosition(qint64 time );
         void	setDuration( qint64 duration );
+        void    applySettings( MediaPlayer * player );
 
 	private slots:
 		void	seekSliderMoved( int newvalue );

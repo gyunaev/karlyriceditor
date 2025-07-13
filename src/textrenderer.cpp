@@ -25,7 +25,6 @@
 #include "settings.h"
 #include "project.h"
 #include "version.h"
-#include "licensing.h"
 
 
 // Some preamble constants
@@ -294,7 +293,7 @@ void TextRenderer::setTitlePageData( const QString& artist, const QString& title
 
 	QString createdBy = QString("@<@%1Created by %2\nhttp://www.ulduzsoft.com/\n") .arg( m_colorToSing.name()) .arg( APP_NAME);
 
-	if ( pLicensing->isEnabled() && pLicensing->isValid() && !userCreatedBy.isEmpty() )
+    if ( pSettings->isRegistered() && !userCreatedBy.isEmpty() )
 		createdBy = userCreatedBy;
 
 	createdBy = createdBy.replace( "<br>", "\n" );
