@@ -18,8 +18,10 @@
  **************************************************************************/
 #include <QRegularExpression>
 #include <QPainter>
+#include <QCoreApplication>
 
 #include "background.h"
+#include "mediaplayer.h"
 
 Background::Background()
 {
@@ -33,12 +35,13 @@ void Background::reset()
 {
 }
 
+//FIXME: image is garbage before loaded. Fixed?
 
 //
 // BackgroundImage
 //
 BackgroundImage::BackgroundImage( const QString& filename )
-	: Background()
+    : Background(), m_image()
 {
     if ( !m_image.load( filename ) )
         qWarning("Cannot load image file %s", qPrintable(filename));
@@ -63,17 +66,39 @@ qint64 BackgroundImage::doDraw( QImage& image, qint64 )
 // BackgroundVideo
 //
 BackgroundVideo::BackgroundVideo( const QString& filename )
-	: Background()
+    : Background(), m_videoDecoder(0), m_valid( false )
 {
     QRegularExpression videopathstart("^(.*);STARTFRAME=(\\d+)$");
     QRegularExpressionMatch match = videopathstart.match( filename );
 
+    m_videoDecoder = new MediaPlayer();
+    qint64 offset = 0;
+    MediaPlayer::State res;
+
     if ( match.hasMatch() )
 	{
-        m_valid = m_videoDecoder.openFile( match.captured(1), match.captured(2).toUInt() );
+        offset = match.captured(2).toUInt();
+        res = m_videoDecoder->loadMediaSync( match.captured(1), MediaPlayer::LoadVideoStream );
 	}
 	else
-		m_valid = m_videoDecoder.openFile( filename, 0 );
+        res = m_videoDecoder->loadMediaSync( filename, MediaPlayer::LoadVideoStream );
+
+    if ( res != MediaPlayer::StateFailed )
+    {
+        m_videoDecoder->seekTo( offset );
+        m_videoDecoder->play();
+        m_valid = true;
+    }
+    else
+    {
+        delete m_videoDecoder;
+        m_videoDecoder = nullptr;
+    }
+}
+
+BackgroundVideo::~BackgroundVideo()
+{
+    delete m_videoDecoder;
 }
 
 bool BackgroundVideo::isValid() const
@@ -83,12 +108,9 @@ bool BackgroundVideo::isValid() const
 
 qint64 BackgroundVideo::doDraw( QImage& image, qint64 timing )
 {
-	QImage videoframe = m_videoDecoder.frame( timing );
+    QPainter p( &image );
 
-	if ( videoframe.isNull() )
-		return 0;
-
-	image = videoframe;
+    m_videoDecoder->drawVideoFrame( p, image.rect() );
 
 	// We use our own cache
 	return 0;
@@ -112,3 +134,6 @@ qint64 BackgroundColor::doDraw(QImage &image, qint64)
     // No updates
     return -1;
 }
+
+
+// FIXED: clicking on slider

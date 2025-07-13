@@ -1,7 +1,6 @@
 /**************************************************************************
- *  Karlyriceditor - a lyrics editor and CD+G / video export for Karaoke  *
- *  songs.                                                                *
- *  Copyright (C) 2009-2013 George Yunaev, support@ulduzsoft.com          *
+ *  Spivak Karaoke PLayer - a free, cross-platform desktop karaoke player *
+ *  Copyright (C) 2015-2016 George Yunaev, support@ulduzsoft.com          *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
  *  it under the terms of the GNU General Public License as published by  *
@@ -17,27 +16,30 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  **************************************************************************/
 
-#ifndef FFMPEG_HEADERS_H
-#define FFMPEG_HEADERS_H
+#ifndef LOGGER_H
+#define LOGGER_H
 
-#include <sys/types.h>
+#include <QFile>
+#include <QMutex>
+#include <QObject>
 
-
-extern "C"
+class Logger
 {
+    public:
+        static bool init();
 
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libswscale/swscale.h>
-#include <libswresample/swresample.h>
-#include <libavutil/opt.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/audio_fifo.h>
+        static void debug( const QString& str );
+        static void debug( const char * fmt, ... );
 
+        static void error( const QString& str );
+        static void error( const char * fmt, ... );
+
+    private:
+        explicit Logger();
+        void     add(const char *type, const char * str );
+
+        QFile   m_logfile;
+        QMutex  m_logMutex;
 };
 
-void ffmpeg_init_once();
-
-#define FFMPEG_FILENAME(string)	( qPrintable(string) )
-
-#endif // FFMPEG_HEADERS_H
+#endif // LOGGER_H

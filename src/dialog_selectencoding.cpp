@@ -23,7 +23,7 @@
 
 #include "dialog_selectencoding.h"
 
-static const char * ENCODED_SETTINGS = "general/savedstoredencoding";
+static const char * ENCODED_SETTINGS = "advanced/savedstoredencoding";
 
 
 DialogSelectEncoding::DialogSelectEncoding( const QByteArray& text, QWidget *parent )

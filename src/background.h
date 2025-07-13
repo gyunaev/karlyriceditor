@@ -21,7 +21,8 @@
 #define BACKGROUND_H
 
 #include <QImage>
-#include "ffmpegvideodecoder.h"
+
+class MediaPlayer;
 
 class Background
 {
@@ -52,7 +53,7 @@ class BackgroundImage : public Background
 		BackgroundImage( const QString& filename );
 		bool isValid() const;
 
-		qint64 doDraw( QImage& image, qint64 timing );
+        qint64 doDraw( QImage& image, qint64 timing );
 
 	private:
 		QImage	m_image;
@@ -62,12 +63,13 @@ class BackgroundVideo : public Background
 {
 	public:
 		BackgroundVideo( const QString& arg );
+        ~BackgroundVideo();
 
 		bool isValid() const;
-		qint64 doDraw( QImage& image, qint64 timing );
+        qint64 doDraw( QImage& image, qint64 timing );
 
 	private:
-		FFMpegVideoDecoder	m_videoDecoder;
+        MediaPlayer    *    m_videoDecoder;
 		bool				m_valid;
 };
 

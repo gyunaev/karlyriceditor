@@ -22,6 +22,7 @@
 
 #include <QString>
 #include <QColor>
+#include <QDateTime>
 
 class Settings
 {
@@ -29,6 +30,11 @@ class Settings
 		Settings();
 
 		void	edit();
+        void    updateLastUsedDirectory( const QString& lastdir );
+
+        // Validates and fills up the Registration info
+        QString         validateCert( const QString& pemdata );
+        bool            isRegistered() const;
 
         void    updateLastUsedDirectory( const QString& lastdir );
 
@@ -97,6 +103,11 @@ class Settings
 		QColor		m_previewBackground;
 		QColor		m_previewTextInactive;
 		QColor		m_previewTextActive;
+
+        // Registration info
+        QString         registeredName;
+        QString         registeredDigest;
+        QDateTime       registeredUntil;
 };
 
 extern Settings * pSettings;

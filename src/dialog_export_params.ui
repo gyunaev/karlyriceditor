@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>574</width>
-    <height>770</height>
+    <width>674</width>
+    <height>685</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,87 +30,7 @@
           <string>Video encoding parameters</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="1" column="3">
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Quality</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="0">
-           <widget class="QLabel" name="label_8">
-            <property name="text">
-             <string>Target medium</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QComboBox" name="boxVideoProfile">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>1</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QComboBox" name="boxVideoMedium">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>1</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="4">
-           <widget class="QComboBox" name="boxVideoTarget">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>1</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="4">
-           <widget class="QComboBox" name="boxVideoQuality">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>1</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="3">
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>Subtarget</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_5">
-            <property name="text">
-             <string>Audio</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
            <widget class="QLabel" name="label_2">
             <property name="text">
              <string>Video profile</string>
@@ -120,27 +40,40 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="2">
-           <widget class="QComboBox" name="boxAudioEncodingType">
-            <item>
-             <property name="text">
-              <string>encode according to profile</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>no audio</string>
-             </property>
-            </item>
+          <item row="0" column="1" rowspan="2" colspan="2">
+           <widget class="QComboBox" name="boxVideoProfile">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>4</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
            </widget>
           </item>
-          <item row="2" column="3" colspan="2">
-           <widget class="QLabel" name="lblVideoDetailsLink">
+          <item row="0" column="3">
+           <widget class="QLabel" name="label_3">
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;yes&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#006e28;&quot;&gt;Click here to see the profile details&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>Resolution:</string>
             </property>
             <property name="alignment">
-             <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4" rowspan="2">
+           <widget class="QComboBox" name="boxVideoResolution">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>1</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="5">
+           <widget class="QLineEdit" name="leCustomProfile">
+            <property name="placeholderText">
+             <string>enter the GStreamer profile string</string>
             </property>
            </widget>
           </item>
@@ -587,11 +520,7 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>boxVideoMedium</tabstop>
-  <tabstop>boxVideoTarget</tabstop>
   <tabstop>boxVideoProfile</tabstop>
-  <tabstop>boxVideoQuality</tabstop>
-  <tabstop>boxAudioEncodingType</tabstop>
   <tabstop>fontVideo</tabstop>
   <tabstop>spinFontSize</tabstop>
   <tabstop>titleVideoMin</tabstop>

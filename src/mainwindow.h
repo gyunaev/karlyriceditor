@@ -21,9 +21,12 @@
 #define MAINWINDOW_H
 
 #include <QSettings>
+#include <QTimer>
 
 #include "checknewversion.h"
+#include "mediaplayer.h"
 #include "ui_mainwindow.h"
+
 
 class Project;
 class ViewWidget;
@@ -45,12 +48,14 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	editor_undoAvail(bool);
 		void	editor_redoAvail(bool);
         void    lyricsChanged( qint64 time );
+        void	playerSeekToTime( qint64 time );
 
 	private slots:
 		void	act_fileNewProject();
 		void	act_fileOpenProject();
 		bool	act_fileSaveProject();
 		bool	act_fileSaveProjectAs();
+        void	openRecentFile( const QString& file );
 
 		void	act_editInsertTag();
 		void	act_editRemoveTag();
@@ -82,8 +87,6 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	act_helpAbout();
 		void	act_helpRegistration();
 
-		void	openRecentFile( const QString& file );
-
 		// New version available
 		void	newVerAvailError( int errorcode );
 		void	newVerAvailable( NewVersionMetaMap metadata );
@@ -93,6 +96,18 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 
 		// Test window
 		void	testWindowClosed();
+
+    private slots:
+        // Media player slots
+        void    mediaLoadingFinished( MediaPlayer::State state, QString text );
+        void    mediaDurationChanged();
+        void    mediaFinished();
+
+        // Player widget slots
+        void	playerStop();
+        void	playerPlayPause();
+        void	playerWidget_updateUI();
+        void    playerSettingsChanged();
 
 	protected:
 		void	closeEvent(QCloseEvent *event);
@@ -108,7 +123,11 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		// If the project is changed, and user selected "Cancel", returns false
 		bool	tryCloseCurrentProject();
 
-		PlayerWidget		*	m_player;
+        // Player UI
+        PlayerWidget		*	m_playerWidget;
+
+        // The player
+        MediaPlayer         *   m_mediaPlayer;
 
 		Project				*	m_project;
 		ViewWidget			*	m_viewer;
@@ -120,6 +139,9 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		QIcon					m_validatorIconRegular;
 		QIcon					m_validatorIconAccepted;
 		QIcon					m_validatorIconFailed;
+
+        // UI updater
+        QTimer                  m_playerUIupdateTimer;
 };
 
 extern MainWindow * pMainWindow;

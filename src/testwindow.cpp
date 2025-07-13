@@ -21,7 +21,7 @@
 
 #include "testwindow.h"
 #include "lyricswidget.h"
-#include "audioplayer.h"
+#include "mediaplayer.h"
 #include "playerwidget.h"
 
 TestWindow::TestWindow( QWidget *parent )
@@ -32,6 +32,8 @@ TestWindow::TestWindow( QWidget *parent )
 	m_widget = 0;
     m_lastTick = 0;
 	m_layout = new QVBoxLayout( frame );
+
+    progressBar->setValue( 0 );
 
     connect( btnLocateTimemark, SIGNAL(clicked()), this, SLOT(locateButtonClicked()) );
 }
@@ -54,21 +56,21 @@ void TestWindow::closeEvent( QCloseEvent * event )
 	QDialog::closeEvent( event );
 }
 
-void TestWindow::tick( qint64 value )
+void TestWindow::tick( qint64 current, qint64 total )
 {
-	m_widget->updateLyrics( value );
+    m_widget->updateLyrics( current );
 
-	qint64 reminder = pAudioPlayer->totalTime() - value;
+    qint64 reminder = total - current;
 
-	lblCurrent->setText( PlayerWidget::tickToString( value ) );
+    lblCurrent->setText( PlayerWidget::tickToString( current ) );
 	lblTotal->setText( PlayerWidget::tickToString( reminder ) );
 
-	int pval = value * progressBar->maximum() / pAudioPlayer->totalTime();
+    int pval = current * progressBar->maximum() / total;
 
 	if ( progressBar->value() != pval )
         progressBar->setValue( pval );
 
-    m_lastTick = value;
+    m_lastTick = current;
 }
 
 void TestWindow::locateButtonClicked()

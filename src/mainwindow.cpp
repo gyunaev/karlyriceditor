@@ -28,7 +28,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 
-#include "audioplayer.h"
+#include "mediaplayer.h"
 #include "wizard_newproject.h"
 #include "mainwindow.h"
 #include "playerwidget.h"
@@ -44,8 +44,6 @@
 #include "ui_dialog_about.h"
 #include "videogenerator.h"
 #include "cdggenerator.h"
-#include "videoencodingprofiles.h"
-#include "licensing.h"
 #include "util.h"
 #include "ui_dialog_registration.h"
 
@@ -64,25 +62,14 @@ MainWindow::MainWindow()
 	// Call UIC-generated code
 	setupUi( this );
 
-	// Video profiles
-	pVideoEncodingProfiles = new VideoEncodingProfiles();
-
 	// Initialize stuff
 	m_project = 0;
 	m_testWindow = 0;
-
-	// Licensing
-	pLicensing = new Licensing();
-
-	if ( pLicensing->init() )
-	{
-		QString key = QSettings().value( "general/registrationkey", "" ).toString();
-		pLicensing->validate( key );
-	}
+    m_mediaPlayer = 0;
 
 	// Create dock widgets
-	m_player = new PlayerWidget( this );
-	addDockWidget( Qt::BottomDockWidgetArea, m_player );
+    m_playerWidget = new PlayerWidget( this );
+    addDockWidget( Qt::BottomDockWidgetArea, m_playerWidget );
 	actionShow_Player_dock_wingow->setChecked( true );
 
 	// Create a lyric viewer window, hidden so far
@@ -106,7 +93,10 @@ MainWindow::MainWindow()
 	m_validatorIconFailed.addFile( ":/images/dryicons_application_deny.png", QSize(), QIcon::Normal, QIcon::Off );
 
 	// Restore current directory
-	QDir::setCurrent( QSettings().value( "general/currentdirectory", "." ).toString() );
+    QDir::setCurrent( QSettings().value( "advanced/currentdirectory", "." ).toString() );
+
+    m_playerUIupdateTimer.setInterval( 100 );
+    connect( &m_playerUIupdateTimer, SIGNAL(timeout()), this, SLOT(playerWidget_updateUI()) );
 
 	// Update window state
 	updateState();
@@ -146,7 +136,8 @@ void MainWindow::checkNewVersionAvailable()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-	pAudioPlayer->stop();
+    if ( m_mediaPlayer )
+        m_mediaPlayer->stop();
 
 	if ( m_project && !tryCloseCurrentProject() )
 	{
@@ -155,7 +146,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 	}
 
 	// Save current directory
-	QSettings().setValue( "general/currentdirectory", QDir::currentPath() );
+    QSettings().setValue( "advanced/currentdirectory", QDir::currentPath() );
 
 	QMainWindow::closeEvent( event );
 	event->accept();
@@ -195,8 +186,12 @@ void MainWindow::connectActions()
     connect( actionAdd_eol_timing_marks, SIGNAL(triggered()), this, SLOT(act_addMissingTimingMarks() ) );
     connect( actionTime_adjustment, SIGNAL(triggered()), this, SLOT(act_adjustTiming() ) );
 
-	// docks
-	connect( m_player,SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPlayer(bool)) );
+    // Player widget
+    connect( m_playerWidget,SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPlayer(bool)) );
+    connect( m_playerWidget->btnPausePlay,SIGNAL(clicked()), this, SLOT(playerPlayPause()) );
+    connect( m_playerWidget->btnStop,SIGNAL(clicked()), this, SLOT(playerStop()) );
+    connect( m_playerWidget->spinPitch, SIGNAL(valueChanged(int)), this, SLOT(playerSettingsChanged()) );
+    connect( m_playerWidget->spinTempo, SIGNAL(valueChanged(int)), this, SLOT(playerSettingsChanged()) );
 
 	// Text editor
 	connect( actionUndo, SIGNAL( triggered()), editor, SLOT( undo()) );
@@ -205,9 +200,7 @@ void MainWindow::connectActions()
 
 	// Registration
 	connect( actionRegistration, SIGNAL( triggered()), this, SLOT( act_helpRegistration()) );
-
-	if ( !pLicensing->isEnabled() )
-		actionRegistration->setVisible( false );
+    actionRegistration->setVisible( true );
 }
 
 void MainWindow::createToolbars()
@@ -263,8 +256,8 @@ void MainWindow::lyricsChanged(qint64 time)
 
         m_testWindow->setLyricWidget( lw );
 
-        if ( m_player->isPlaying() && pSettings->m_editorAutoUpdatePlayerBackseek > 0 )
-            m_player->seekToTime( time - pSettings->m_editorAutoUpdatePlayerBackseek * 1000 );
+        if ( m_mediaPlayer->isPlaying() && pSettings->m_editorAutoUpdatePlayerBackseek > 0 )
+            playerSeekToTime( time - pSettings->m_editorAutoUpdatePlayerBackseek * 1000 );
     }
 }
 
@@ -444,20 +437,24 @@ void MainWindow::setCurrentProject( Project * proj )
 
 	statusBar()->showMessage( tr("Loading the music file %1") .arg(m_project->musicFile()), 2000);
 
-	// Set the music file into player
-	if ( m_player->openMusicFile( m_project ) )
-	{
-		qint64 totaltime = m_player->totalTime();
+    // Open the music file
+    if ( m_mediaPlayer )
+        delete m_mediaPlayer;
 
-		if ( totaltime > 0 )
-			m_project->setSongLength( totaltime );
-	}
+    m_mediaPlayer = new MediaPlayer();
+
+    connect( m_mediaPlayer, SIGNAL(mediaLoadingFinished(MediaPlayer::State,QString)), this,SLOT(mediaLoadingFinished(MediaPlayer::State,QString)) );
+    connect( m_mediaPlayer, SIGNAL( durationChanged() ), this, SLOT( mediaDurationChanged()) );
+    connect( m_mediaPlayer, SIGNAL(finished()), this, SLOT(playerStop()) );
+
+    m_mediaPlayer->loadMedia( m_project->musicFile(), MediaPlayer::LoadAudioStream );
+    m_playerWidget->updatePlayerState( PlayerWidget::Audio_ErrorState, m_mediaPlayer );
 }
 
 void MainWindow::act_editInsertTag()
 {
-	if ( m_player->isPlaying() )
-		editor->insertTimeTag( m_player->currentTime() );
+    if ( m_mediaPlayer && m_mediaPlayer->isPlaying() )
+        editor->insertTimeTag( m_mediaPlayer->position() );
 	else
 		editor->insertTimeTag( 0 );
 }
@@ -651,8 +648,8 @@ void MainWindow::act_projectSettings()
 	if ( ps.exec() == QDialog::Accepted )
 	{
 		if ( ps.musicFileChanged() )
-			m_player->openMusicFile( m_project );
-	}
+            m_mediaPlayer->loadMedia( m_project->musicFile(), MediaPlayer::LoadAudioStream );
+    }
 }
 
 void MainWindow::act_settingsGeneral()
@@ -680,7 +677,7 @@ void MainWindow::act_helpAbout()
 void MainWindow::updateState()
 {
 	bool project_available = m_project ? true : false;
-	bool project_ready = m_project ? m_player->isReady() : false;
+    bool project_ready = m_project && m_mediaPlayer && m_mediaPlayer->isMediaReady();
 
 	actionSave->setEnabled( project_available );
 	actionSave_as->setEnabled( project_available );
@@ -749,9 +746,9 @@ void MainWindow::newVerAvailable( NewVersionMetaMap metadata )
 void MainWindow::act_settingsShowPlayer( bool checked )
 {
 	if ( checked )
-		m_player->show();
+        m_playerWidget->show();
 	else
-		m_player->hide();
+        m_playerWidget->hide();
 }
 
 void MainWindow::visibilityPlayer( bool visible )
@@ -773,7 +770,6 @@ void MainWindow::act_projectTest()
 	{
 		m_testWindow = new TestWindow( this );
 
-		connect( m_player, SIGNAL(tick(qint64)), m_testWindow, SLOT(tick(qint64)) );
 		connect( m_testWindow, SIGNAL(closed()), this, SLOT( testWindowClosed() ) );
         connect( m_testWindow, SIGNAL(editorTick(qint64)), editor, SLOT(followingTick(qint64)) );
 	}
@@ -789,16 +785,17 @@ void MainWindow::act_projectTest()
 
 	// Added the pause to make the test lyrics button simply reload the lyrics and continue
 	// playing where it is at, making testing easier
-	m_player->btn_playerPlayPause();
-	m_player->startPlaying();
+
+    // fixme test
+    playerPlayPause();
 }
 
 void MainWindow::testWindowClosed()
 {
-	m_player->btn_playerStop();
+    playerStop();
 
 	delete m_testWindow;
-	m_testWindow = 0;
+    m_testWindow = 0;
 }
 
 void MainWindow::act_projectTestCDG()
@@ -824,7 +821,7 @@ void MainWindow::act_projectTestCDG()
 	if ( !m_testWindow )
 	{
 		m_testWindow = new TestWindow( this );
-		connect( m_player, SIGNAL(tick(qint64)), m_testWindow, SLOT(tick(qint64)) );
+        connect( m_playerWidget, SIGNAL(tick(qint64)), m_testWindow, SLOT(tick(qint64)) );
 		connect( m_testWindow, SIGNAL(closed()), this, SLOT( testWindowClosed() ) );
 	}
 
@@ -834,7 +831,8 @@ void MainWindow::act_projectTestCDG()
 	m_testWindow->setLyricWidget( lw );
 	m_testWindow->show();
 
-	m_player->startPlaying();
+    if ( !m_mediaPlayer->isPlaying() )
+        playerPlayPause();
 }
 
 
@@ -849,10 +847,11 @@ void MainWindow::act_projectExportVideoFile()
 		return;
 
 	// Stop the player if playing
-	m_player->btn_playerStop();
+    playerStop();
 
-	VideoGenerator videogen( m_project );
-	videogen.generate( lyrics, m_player->totalTime() );
+    // This one runs an event loop inside so it would delete itself
+    VideoGenerator * videogen = new VideoGenerator( m_project, lyrics, m_mediaPlayer->duration() );
+    videogen->generate( m_playerWidget );
 }
 
 void MainWindow::act_projectExportCDGFile()
@@ -866,19 +865,16 @@ void MainWindow::act_projectExportCDGFile()
 		return;
 
 	// Stop the player if playing
-	m_player->btn_playerStop();
+    playerStop();
 
 	CDGGenerator gen( m_project );
-	gen.generate( lyrics, m_player->totalTime() );
+    gen.generate( lyrics, m_mediaPlayer->duration() );
 }
 
 
 void MainWindow::act_helpRegistration()
 {
-	if ( !pLicensing->isEnabled() )
-		return;
-
-	if ( !pLicensing->isValid() )
+    if ( !pSettings->isRegistered() )
 	{
 		while ( 1 )
 		{
@@ -896,16 +892,14 @@ void MainWindow::act_helpRegistration()
 				return;
 
 			QString key = ui.leKey->toPlainText();
+            QString err = pSettings->validateCert( key );
 
-			if ( pLicensing->validate( key ) )
-			{
-				QSettings().setValue( "general/registrationkey", key );
+            if ( err.isEmpty() )
 				break;
-			}
 
 			QMessageBox::critical( 0,
 								  tr("Registration failed"),
-								  tr("Registration failed: %1") .arg( pLicensing->errMsg() ) );
+                                  tr("Registration failed: %1") .arg( err ) );
 			continue;
 		}
 	}
@@ -916,8 +910,8 @@ void MainWindow::act_helpRegistration()
 	ui.setupUi( &dlg );
 
 	// Set the data
-	ui.lblExpires->setText( pLicensing->expires().toString() );
-	ui.lblSubject->setText( pLicensing->subject() );
+    ui.lblExpires->setText( pSettings->registeredUntil.toString() );
+    ui.lblSubject->setText( pSettings->registeredName );
 
 	// Remove the "cancel" button from the button box
 	ui.buttonBox->removeButton( ui.buttonBox->button(QDialogButtonBox::Cancel ));
@@ -938,4 +932,91 @@ void MainWindow::act_addMissingTimingMarks()
 void MainWindow::act_adjustTiming()
 {
 	editor->adjustTimings();
+}
+
+
+void MainWindow::playerStop()
+{
+    m_playerWidget->updatePlayerState( PlayerWidget::Audio_StoppedState, m_mediaPlayer );
+    m_mediaPlayer->stop();
+    m_playerUIupdateTimer.stop();
+    updateState();
+}
+
+void MainWindow::playerSettingsChanged()
+{
+    if ( !pSettings->isRegistered() )
+    {
+        GentleMessageBox::warning( 0, "dialogs/nonregistered", "Requires registration", "This setting will only have effect in a registered version" );
+        return;
+    }
+
+    m_playerWidget->applySettings( m_mediaPlayer );
+}
+
+void MainWindow::playerPlayPause()
+{
+    if ( m_mediaPlayer->state() == MediaPlayer::StatePlaying )
+    {
+        m_playerWidget->updatePlayerState( PlayerWidget::Audio_PausedState, m_mediaPlayer );
+        m_playerUIupdateTimer.stop();
+        m_mediaPlayer->pause();
+    }
+    else
+    {
+        // Start playing
+        m_playerWidget->updatePlayerState( PlayerWidget::Audio_PlayingState, m_mediaPlayer );
+        m_playerUIupdateTimer.start();
+        m_mediaPlayer->play();
+    }
+}
+
+void MainWindow::playerSeekToTime(qint64 time)
+{
+    m_mediaPlayer->seekTo( time );
+    m_playerWidget->setCurrentPosition( m_mediaPlayer->position() );
+}
+
+void MainWindow::playerWidget_updateUI()
+{
+    m_playerWidget->setCurrentPosition( m_mediaPlayer->position() );
+
+    if ( m_testWindow )
+        m_testWindow->tick( m_mediaPlayer->position(), m_mediaPlayer->duration() );
+}
+
+void MainWindow::mediaDurationChanged()
+{
+    qint64 totaltime = m_mediaPlayer->duration();
+
+    if ( totaltime > 0 )
+    {
+        if ( m_project )
+            m_project->setSongLength( totaltime );
+
+        m_playerWidget->setDuration( totaltime );
+    }
+}
+
+void MainWindow::mediaFinished()
+{
+    playerStop();
+}
+
+void MainWindow::mediaLoadingFinished(MediaPlayer::State state, QString text)
+{
+    if ( state == MediaPlayer::StateFailed )
+    {
+        QMessageBox::critical( 0,
+                               tr("Cannot open the music file"),
+                               tr("Cannot open the music file.\n\n%1") .arg(text) );
+
+        // FIXME
+    }
+    else
+    {
+        m_playerWidget->updatePlayerState( PlayerWidget::Audio_StoppedState, m_mediaPlayer );
+    }
+
+    updateState();
 }

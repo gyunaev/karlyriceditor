@@ -25,11 +25,17 @@
 #include "textrenderer.h"
 #include "dialog_export_params.h"
 #include "playerwidget.h"
-#include "licensing.h"
+#include "settings.h"
 #include "version.h"
 #include "util.h"
 #include "cdg.h"
 
+// Video profiles
+static const QVector< QPair< QString, QString > > videoProfileMap = {
+    { "MP4 video with x264/aac" , "video/quicktime:video/x-h264:audio/mpeg" },
+    { "OGG video with theora/vorbis" , "application/ogg:video/x-theora:audio/x-vorbis" },
+    { "Custom GStreamer video (for advanced users)" , "CUSTOM" },
+};
 
 DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyrics,  bool video, QWidget *parent )
 	: QDialog(parent), Ui::DialogExportParams(), m_renderer(0, 0)
@@ -53,13 +59,22 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 	connect( tabWidget, SIGNAL(currentChanged(int)), this, SLOT(activateTab(int)) );
 	connect( seekSlider, SIGNAL(valueChanged(int)), this, SLOT(previewSliderMoved(int)) );
 
-	// Video comboboxes
-	connect( boxVideoTarget, SIGNAL(currentIndexChanged(int)), this, SLOT(videoTargetChanged(int)) );
-	connect( boxVideoMedium, SIGNAL(currentIndexChanged(int)), this, SLOT(videoMediumChanged(int)) );
-    connect( boxVideoProfile, SIGNAL(currentIndexChanged(int)), this, SLOT(recalculateLargestFontSize() ) );
+    // Video resolution setup
+    boxVideoResolution->addItem( "NTSC DVD 720x480", "720x480" );
+    boxVideoResolution->addItem( "PAL DVD 720x576", "720x576" );
+    boxVideoResolution->addItem( "HD 1280x720", "1280x720" );
+    boxVideoResolution->addItem( "Full HD 1920x1080", "1920x1080" );
 
-	// Details label
-	connect( lblVideoDetailsLink, SIGNAL(linkActivated(QString)), this, SLOT(videoShowDetails()) );
+    if ( pSettings->isRegistered() )
+        boxVideoResolution->addItem( "Ultra HD 3840x2160", "3840x2160" );
+
+    // Video resolution combobox
+    connect( boxVideoResolution, SIGNAL(currentIndexChanged(int)), this, SLOT(recalculateLargestFontSize() ) );
+    connect( boxVideoProfile, SIGNAL(currentIndexChanged(int)), this, SLOT(videoProfileChanged(int) ) );
+
+    // Video profiles setup
+    for ( const auto& v : videoProfileMap )
+        boxVideoProfile->addItem( v.first, v.second );
 
     // Add font video styles and choose "normal" to match previous behavior
     fontVideoStyle->addItem( "Thin", QFont::Thin );
@@ -73,7 +88,6 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 	if ( video )
 	{
 		// Set the video output params
-		boxVideoMedium->addItems( pVideoEncodingProfiles->videoMediumTypes() );
 		btnVideoColorActive->setColor( m_project->tag( Project::Tag_Video_activecolor, "blue" ) );
 		btnVideoColorBg->setColor( m_project->tag( Project::Tag_Video_bgcolor, "black" ) );
 		btnVideoColorInactive->setColor( m_project->tag( Project::Tag_Video_inactivecolor, "green" ) );
@@ -86,6 +100,8 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
         leOutputFile->setText( m_project->tag( Project::Tag_ExportFilenameVideo, "" ) );
 
         boxTextVerticalAlign->setCurrentIndex( m_project->tag( Project::Tag_Video_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
+
+        //leCustomProfile->hide();
 	}
 	else
 	{
@@ -136,7 +152,7 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 	leTitle->setText( m_project->tag( Project::Tag_Title, "") );
 	leArtist->setText( m_project->tag( Project::Tag_Artist, "") );
 
-	if ( pLicensing->isValid() )
+    if ( pSettings->isRegistered() )
 	{
 		leTitleCreatedBy->setText( QString("Created by %1<br>http://www.ulduzsoft.com") .arg(APP_NAME) );
 	}
@@ -215,12 +231,12 @@ void DialogExportOptions::browseOutputFile()
 
 	if ( m_videomode )
 	{
-		QString exportdir = QSettings().value( "general/exportdirvideo", "" ).toString();
+        QString exportdir = QSettings().value( "advanced/exportdirvideo", "" ).toString();
 		outfile = QFileDialog::getSaveFileName( 0, tr("Export video to a file"), exportdir );
 	}
 	else
 	{
-		QString exportdir = QSettings().value( "general/exportdircdg", "" ).toString();
+        QString exportdir = QSettings().value( "advanced/exportdircdg", "" ).toString();
 		outfile = QFileDialog::getSaveFileName( 0, tr("Export CD+G graphics to a file"), exportdir, "CD+G (*.cdg)" );
 	}
 
@@ -230,9 +246,9 @@ void DialogExportOptions::browseOutputFile()
 	QFileInfo finfo( outfile );
 
 	if ( m_videomode )
-		QSettings().setValue( "general/exportdirvideo", finfo.dir().absolutePath() );
+        QSettings().setValue( "advanced/exportdirvideo", finfo.dir().absolutePath() );
 	else
-		QSettings().setValue( "general/exportdircdg", finfo.dir().absolutePath() );
+        QSettings().setValue( "advanced/exportdircdg", finfo.dir().absolutePath() );
 
 	leOutputFile->setText( outfile );
 }
@@ -259,15 +275,6 @@ void DialogExportOptions::accept()
 	// Store encoding params
 	if ( m_videomode )
 	{
-		m_currentVideoFormat = pVideoEncodingProfiles->videoFormat( boxVideoProfile->currentText() );
-		m_currentProfile = pVideoEncodingProfiles->videoProfile( boxVideoTarget->currentText() );
-
-		if ( !m_currentProfile || !m_currentVideoFormat )
-			return;
-
-        m_audioEncodingType = boxAudioEncodingType->currentIndex();
-		m_quality = boxVideoQuality->itemData( boxVideoQuality->currentIndex() ).toInt();
-
 		// Store rendering params
 		m_project->setTag( Project::Tag_Video_activecolor, btnVideoColorActive->color().name() );
 		m_project->setTag( Project::Tag_Video_bgcolor, btnVideoColorBg->color().name() );
@@ -313,118 +320,8 @@ void DialogExportOptions::accept()
 	QDialog::accept();
 }
 
-void DialogExportOptions::videoMediumChanged(int newvalue)
-{
-	// This filters off target-specific profiles such as DVD/PAL and DVD/NTSC for DVD
-	QStringList	profilenames = pVideoEncodingProfiles->videoProfiles();
-	boxVideoTarget->clear();
 
-	for ( int i = 0; i < profilenames.size(); i++ )
-	{
-		const VideoEncodingProfile * p = pVideoEncodingProfiles->videoProfile( profilenames[i] );
-
-		if ( !p )
-			continue;
-
-		if ( p->type != newvalue )
-			continue;
-
-		boxVideoTarget->addItem( profilenames[i] );
-	}
-
-	// Update the qualities
-	videoTargetChanged( 0 );
-}
-
-void DialogExportOptions::videoTargetChanged( int )
-{
-	// This filters off video profile-specific formats (i.e. no PAL video encodings for NTSC formats),
-	// as well as quality settings.
-	boxVideoProfile->clear();
-	boxVideoQuality->clear();
-
-	m_currentProfile = pVideoEncodingProfiles->videoProfile( boxVideoTarget->currentText() );
-
-	if ( !m_currentProfile )
-		return;
-
-	// Filter out the video formats
-	QStringList videoFormats = pVideoEncodingProfiles->videoFormats();
-
-	Q_FOREACH ( QString format, videoFormats )
-	{
-		if ( !m_currentProfile->limitFormats.empty() && !m_currentProfile->limitFormats.contains( format ) )
-			continue;
-
-		boxVideoProfile->addItem( format );
-	}
-
-	if ( m_currentProfile->bitratesEnabled[VideoEncodingProfile::BITRATE_HIGH] )
-		boxVideoQuality->addItem( tr("High"), VideoEncodingProfile::BITRATE_HIGH );
-
-	if ( m_currentProfile->bitratesEnabled[VideoEncodingProfile::BITRATE_MEDIUM] )
-		boxVideoQuality->addItem( tr("Medium"), VideoEncodingProfile::BITRATE_MEDIUM );
-
-	if ( m_currentProfile->bitratesEnabled[VideoEncodingProfile::BITRATE_LOW] )
-		boxVideoQuality->addItem( tr("Low"), VideoEncodingProfile::BITRATE_LOW );
-
-	boxVideoProfile->setEnabled( boxVideoProfile->count() > 1 );
-	boxVideoQuality->setEnabled( boxVideoQuality->count() > 1 );
-}
-
-void DialogExportOptions::videoShowDetails()
-{
-	m_currentVideoFormat = pVideoEncodingProfiles->videoFormat( boxVideoProfile->currentText() );
-	m_currentProfile = pVideoEncodingProfiles->videoProfile( boxVideoTarget->currentText() );
-
-	if ( !m_currentProfile || !m_currentVideoFormat )
-		return;
-
-    m_audioEncodingType = boxAudioEncodingType->currentIndex();
-	m_quality = boxVideoQuality->itemData( boxVideoQuality->currentIndex() ).toInt();
-
-	QString data = tr("<table border=0>"
-					  "<tr colspan=2><td><b>Video parameters</b></td></tr>"
-					  "<tr><td>Codec:</td><td>$videoCodec</td></tr>"
-					  "<tr><td>Container:</td><td>$videoContainer</td></tr>"
-					  "<tr><td>Resolution:</td><td>$videoResolution</td></tr>"
-					  "<tr><td>Frame rate:</td><td>$frameRate FPS</td></tr>"
-					  "<tr><td>Bitrate:</td><td>$videoBitrate</td></tr>"
-					  "<tr><td>Display&nbsp;aspect&nbsp;ratio:</td><td>$displayAspectRatio</td></tr>"
-					  "<tr><td>Sample&nbsp;aspect&nbsp;ratio:</td><td>$sampleAspectRatio</td></tr>"
-					  "<tr><td>Progressive:</td><td>$progressive</td></tr>"
-					  "<tr colspan=2><td>&nbsp;</td></tr>"
-					  "<tr colspan=2><td><b>Audio parameters</b></td></tr>"
-					  "<tr><td>Codec:</td><td>$audioCodec</td></tr>"
-					  "<tr><td>Sample rate:</td><td>$audioSampleRate</td></tr>"
-					  "<tr><td>Channels:</td><td>$audioChannels</td></tr>"
-					  "<tr><td>Bitrate:</td><td>$audioBitrate</td></tr>"
-					  "</table>");
-
-	QMap< QString, QString > variables;
-	variables["$videoCodec"] = m_currentProfile->videoCodec;
-	variables["$videoContainer"] = m_currentProfile->videoContainer;
-	variables["$videoResolution"] = QString("%1x%2") .arg(m_currentVideoFormat->width) .arg(m_currentVideoFormat->height);
-	variables["$frameRate"] = QString::number( (double) m_currentVideoFormat->frame_rate_den / m_currentVideoFormat->frame_rate_num, 'g', 2 );
-	variables["$videoBitrate"] = QString("%1Kbps") .arg( m_currentProfile->bitratesVideo[m_quality] );
-	variables["$displayAspectRatio"] = QString("%1:%2") .arg( m_currentVideoFormat->display_aspect_num ) .arg( m_currentVideoFormat->display_aspect_den );
-	variables["$sampleAspectRatio"] = QString("%1:%2") .arg( m_currentVideoFormat->sample_aspect_num ) .arg( m_currentVideoFormat->sample_aspect_den );
-	variables["$progressive"] = (m_currentVideoFormat->flags & VIFO_INTERLACED) ? "false" : "true";
-	variables["$audioCodec"] = m_currentProfile->audioCodec;
-	variables["$audioSampleRate"] = QString::number( m_currentProfile->sampleRate );
-	variables["$audioChannels"] = QString::number( m_currentProfile->channels );
-	variables["$audioBitrate"] = QString("%1Kbps") .arg( m_currentProfile->bitratesAudio[m_quality] );
-
-	Q_FOREACH( QString key, variables.keys() )
-	{
-		data.replace( key, variables[key]);
-	}
-
-	QWhatsThis::showText( mapToGlobal(lblVideoDetailsLink->pos()), data );
-}
-
-
-QSize DialogExportOptions::getVideoSize()
+QSize DialogExportOptions::getVideoSize() const
 {
 	if ( !m_videomode )
 	{
@@ -432,23 +329,18 @@ QSize DialogExportOptions::getVideoSize()
 		return QSize( CDG_DRAW_WIDTH, CDG_DRAW_HEIGHT );
 	}
 
-	// Get the current video profile value
-	const VideoFormat * vf = pVideoEncodingProfiles->videoFormat( boxVideoProfile->currentText() );
-
-	if ( !vf )
-		return QSize( 100, 100 );
-
-	return QSize( vf->width, vf->height );
+    QStringList resolution = boxVideoResolution->currentData().toString().split("x");
+    return QSize( resolution[0].toUInt(), resolution[1].toUInt() );
 }
 
-bool DialogExportOptions::videoParams(const VideoEncodingProfile **profile, const VideoFormat **format, unsigned int *audioMode, unsigned int *qualty)
+QString DialogExportOptions::videoProfile() const
 {
-	*profile = m_currentProfile;
-	*format = m_currentVideoFormat;
-    *audioMode = m_audioEncodingType;
-	*qualty = m_quality;
+    QString value = boxVideoProfile->currentData().toString();
 
-    return true;
+    if ( value == "CUSTOM" )
+        return leCustomProfile->text();
+
+    return value;
 }
 
 void DialogExportOptions::activateTab( int index )
@@ -495,7 +387,7 @@ void DialogExportOptions::activateTab( int index )
     // Title
     m_renderer.setTitlePageData( leArtist->text(),
                                  leTitle->text(),
-                                 pLicensing->isValid() ? leTitleCreatedBy->text() : "",
+                                 pSettings->isRegistered() ? leTitleCreatedBy->text() : "",
                                  titleVideoMin->value() * 1000 );
 
     // Preamble
@@ -560,4 +452,9 @@ void DialogExportOptions::fontSizeStrategyChanged(int index)
         spinFontSize->setValue( spinFontSize->maximum() );
         spinFontSize->setEnabled( false );
     }
+}
+
+void DialogExportOptions::videoProfileChanged(int index)
+{
+    leCustomProfile->setHidden( boxVideoProfile->itemData( index ).toString() != "CUSTOM" );
 }

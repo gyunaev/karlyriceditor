@@ -2,21 +2,9 @@ TEMPLATE = app
 TARGET = ../bin/karlyriceditor
 DEPENDPATH += .
 
-!win32: {
-        INCLUDEPATH = /usr/include/ffmpeg
-	CONFIG += link_pkgconfig
-	PKGCONFIG += libavformat libavcodec libswscale libavutil libswresample
-	LIBS += -lcrypto
-}
-
-win32: {
-    LIBS += -lwsock32 -ldxguid libeay32.lib avformat.lib avcodec.lib swscale.lib avutil.lib swresample.lib
-    INCLUDEPATH=C:\Users\test\Builder\extralibs\x86_64\include\ffmpeg\ C:\Users\test\Builder\extralibs\x86_64\include
-    LIBS += -LC:\Users\test\Builder\extralibs\x86_64\lib\ffmpeg\ -LC:\Users\test\Builder\extralibs\x86_64\lib
-}
-
 # Input
 HEADERS += mainwindow.h \
+    mediaplayer.h \
     wizard_newproject.h \
     project.h \
     playerwidget.h \
@@ -41,26 +29,21 @@ HEADERS += mainwindow.h \
     lyricsrenderer.h \
     textrenderer.h \
     lyricswidget.h \
-    ffmpegvideodecoder.h \
-    ffmpegvideoencoder.h \
     videogenerator.h \
     lyricsevents.h \
     background.h \
     audioplayer.h \
-    ffmpeg_headers.h \
     audioplayerprivate.h \
-    licensing.h \
     karaokelyricstextkar.h \
     kfn_file_parser.h \
     dialog_timeadjustment.h \
     util.h \
-    videoencodingprofiles.h \
-    videogeneratorthread.h \
     dialog_export_params.h
 SOURCES += mainwindow.cpp \
     ffmpegvideodecoder.cpp \
     ffmpegvideoencoder.cpp \
     main.cpp \
+    mediaplayer.cpp \
     wizard_newproject.cpp \
     project.cpp \
     playerwidget.cpp \
@@ -85,16 +68,10 @@ SOURCES += mainwindow.cpp \
     videogenerator.cpp \
     lyricsevents.cpp \
     background.cpp \
-    audioplayer.cpp \
-    audioplayerprivate.cpp \
-    ffmpeg_headers.cpp \
-    licensing.cpp \
     karaokelyricstextkar.cpp \
     kfn_file_parser.cpp \
     dialog_timeadjustment.cpp \
     util.cpp \
-    videoencodingprofiles.cpp \
-    videogeneratorthread.cpp \
     dialog_export_params.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui \
@@ -116,4 +93,31 @@ FORMS += mainwindow.ui \
     dialog_timeadjustment.ui \
     video_profile_dialog.ui
 
-QT += widgets multimedia
+QT += core widgets network
+
+# Handle libzip and GStreamer dependency with pkgconfig on Linux, specify exact paths on Mac
+unix:!mac:{
+    CONFIG += link_pkgconfig
+    PKGCONFIG += gstreamer-1.0 gstreamer-app-1.0
+} else: {
+    INCLUDEPATH += /Library/Frameworks/GStreamer.framework/Headers
+    LIBS += -L/Library/Frameworks/GStreamer.framework/Libraries -lgstapp-1.0 -lgstreamer-1.0 -lglib-2.0 -lgobject-2.0
+}
+
+LIBS += -lcrypto
+# Windows builds debug/release libs in different directories while other platforms use a single dir
+win32: {
+
+    RC_ICONS += images/application.ico
+    QMAKE_CXXFLAGS+=/Zi
+    QMAKE_LFLAGS+= /INCREMENTAL:NO /Debug
+    LIBS += crypt32.lib
+
+    CONFIG(debug, debug|release) {
+        LIBSUBDIR="debug"
+    } else: {
+        LIBSUBDIR="release"
+    }
+} else: {
+    LIBSUBDIR=""
+}

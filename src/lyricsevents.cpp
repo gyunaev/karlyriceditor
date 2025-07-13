@@ -24,6 +24,7 @@
 
 #include "lyricsevents.h"
 #include "background.h"
+#include "mediaplayer.h"
 
 enum
 {
@@ -148,9 +149,9 @@ bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * err
 			return false;
 		}
 
-		FFMpegVideoDecoder vd;
+        MediaPlayer mpl;
 
-		if ( !vd.openFile( filename ) )
+        if ( mpl.loadMediaSync( filename, MediaPlayer::LoadVideoStream ) == MediaPlayer::StateFailed )
 		{
 			if ( errmsg )
 				*errmsg = QString("File %1 is not a supported video") .arg(filename);
@@ -178,7 +179,7 @@ bool LyricsEvents::parseEvent( const QString& text, Event * event, QString * err
     }
     else if ( key == "COLOR" )
     {
-        if ( !QColor::isValidColor(value) )
+        if ( !QColor::isValidColorName(value) )
         {
             if ( errmsg )
                 *errmsg = QString("Color %1 is not valid") .arg(value);

@@ -22,7 +22,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 
-#include "audioplayer.h"
+#include "mediaplayer.h"
 #include "project.h"
 #include "version.h"
 #include "wizard_newproject.h"
@@ -82,6 +82,11 @@ PageMusicFile::PageMusicFile( Project * project, QWidget *parent )
 	setupUi( this );
 
 	m_project = project;
+
+    m_mediaPlayer = new MediaPlayer();
+    connect( m_mediaPlayer, SIGNAL(mediaLoadingFinished(State,QString)), this,SLOT(mediaLoadingFinished(MediaPlayer::State,QString)) );
+    connect( m_mediaPlayer, SIGNAL(tagsChanged(QString,QString)), this,SLOT(mediaTagsChanged(QString,QString)) );
+
 	connect( btnBrowse, SIGNAL( clicked() ), this, SLOT( browse() ) );
 }
 
@@ -172,45 +177,59 @@ void PageMusicFile::browse()
 							   tr("The file %1 cannot be imported: the lyrics cannot be parsed: %s") .arg( filename ) .arg( parser.errorMsg() ) );
 	}
 
-	// Try to open it
-	if ( !pAudioPlayer->open( filename ) )
-	{
-		QMessageBox::critical( 0,
-							   tr("Cannot open the music file"),
-							   tr("Cannot open the music file.\n\n%1") .arg(pAudioPlayer->errorMsg()) );
-		return;
-	}
-
-	// Store the music file
-	leSongFile->setText( filename );
-	leArtist->setText( pAudioPlayer->metaArtist() );
-	leTitle->setText( pAudioPlayer->metaTitle() );
-	pAudioPlayer->close();
-
-	// If there's an LRC file nearby, ask whether the user wants to load it (and get the values from it)
-	if ( !m_hasLrcLyrics.isEmpty() )
-		return;
-
-	QString lrcfile = Util::removeFileExtention( filename ) + "lrc";
-	QFile file( lrcfile );
-
-	if ( file.open( QIODevice::ReadOnly ) )
-	{
-		if ( QMessageBox::question( 0,
-						   tr("Lyrics file found"),
-						   tr("It looks like there is a lyrics file %1 matching this music file.\n\n"
-							  "Do you want to import it as well?") .arg(lrcfile),
-								   QMessageBox::Yes | QMessageBox::No, QMessageBox::No )
-				== QMessageBox::Yes )
-		{
-			m_hasLrcLyrics = Util::convertWithUserEncoding( file.readAll() );
-
-		}
-	}
-
-    // Store the last used import directory
-    pSettings->updateLastUsedDirectory( QDir(filename).dirName() );
+    // Try to open it; we will receive signals
+    m_lastMusicFile = filename;
+    m_mediaPlayer->loadMedia( filename, MediaPlayer::LoadAudioStream );
 }
+
+void PageMusicFile::mediaLoadingFinished(MediaPlayer::State state, QString text)
+{
+    if ( state == MediaPlayer::StateFailed )
+    {
+        QMessageBox::critical( 0,
+                               tr("Cannot open the music file"),
+                               tr("Cannot open the music file.\n\n%1") .arg(text) );
+
+        m_lastMusicFile.clear();
+    }
+    else
+    {
+        // Store the music file
+        leSongFile->setText( m_lastMusicFile );
+
+        // If there's an LRC file nearby, ask whether the user wants to load it (and get the values from it)
+        if ( !m_hasLrcLyrics.isEmpty() )
+            return;
+
+        QString lrcfile = Util::removeFileExtention( m_lastMusicFile ) + "lrc";
+        QFile file( lrcfile );
+
+        if ( file.open( QIODevice::ReadOnly ) )
+        {
+            if ( QMessageBox::question( 0,
+                               tr("Lyrics file found"),
+                               tr("It looks like there is a lyrics file %1 matching this music file.\n\n"
+                                  "Do you want to import it as well?") .arg(lrcfile),
+                                       QMessageBox::Yes | QMessageBox::No, QMessageBox::No )
+                    == QMessageBox::Yes )
+            {
+                m_hasLrcLyrics = Util::convertWithUserEncoding( file.readAll() );
+
+            }
+        }
+
+        // Store the last used import directory
+        pSettings->updateLastUsedDirectory( QDir(m_lastMusicFile).dirName() );
+    }
+}
+
+
+void PageMusicFile::mediaTagsChanged(QString artist, QString title)
+{
+    leArtist->setText( artist );
+    leTitle->setText( title );
+}
+
 
 bool PageMusicFile::validatePage()
 {
@@ -221,9 +240,6 @@ bool PageMusicFile::validatePage()
 							   tr("You must select a music file to continue.") );
 		return false;
 	}
-
-	if ( !pAudioPlayer->open( leSongFile->text() ) )
-		return false;
 
 	if ( leTitle->text().isEmpty() )
 	{

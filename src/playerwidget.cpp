@@ -20,18 +20,10 @@
 #include <QTime>
 #include <QMessageBox>
 
-#include "audioplayer.h"
+#include "mediaplayer.h"
 #include "playerwidget.h"
 #include "mainwindow.h"
 #include "project.h"
-
-enum
-{
-	Audio_ErrorState,
-	Audio_PausedState,
-	Audio_StoppedState,
-	Audio_PlayingState
-};
 
 
 PlayerWidget::PlayerWidget(QWidget *parent)
@@ -39,8 +31,12 @@ PlayerWidget::PlayerWidget(QWidget *parent)
 {
 	setupUi(this);
 
-	m_ready = false;
 	m_sliderDown = false;
+    m_changingSliderPosition = false;
+    m_totalTime = 0;
+    m_currentTime = 0;
+
+    setWindowTitle( tr("Player controls") );
 
 	// Set up icons
 	btnFwd->setPixmap( QPixmap(":images/dryicons_forward.png") );
@@ -48,60 +44,16 @@ PlayerWidget::PlayerWidget(QWidget *parent)
 	btnRew->setPixmap( QPixmap(":images/dryicons_rewind.png") );
 	btnStop->setPixmap( QPixmap(":images/dryicons_stop") );
 
-	// Connect button slots
-	connect( btnFwd, SIGNAL( clicked() ), this, SLOT(btn_playerSeekForward()) );
-	connect( btnRew, SIGNAL( clicked() ), this, SLOT(btn_playerSeekBackward()) );
-	connect( btnPausePlay, SIGNAL( clicked() ), this, SLOT(btn_playerPlayPause()) );
-	connect( btnStop, SIGNAL( clicked() ), this, SLOT(btn_playerStop()) );
-
-	// Create the audio player, and initialize it
-	pAudioPlayer = new AudioPlayer();
-
-	if ( !pAudioPlayer->init() )
-	{
-		QMessageBox::critical( 0,
-							  tr("Cannot initialize audio"),
-							  tr("Audio output device cannot be initialized.\n\nPlease make sure the sound card "
-								 "in your computer works fine, that all necessary drivers are installed, and "
-								 "that no other application is currently locking the sound device.\n\n"
-								 "Program is now aborting.") );
-		exit( 1 );
-	}
-
-	// Connect the player
-	connect( pAudioPlayer,
-			 SIGNAL( tick(qint64) ),
-			 this,
-			 SLOT( slotAudioTick(qint64)) );
-
-    connect( pAudioPlayer, SIGNAL(finished()), this, SLOT(btn_playerStop()) );
-
-	// Connect the seek slider
 	connect( seekSlider, SIGNAL(sliderMoved(int)), this, SLOT(seekSliderMoved(int)) );
 	connect( seekSlider, SIGNAL(sliderPressed()), this, SLOT(seekSliderDown()) );
 	connect( seekSlider, SIGNAL(sliderReleased()), this, SLOT(seekSliderUp()) );
+    connect( seekSlider, SIGNAL(valueChanged(int)), this, SLOT(seekSliderMoved(int)) );
+    connect( btnFwd, SIGNAL(clicked()), this, SLOT(btnSeekForward()) );
+    connect( btnRew, SIGNAL(clicked()), this, SLOT(btnSeekBackward()) );
 }
 
 PlayerWidget::~PlayerWidget()
 {
-	delete pAudioPlayer;
-}
-
-void PlayerWidget::slotAudioTick( qint64 tickvalue )
-{
-	emit tick( tickvalue );
-
-	qint64 remaining = qMax( (qint64) 0, totalTime() - tickvalue );
-	lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( tickvalue ) ) );
-	lblTimeRemaining->setText( tr("<b>-%1</b>") .arg( tickToString( remaining ) ) );
-
-	if ( !m_sliderDown )
-	{
-		int value = currentTime() * seekSlider->maximum() / totalTime();
-
-		if ( seekSlider->value() != value )
-			seekSlider->setValue( value );
-	}
 }
 
 QString PlayerWidget::tickToString( qint64 tickvalue )
@@ -114,95 +66,26 @@ QString PlayerWidget::tickToString( qint64 tickvalue )
     return ct.toString( "mm:ss" );
 }
 
-bool PlayerWidget::openMusicFile( Project * project )
+int PlayerWidget::playerState() const
 {
-	if ( !pAudioPlayer->open( project->musicFile() ) )
-	{
-		QMessageBox::critical( 0,
-						   tr("Cannot open media file"),
-						   tr("Cannot play media file %1: %2")
-								.arg( project->musicFile() )
-								.arg( pAudioPlayer->errorMsg() ) );
-
-		updatePlayerState( Audio_ErrorState );
-		return false;
-	}
-
-	setWindowTitle( tr("Player controls - %1 by %2")
-					.arg( project->tag( Project::Tag_Title ) )
-					.arg( project->tag( Project::Tag_Artist ) ) );
-
-
-	updatePlayerState( Audio_StoppedState );
-	return true;
+    return m_state;
 }
 
-void PlayerWidget::btn_playerStop()
+
+void PlayerWidget::btnSeekForward()
 {
-	pAudioPlayer->stop();
-	pAudioPlayer->reset();
-	updatePlayerState( Audio_StoppedState );
+    pMainWindow->playerSeekToTime( qMin( m_totalTime, m_currentTime + 5000 ) );
 }
 
-void PlayerWidget::btn_playerPlayPause()
+void PlayerWidget::btnSeekBackward()
 {
-	if ( pAudioPlayer->isPlaying() )
-	{
-		pAudioPlayer->stop();
-		updatePlayerState( Audio_PausedState );
-	}
-	else
-	{
-		pAudioPlayer->play();
-		updatePlayerState( Audio_PlayingState );
-	}
+    pMainWindow->playerSeekToTime( qMax( 0, m_currentTime - 5000 ) );
 }
 
-void PlayerWidget::btn_playerSeekForward()
+
+void PlayerWidget::updatePlayerState( int newstate, const MediaPlayer * player )
 {
-    seekToTime( pAudioPlayer->currentTime() + 5000 );
-}
-
-void PlayerWidget::btn_playerSeekBackward()
-{
-    seekToTime( pAudioPlayer->currentTime() - 5000 );
-}
-
-void PlayerWidget::seekToTime(qint64 time)
-{
-    if ( pAudioPlayer->isPlaying() )
-    {
-        if ( time < 0 )
-            time = 0;
-
-        pAudioPlayer->seekTo( time );
-    }
-}
-
-void PlayerWidget::startPlaying()
-{
-	if ( pAudioPlayer->isPlaying() )
-	{
-		pAudioPlayer->stop();
-		pAudioPlayer->reset();
-	}
-
-	pAudioPlayer->play();
-	updatePlayerState( Audio_PlayingState );
-}
-
-qint64 PlayerWidget::currentTime() const
-{
-	return pAudioPlayer->currentTime();
-}
-
-qint64 PlayerWidget::totalTime() const
-{
-	return pAudioPlayer->totalTime();
-}
-
-void PlayerWidget::updatePlayerState( int newstate )
-{
+    m_state = newstate;
 	bool ready = true, enable_playpause = false, enable_seek = false, enable_stop = false;
 
 	switch ( newstate )
@@ -219,7 +102,6 @@ void PlayerWidget::updatePlayerState( int newstate )
 
 		case Audio_StoppedState:
 			btnPausePlay->setPixmap( QPixmap( ":images/dryicons_play.png" ) );
-			m_ready = true;
 			enable_playpause = true;
 			break;
 
@@ -236,6 +118,8 @@ void PlayerWidget::updatePlayerState( int newstate )
 	btnFwd->setEnabled( enable_seek );
 	btnPausePlay->setEnabled( enable_playpause );
 	btnStop->setEnabled( enable_stop );
+    spinPitch->setEnabled( ready );
+    spinTempo->setEnabled( ready );
 
 	if ( !ready )
 	{
@@ -244,18 +128,47 @@ void PlayerWidget::updatePlayerState( int newstate )
 	}
 	else
 	{
-		qint64 remaining = qMax( (qint64) 0, totalTime() - currentTime() );
-		lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( currentTime() ) ) );
+        qint64 remaining = qMax( (qint64) 0, m_totalTime - m_currentTime );
+        lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( m_currentTime ) ) );
 		lblTimeRemaining->setText( tr("<b>-%1</b>") .arg( tickToString( remaining ) ) );
 	}
-
-	pMainWindow->updateState();
 }
 
+void PlayerWidget::setCurrentPosition(qint64 time)
+{
+    m_currentTime = time;
+
+    qint64 remaining = qMax( (qint64) 0, m_totalTime - m_currentTime );
+    lblTimeCur->setText( tr("<b>%1</b>") .arg( tickToString( m_currentTime ) ) );
+    lblTimeRemaining->setText( tr("<b>-%1</b>") .arg( tickToString( remaining ) ) );
+
+    if ( !m_sliderDown && m_totalTime > 0 )
+    {
+        int value = m_currentTime * seekSlider->maximum() / m_totalTime;
+
+        if ( seekSlider->value() != value )
+        {
+            m_changingSliderPosition = true;
+            seekSlider->setValue( value );
+        }
+    }
+}
+
+void PlayerWidget::setDuration(qint64 duration)
+{
+    m_totalTime = duration;
+    setCurrentPosition( m_currentTime );
+}
+
+void PlayerWidget::applySettings(MediaPlayer *player)
+{
+    player->setCapabilityValue( MediaPlayer::CapChangePitch, spinPitch->value() );
+    player->setCapabilityValue( MediaPlayer::CapChangeTempo, spinTempo->value() );
+}
 
 void PlayerWidget::seekSliderUp()
 {
-	pAudioPlayer->seekTo( seekSlider->value() * totalTime() / seekSlider->maximum() );
+    pMainWindow->playerSeekToTime( seekSlider->value() * m_totalTime / seekSlider->maximum() );
 	m_sliderDown = false;
 }
 
@@ -266,10 +179,9 @@ void PlayerWidget::seekSliderDown()
 
 void PlayerWidget::seekSliderMoved( int newvalue )
 {
-	pAudioPlayer->seekTo( newvalue * totalTime() / seekSlider->maximum() );
+    if ( !m_changingSliderPosition )
+        pMainWindow->playerSeekToTime( newvalue * m_totalTime / seekSlider->maximum() );
+    else
+        m_changingSliderPosition = false;
 }
 
-bool PlayerWidget::isPlaying() const
-{
-	return pAudioPlayer->isPlaying();
-}
