@@ -107,7 +107,7 @@ win32: {
     RC_ICONS += images/application.ico
     QMAKE_CXXFLAGS+=/Zi
     QMAKE_LFLAGS+= /INCREMENTAL:NO /Debug
-    LIBS += crypt32.lib
+    LIBS += crypt32.lib ws2_32.lib
 
     CONFIG(debug, debug|release) {
         LIBSUBDIR="debug"
