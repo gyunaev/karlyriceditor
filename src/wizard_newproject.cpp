@@ -84,7 +84,7 @@ PageMusicFile::PageMusicFile( Project * project, QWidget *parent )
 	m_project = project;
 
     m_mediaPlayer = new MediaPlayer();
-    connect( m_mediaPlayer, SIGNAL(mediaLoadingFinished(State,QString)), this,SLOT(mediaLoadingFinished(MediaPlayer::State,QString)) );
+    connect( m_mediaPlayer, SIGNAL(mediaLoadingFinished(MediaPlayer::State,QString)), this,SLOT(mediaLoadingFinished(MediaPlayer::State,QString)) );
     connect( m_mediaPlayer, SIGNAL(tagsChanged(QString,QString)), this,SLOT(mediaTagsChanged(QString,QString)) );
 
 	connect( btnBrowse, SIGNAL( clicked() ), this, SLOT( browse() ) );
