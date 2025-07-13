@@ -273,7 +273,7 @@ void MediaPlayer::loadMediaGeneric()
        if ( pSettings->isRegistered() )
            pipeline += " ! pitch name=" + pSettings->registeredDigest;
 
-        pipeline += " ! volume name=volume ! autoaudiosink";
+        pipeline += " ! volume name=volume ! audioconvert ! autoaudiosink";
     }
 
     qDebug( "Gstreamer: setting up pipeline: '%s'", qPrintable( pipeline ) );
