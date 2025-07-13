@@ -80,6 +80,7 @@ PageMusicFile::PageMusicFile( Project * project, QWidget *parent )
 	: QWizardPage( parent ), Ui::WizNewProject_MusicFile()
 {
 	setupUi( this );
+    boxMusicAnalysis->hide();
 
 	m_project = project;
 
@@ -177,6 +178,11 @@ void PageMusicFile::browse()
 							   tr("The file %1 cannot be imported: the lyrics cannot be parsed: %s") .arg( filename ) .arg( parser.errorMsg() ) );
 	}
 
+    // UI changes
+    boxMusicInfo->hide();
+    boxMusicSelector->hide();
+    boxMusicAnalysis->show();
+
     // Try to open it; we will receive signals
     m_lastMusicFile = filename;
     m_mediaPlayer->loadMedia( filename, MediaPlayer::LoadAudioStream );
@@ -184,6 +190,10 @@ void PageMusicFile::browse()
 
 void PageMusicFile::mediaLoadingFinished(MediaPlayer::State state, QString text)
 {
+    boxMusicInfo->show();
+    boxMusicSelector->show();
+    boxMusicAnalysis->hide();
+
     if ( state == MediaPlayer::StateFailed )
     {
         QMessageBox::critical( 0,
