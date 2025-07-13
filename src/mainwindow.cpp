@@ -448,7 +448,7 @@ void MainWindow::setCurrentProject( Project * proj )
     connect( m_mediaPlayer, SIGNAL(finished()), this, SLOT(playerStop()) );
 
     m_mediaPlayer->loadMedia( m_project->musicFile(), MediaPlayer::LoadAudioStream );
-    m_playerWidget->updatePlayerState( PlayerWidget::Audio_ErrorState, m_mediaPlayer );
+    m_playerWidget->updatePlayerState( PlayerWidget::Audio_ErrorState);
 }
 
 void MainWindow::act_editInsertTag()
@@ -937,7 +937,7 @@ void MainWindow::act_adjustTiming()
 
 void MainWindow::playerStop()
 {
-    m_playerWidget->updatePlayerState( PlayerWidget::Audio_StoppedState, m_mediaPlayer );
+    m_playerWidget->updatePlayerState( PlayerWidget::Audio_StoppedState );
     m_mediaPlayer->stop();
     m_playerUIupdateTimer.stop();
     updateState();
@@ -958,14 +958,14 @@ void MainWindow::playerPlayPause()
 {
     if ( m_mediaPlayer->state() == MediaPlayer::StatePlaying )
     {
-        m_playerWidget->updatePlayerState( PlayerWidget::Audio_PausedState, m_mediaPlayer );
+        m_playerWidget->updatePlayerState( PlayerWidget::Audio_PausedState );
         m_playerUIupdateTimer.stop();
         m_mediaPlayer->pause();
     }
     else
     {
         // Start playing
-        m_playerWidget->updatePlayerState( PlayerWidget::Audio_PlayingState, m_mediaPlayer );
+        m_playerWidget->updatePlayerState( PlayerWidget::Audio_PlayingState );
         m_playerUIupdateTimer.start();
         m_mediaPlayer->play();
     }
@@ -1015,7 +1015,7 @@ void MainWindow::mediaLoadingFinished(MediaPlayer::State state, QString text)
     }
     else
     {
-        m_playerWidget->updatePlayerState( PlayerWidget::Audio_StoppedState, m_mediaPlayer );
+        m_playerWidget->updatePlayerState( PlayerWidget::Audio_StoppedState );
     }
 
     updateState();

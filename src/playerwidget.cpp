@@ -83,7 +83,7 @@ void PlayerWidget::btnSeekBackward()
 }
 
 
-void PlayerWidget::updatePlayerState( int newstate, const MediaPlayer * player )
+void PlayerWidget::updatePlayerState( int newstate )
 {
     m_state = newstate;
 	bool ready = true, enable_playpause = false, enable_seek = false, enable_stop = false;

@@ -36,8 +36,6 @@ class Settings
         QString         validateCert( const QString& pemdata );
         bool            isRegistered() const;
 
-        void    updateLastUsedDirectory( const QString& lastdir );
-
 	public:
         // Last used directory for opending files
         QString     m_LastUsedDirectory;

@@ -109,7 +109,6 @@ void VideoGenerator::generate( PlayerWidget * widget )
     connect( m_encoder, SIGNAL(finished()), this, SLOT(mediaFinished()) );
 
     // Launch the encoder process
-    m_paramsSet = false;
     m_encoder->prepareVideoEncoder( m_project->musicFile(),
                                     dlg.m_outputVideo,
                                     profile,

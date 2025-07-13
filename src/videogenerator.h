@@ -50,14 +50,6 @@ class VideoGenerator : public QDialog
     protected:
         void    closeEvent(QCloseEvent *e);
 
-    public slots:
-        void    progress( int progress, QString frames, QString size, QString timing );
-        void    finished( QString errormsg );
-        void    buttonAbort();
-
-    protected:
-        void    closeEvent(QCloseEvent *e);
-
 	private:
 		Project *	m_project;
         const Lyrics&  m_lyrics;

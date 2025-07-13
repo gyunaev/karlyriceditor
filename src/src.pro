@@ -32,16 +32,12 @@ HEADERS += mainwindow.h \
     videogenerator.h \
     lyricsevents.h \
     background.h \
-    audioplayer.h \
-    audioplayerprivate.h \
     karaokelyricstextkar.h \
     kfn_file_parser.h \
     dialog_timeadjustment.h \
     util.h \
     dialog_export_params.h
 SOURCES += mainwindow.cpp \
-    ffmpegvideodecoder.cpp \
-    ffmpegvideoencoder.cpp \
     main.cpp \
     mediaplayer.cpp \
     wizard_newproject.cpp \

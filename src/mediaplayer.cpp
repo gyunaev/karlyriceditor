@@ -166,10 +166,11 @@ bool MediaPlayer::setCapabilityValue( MediaPlayer::Capability cap, int value)
 
     case MediaPlayer::CapChangePitch:
         g_object_set( G_OBJECT( getElement(pSettings->registeredDigest) ), "pitch", (double) value / 100, NULL );
+        return true;
 
     case MediaPlayer::CapChangeTempo:
         g_object_set( G_OBJECT( getElement(pSettings->registeredDigest) ), "tempo", (double) value / 100, NULL );
-        break;
+        return true;
     }
 
     return false;
