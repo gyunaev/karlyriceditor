@@ -31,6 +31,15 @@ Karaoke Lyric Editor is licensed under GNU GPL version 3, and is written by Geor
 - Allows real-time testing of your changes in lyrics text or timing, with automatic music rewind a few seconds back just before the edited timestamp.
 - Support for real-time testing of your lyric modifications
 
+## Building
+
+The Karaoke Lyric Editor needs the following:
+
+- Qt 6.5 or higher;
+- GStreamer 1.0 or higher;
+
+`qmake && make` would do the job.
+
 ## Screenshots
 
 ![Screenshot](https://github.com/gyunaev/karlyriceditor/blob/master/example/screenshots/1.jpeg "Screenshot")
