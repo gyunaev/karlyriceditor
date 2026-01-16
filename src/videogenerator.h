@@ -21,6 +21,7 @@
 #define VIDEOGENERATOR_H
 
 #include <QDialog>
+#include <QElapsedTimer>
 #include <QTimer>
 
 #include "lyrics.h"
