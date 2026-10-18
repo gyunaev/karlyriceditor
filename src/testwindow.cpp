@@ -40,9 +40,13 @@ TestWindow::TestWindow( QWidget *parent )
 
 void TestWindow::setLyricWidget( LyricsWidget * lw )
 {
-	// Clear the layout
-	QWidget *child = (QWidget*) m_layout->takeAt(0);
-	delete child;
+	// Remove whatever was in the layout before
+	while ( QLayoutItem * item = m_layout->takeAt( 0 ) )
+	{
+		if ( QWidget * w = item->widget() )
+			w->deleteLater();
+		delete item;
+	}
 
 	m_widget = lw;
 	m_layout->addWidget( lw );
@@ -51,9 +55,8 @@ void TestWindow::setLyricWidget( LyricsWidget * lw )
 
 void TestWindow::closeEvent( QCloseEvent * event )
 {
-	emit closed();
-
 	QDialog::closeEvent( event );
+	emit closed();
 }
 
 void TestWindow::tick( qint64 current, qint64 total )

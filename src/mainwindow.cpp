@@ -794,8 +794,11 @@ void MainWindow::testWindowClosed()
 {
     playerStop();
 
-	delete m_testWindow;
-    m_testWindow = 0;
+	if ( m_testWindow )
+	{
+		m_testWindow->deleteLater();   // safe: deleted after the event handler returns
+		m_testWindow = 0;
+	}
 }
 
 void MainWindow::act_projectTestCDG()
