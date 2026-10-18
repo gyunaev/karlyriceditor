@@ -1211,7 +1211,7 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 
 		if ( header )
 		{
-            QRegularExpression regex( "^#([a-zA-Z]+):\\s*(.*)\\s*$" );
+            QRegularExpression regex( "^#([a-zA-Z0-9]+):\\s*(.*)\\s*$" );
             QRegularExpressionMatch m = regex.match( line );
 
             if ( m.hasMatch() )
@@ -1284,9 +1284,9 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 			if ( line[0] == 'E' )
 				break;
 
-            QStringList parsed = line.split( QRegularExpression("\\s+") );
+            QStringList parsed = line.split(" ", Qt::KeepEmptyParts);
 
-			if ( parsed.size() < 3 )
+			if ( parsed.size() < 3 && (parsed[0] != "-" && parsed.size() == 2))
 			{
 				QMessageBox::critical( 0,
 									   QObject::tr("Invalid UltraStar file"),
@@ -1305,7 +1305,11 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 				lyrics.curLyricAdd();
 			}
 
-			next_time_ms = timing + parsed[2].toInt() * msecs_per_beat;
+			if (parsed.size() == 2 && parsed[0] == "-") {
+				next_time_ms = timing + parsed[1].toInt() * msecs_per_beat;
+			} else {
+				next_time_ms = timing + parsed[2].toInt() * msecs_per_beat;
+			}
 			lyrics.curLyricSetTime( timing );
 
 			if ( parsed[0] == "F" || parsed[0] == "*"  || parsed[0] == ":" )
@@ -1325,8 +1329,10 @@ bool Project::importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics 
 				else if ( parsed[0] == "*" )
 					pitch |= Lyrics::PITCH_NOTE_GOLDEN;
 
+				// Preserve whitespace, take 4th element of parsed onwards and glue together into a single string
+				// split() will turn spaces into empty strings, so use the space character as sep to add them back
 				lyrics.curLyricSetPitch( pitch );
-				lyrics.curLyricAppendText( parsed[4] );
+				lyrics.curLyricAppendText(parsed.sliced(4).join(" "));
 			}
 			else if ( parsed[0] == "-" )
 				lyrics.curLyricAddEndOfLine();
